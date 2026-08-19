@@ -8,12 +8,7 @@
   "description": "Sistema de gestión de planos y reservas para Crypto Business Club",
   "icons": [
     {
-      "src": "https://img.icons8.com/fluids/96/bitcoin.png",
-      "sizes": "96x96",
-      "type": "image/png"
-    },
-    {
-      "src": "https://img.icons8.com/fluids/512/bitcoin.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/2910/2910791.png",
       "sizes": "512x512",
       "type": "image/png"
     }
