@@ -1,627 +1,806 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<link rel="manifest" href="/manifest.json">
-<title>CRYPTO — Plano de Sala & CRM</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@500;600;700&display=swap');
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crypto Floor - Sistema Integral de Gestión de Plano y CRM</title>
+  <style>
+    :root {
+      --bg-dark: #0d0f12;
+      --panel-bg: #161920;
+      --panel-border: #262b36;
+      --accent: #f3ba2f;
+      --neon-amber: #ffb703;
+      --neon-green: #06d6a0;
+      --neon-red: #ef476f;
+      --text-main: #f1f1f1;
+      --text-low: #8a93a0;
+    }
 
-  :root{
-    --bg-void:#0a0710;
-    --bg-panel:#140e20;
-    --bg-panel-2:#1b1330;
-    --line:#332a4d;
-    --neon-pink:#ff2e88;
-    --neon-cyan:#26f5e0;
-    --neon-purple:#8b5cf6;
-    --neon-amber:#ffb020;
-    --neon-red:#ff3b4e;
-    --neutral-table:#3a3252;
-    --text-hi:#f3edff;
-    --text-mid:#a99fc4;
-    --text-low:#665c85;
-  }
-  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
-  html,body{
-    margin:0;padding:0;height:100%;
-    background:var(--bg-void);
-    color:var(--text-hi);
-    font-family:'Rajdhani',sans-serif;
-    overflow:hidden;
-    -webkit-user-select:none;user-select:none;
-    touch-action:none;
-  }
-  body{
-    background-image:
-      radial-gradient(circle at 20% 10%, rgba(139,92,246,0.12), transparent 40%),
-      radial-gradient(circle at 80% 90%, rgba(255,46,136,0.1), transparent 45%);
-  }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      user-select: none;
+    }
 
-  /* ---------- HEADER ---------- */
-  header{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:8px 16px;flex-wrap:wrap;gap:8px;
-    background:linear-gradient(180deg, var(--bg-panel-2), var(--bg-panel));
-    border-bottom:1px solid var(--line);
-    min-height:56px;
-    transition: all 0.3s ease;
-  }
-  header.hidden-elements {
-    display: none;
-  }
-  header h1{
-    font-family:'Bebas Neue',sans-serif;
-    font-size:20px;letter-spacing:3px;margin:0;
-    color:var(--neon-cyan);white-space:nowrap;
-    text-shadow:0 0 12px rgba(38,245,224,0.5);
-  }
-  header h1 span{color:var(--neon-pink);text-shadow:0 0 12px rgba(255,46,136,0.6);}
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
 
-  .header-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    /* Header y Navegación Principal */
+    header {
+      height: 60px;
+      background: var(--panel-bg);
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      gap: 10px;
+      z-index: 10;
+    }
 
-  #f-fecha{
-    background:var(--bg-panel);border:1px solid var(--line);color:var(--text-hi);
-    font-family:'Rajdhani',sans-serif;font-weight:600;font-size:13px;
-    padding:7px 10px;border-radius:6px;
-  }
+    header.hidden-elements {
+      display: none;
+    }
 
-  .floor-toggle{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;}
-  .floor-toggle button{
-    background:transparent;border:none;color:var(--text-mid);
-    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;
-    padding:8px 14px;cursor:pointer;letter-spacing:1px;
-  }
-  .floor-toggle button.active{
-    background:var(--neon-purple);color:#fff;
-    box-shadow:0 0 12px rgba(139,92,246,0.5);
-  }
+    .nav-tabs, .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-  nav{display:flex;gap:8px;}
-  nav button{
-    background:transparent;border:1px solid var(--line);color:var(--text-mid);
-    font-family:'Rajdhani',sans-serif;font-weight:600;font-size:13px;letter-spacing:1px;
-    padding:8px 16px;border-radius:6px;cursor:pointer;text-transform:uppercase;
-  }
-  nav button.active{
-    color:var(--bg-void);background:var(--neon-cyan);border-color:var(--neon-cyan);
-    box-shadow:0 0 14px rgba(38,245,224,0.5);
-  }
+    .tab-btn, .btn {
+      background: #202530;
+      color: var(--text-main);
+      border: 1px solid var(--panel-border);
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s ease-in-out;
+    }
 
-  .mode-btn, .btn-action-top{
-    background:var(--bg-panel);border:1px solid var(--line);color:var(--text-mid);
-    padding:7px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;
-  }
-  .mode-btn.active{background:var(--neon-pink);color:#fff;border-color:var(--neon-pink);box-shadow:0 0 12px rgba(255,46,136,0.5);}
-  .btn-action-top{background:var(--neon-purple);color:#fff;border-color:var(--neon-purple);box-shadow:0 0 10px rgba(139,92,246,0.4);}
-  .btn-fullscreen{background:#111827;border-color:var(--neon-cyan);color:var(--neon-cyan);box-shadow:0 0 10px rgba(38,245,224,0.3);}
-  .btn-clean-mode{background:#1f132d;border-color:var(--neon-pink);color:var(--neon-pink);box-shadow:0 0 10px rgba(255,46,136,0.3);}
+    .tab-btn:hover, .btn:hover {
+      background: #2a3140;
+      border-color: #3d4659;
+    }
 
-  /* BOTÓN FLOTANTE MODO LIMPIO (CUANDO SE OCULTA EL HEADER) */
-  .floating-clean-toggle {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    z-index: 200;
-    display: none;
-    gap: 8px;
-    align-items: center;
-  }
-  .floating-clean-toggle.visible {
-    display: flex;
-  }
+    .tab-btn.active, .btn.primary {
+      background: var(--accent);
+      color: #000000;
+      border-color: var(--accent);
+    }
 
-  /* BARRA HERRAMIENTAS SELECCIÓN MÚLTIPLE */
-  .multi-tools{
-    position:absolute;top:12px;left:50%;transform:translateX(-50%);
-    background:var(--bg-panel-2);border:1px solid var(--neon-pink);
-    padding:6px 16px;border-radius:30px;display:none;align-items:center;gap:12px;
-    z-index:300;box-shadow:0 0 20px rgba(255,46,136,0.5);
-  }
-  .multi-tools.active{display:flex;}
-  .btn-multi-del{
-    background:var(--neon-red);color:#fff;border:none;padding:6px 14px;
-    border-radius:20px;font-weight:700;font-size:12px;cursor:pointer;
-  }
+    .floor-toggle {
+      display: flex;
+      background: #000000;
+      border-radius: 6px;
+      padding: 2px;
+      border: 1px solid var(--panel-border);
+    }
 
-  /* ---------- LAYOUT ---------- */
-  .app{display:flex;height:calc(100% - 56px);position:relative;transition: height 0.3s ease;}
-  .app.full-height {height: 100%;}
+    .floor-toggle button {
+      background: transparent;
+      border: none;
+      color: var(--text-low);
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
 
-  /* ---------- SIDEBAR ---------- */
-  .sidebar{
-    width:170px;flex-shrink:0;
-    background:var(--bg-panel);
-    border-right:1px solid var(--line);
-    padding:10px;
-    display:flex;flex-direction:column;gap:10px;
-    overflow-y:auto;
-    transition: transform 0.3s ease, width 0.3s ease;
-  }
-  .sidebar.hidden {
-    display: none;
-  }
-  .sidebar h3{
-    font-size:11px;letter-spacing:2px;color:var(--text-low);
-    text-transform:uppercase;margin:0 0 2px 2px;font-weight:600;
-  }
-  .palette-grid{
-    display:grid;grid-template-columns:1fr 1fr;gap:6px;
-  }
-  .palette-item{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
-    padding:8px 4px;border:1px dashed var(--line);border-radius:8px;
-    background:var(--bg-panel-2);cursor:grab;min-height:55px;
-    touch-action:none;
-  }
-  .palette-item span{font-size:10px;color:var(--text-mid);font-weight:600;text-align:center;line-height:1.1;}
-  
-  .legend{margin-top:auto;font-size:11px;color:var(--text-low);line-height:1.7;padding-top:10px;}
-  .legend .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;}
-  .legend .d-disp{background:var(--neutral-table);}
-  .legend .d-res{background:var(--neon-amber);}
-  .legend .d-ocu{background:var(--neon-red);}
+    .floor-toggle button.active {
+      background: var(--panel-bg);
+      color: var(--accent);
+    }
 
-  /* ---------- CANVAS ---------- */
-  .canvas-wrap{flex:1;position:relative;overflow:hidden;}
-  #canvas{
-    position:absolute;inset:0;
-    background:
-      radial-gradient(circle at 50% 8%, rgba(255,46,136,0.06), transparent 30%),
-      repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 40px),
-      repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 40px),
-      var(--bg-void);
-  }
+    input[type="date"], input[type="text"], input[type="number"], textarea {
+      background: #0d0f12;
+      border: 1px solid var(--panel-border);
+      color: #ffffff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      outline: none;
+      font-size: 13px;
+    }
 
-  /* ---------- MUEBLES Y ESTRUCTURAS ---------- */
-  .furniture{
-    position:absolute;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    cursor:grab;z-index:10;
-    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:11px;
-    color:var(--text-hi);text-align:center;padding:2px;
-    border:2px solid #574c7d;border-radius:6px;
-    box-shadow:0 4px 10px rgba(0,0,0,0.5);
-    touch-action:none;
-    will-change: transform, left, top, width, height;
-  }
-  .furniture.locked{cursor:default;border-style:dotted;opacity:0.9;}
-  .furniture.selected{
-    outline:2px dashed var(--neon-cyan);
-    outline-offset:3px;
-    z-index:50;
-  }
-  .furniture.multi-selected{
-    outline:2px solid var(--neon-pink);
-    outline-offset:3px;
-    box-shadow:0 0 15px rgba(255,46,136,0.6);
-  }
+    input[type="date"]:focus, input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
+      border-color: var(--accent);
+    }
 
-  .resize-handle{
-    position:absolute;
-    width:32px;height:32px;
-    background:var(--neon-cyan);
-    border:2px solid #000;
-    border-radius:50%;
-    z-index:100;
-    box-shadow:0 0 12px rgba(38,245,224,1);
-    touch-action:none;
-  }
-  .resize-handle::after{
-    content:'';position:absolute;inset:-15px;
-  }
-  .resize-handle.se{ bottom:-16px; right:-16px; cursor:nwse-resize; }
-  .resize-handle.sw{ bottom:-16px; left:-16px; cursor:nesw-resize; }
-  .resize-handle.ne{ top:-16px; right:-16px; cursor:nesw-resize; }
-  .resize-handle.nw{ top:-16px; left:-16px; cursor:nwse-resize; }
+    /* Layout Contenedor */
+    #app-container {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 60px);
+      position: relative;
+    }
 
-  .furniture.mesa{border-radius:10px;background:var(--neutral-table);}
-  .furniture.sillon{border-radius:18px;background:#2d2642;border-color:#63538c;}
-  .furniture.bocina{background:#111827;border-color:var(--neon-pink);color:var(--neon-pink);border-radius:4px;box-shadow:0 0 10px rgba(255,46,136,0.3);}
-  .furniture.cristal{background:rgba(38,245,224,0.15);border:1px solid var(--neon-cyan);color:var(--neon-cyan);box-shadow:0 0 12px rgba(38,245,224,0.2);}
-  .furniture.dj{background:linear-gradient(180deg,#2a1840,#190f28);border-color:var(--neon-purple);color:var(--neon-purple);box-shadow:0 0 15px rgba(139,92,246,0.3);}
-  .furniture.entrada{background:#0e2a1f;border-color:#10b981;color:#a7f3d0;}
-  .furniture.salida{background:#381320;border-color:#f43f5e;color:#fecdd3;}
-  .furniture.wc{background:#181635;border-color:#6366f1;color:#e0e7ff;}
-  .furniture.pasillo{background:transparent;border:2px dashed var(--neon-cyan);color:var(--neon-cyan);opacity:0.8;}
-  .furniture.barra{background:linear-gradient(180deg, #182830, #0f1c24);border-color:var(--neon-cyan);color:var(--neon-cyan);}
-  .furniture.caja{background:#332308;border-color:#eab308;color:#fef08a;}
-  .furniture.escaleras{background:#262333;border-color:#9ca3af;color:#f3f4f6;}
+    #app-container.full-height {
+      height: 100vh;
+    }
 
-  .furniture.est-disponible{background:var(--neutral-table);border-color:#574c7d;}
-  .furniture.est-reservada{background:#5c4413;border-color:var(--neon-amber);box-shadow:0 0 14px rgba(255,176,32,0.45);}
-  .furniture.est-ocupada{background:#5c1420;border-color:var(--neon-red);box-shadow:0 0 14px rgba(255,59,78,0.5);}
-  .furniture.dragging{opacity:0.85;box-shadow:0 0 20px rgba(38,245,224,0.6);z-index:100;}
-  
-  .furniture .title-txt{
-    font-size:11px;font-weight:700;line-height:1.1;pointer-events:none;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:95%;
-  }
-  .furniture .sub-txt{
-    font-size:9px;color:var(--neon-cyan);font-weight:600;line-height:1;margin-top:2px;pointer-events:none;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:95%;
-  }
+    /* Panel Lateral - Herramientas */
+    sidebar {
+      width: 220px;
+      background: var(--panel-bg);
+      border-right: 1px solid var(--panel-border);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+    }
 
-  .furniture .pax{
-    position:absolute;top:-8px;right:-8px;pointer-events:none;
-    background:var(--bg-void);border:1px solid var(--line);
-    border-radius:50%;width:18px;height:18px;font-size:9px;
-    display:flex;align-items:center;justify-content:center;color:var(--neon-amber);
-  }
+    sidebar.hidden {
+      display: none;
+    }
 
-  .ghost{position:fixed;pointer-events:none;z-index:999;opacity:0.85;}
+    .palette-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
 
-  /* ---------- PANEL MESEROS (DERECHA) ---------- */
-  .waiters-panel{
-    width:240px;flex-shrink:0;
-    background:var(--bg-panel);
-    border-left:1px solid var(--line);
-    padding:12px;display:flex;flex-direction:column;gap:12px;
-    overflow-y:auto;
-    transition: transform 0.3s ease, width 0.3s ease;
-  }
-  .waiters-panel.hidden {
-    display: none;
-  }
-  .waiters-panel h3{
-    font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;
-    color:var(--neon-cyan);margin:0;display:flex;justify-content:space-between;align-items:center;
-  }
-  .waiter-card{
-    background:var(--bg-panel-2);border:1px solid var(--line);
-    border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px;
-  }
-  .waiter-card-header{
-    display:flex;justify-content:space-between;align-items:center;
-    border-bottom:1px solid rgba(51,42,77,0.6);padding-bottom:4px;
-  }
-  .waiter-name{font-weight:700;font-size:13px;color:var(--neon-pink);}
-  .waiter-count{font-size:10px;background:var(--line);padding:2px 6px;border-radius:10px;color:var(--text-hi);}
-  .waiter-tables{display:flex;flex-wrap:wrap;gap:4px;}
-  .table-badge{
-    font-size:10px;font-weight:700;padding:3px 6px;border-radius:4px;
-    background:var(--bg-void);border:1px solid var(--line);color:var(--text-mid);
-  }
-  .table-badge.res{border-color:var(--neon-amber);color:var(--neon-amber);}
-  .table-badge.ocu{border-color:var(--neon-red);color:var(--neon-red);}
+    .pal-item {
+      background: #202530;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 12px 8px;
+      text-align: center;
+      font-size: 11px;
+      cursor: grab;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
 
-  /* ---------- MODAL ---------- */
-  .overlay{
-    position:fixed;inset:0;background:rgba(6,4,12,0.72);
-    display:none;align-items:center;justify-content:center;z-index:400;
-    backdrop-filter:blur(3px);
-  }
-  .overlay.open{display:flex;}
-  .modal{
-    width:350px;max-width:92vw;
-    background:var(--bg-panel-2);border:1px solid var(--line);border-radius:14px;
-    padding:18px;box-shadow:0 0 40px rgba(0,0,0,0.6);
-    max-height:85vh;overflow-y:auto;
-  }
-  .modal h2{
-    font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;
-    margin:0 0 14px;color:var(--neon-cyan);
-  }
-  .field{margin-bottom:12px;}
-  .field label{
-    display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;
-    color:var(--text-mid);margin-bottom:5px;font-weight:600;
-  }
-  .field input, .field textarea, .field select{
-    width:100%;padding:8px 10px;border-radius:8px;
-    background:var(--bg-panel);border:1px solid var(--line);color:var(--text-hi);
-    font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;
-  }
-  .field textarea{resize:none;height:50px;}
-  
-  .dim-row{display:flex;gap:8px;}
-  .dim-row .field{flex:1;}
+    .pal-item:hover {
+      background: #2c3342;
+      border-color: var(--accent);
+    }
 
-  .estado-row{display:flex;gap:8px;}
-  .estado-btn{
-    flex:1;padding:8px 4px;border-radius:8px;border:1px solid var(--line);
-    background:var(--bg-panel);color:var(--text-mid);font-size:12px;font-weight:700;
-    cursor:pointer;text-align:center;letter-spacing:0.5px;
-  }
-  .estado-btn.sel-disponible{background:var(--neutral-table);color:var(--text-hi);border-color:#574c7d;}
-  .estado-btn.sel-reservada{background:#5c4413;color:var(--neon-amber);border-color:var(--neon-amber);}
-  .estado-btn.sel-ocupada{background:#5c1420;color:var(--neon-red);border-color:var(--neon-red);}
+    /* Área Principal - Mapa Canvas */
+    .main-view {
+      flex: 1;
+      position: relative;
+      background: #08090b;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
 
-  .control-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
-  .rotate-btn, .lock-btn{
-    flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--line);
-    background:var(--bg-panel);color:var(--neon-cyan);font-weight:700;font-size:12px;
-    cursor:pointer;letter-spacing:0.5px;text-align:center;
-  }
-  .lock-btn.locked{background:var(--neon-purple);color:#fff;border-color:var(--neon-purple);}
+    #view-plano {
+      width: 100%;
+      height: 100%;
+      display: flex;
+    }
 
-  .modal-actions{display:flex;gap:8px;margin-top:16px;}
-  .btn{
-    flex:1;padding:10px;border-radius:8px;border:1px solid var(--line);
-    background:transparent;color:var(--text-mid);font-weight:700;font-size:12px;
-    letter-spacing:0.5px;cursor:pointer;text-transform:uppercase;
-  }
-  .btn.primary{background:var(--neon-cyan);color:var(--bg-void);border-color:var(--neon-cyan);}
-  .btn.danger{background:transparent;color:var(--neon-red);border-color:var(--neon-red);}
+    #canvas {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background-image: radial-gradient(#202530 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
 
-  /* ---------- CRM & RESERVAS VIEW ---------- */
-  .crm-view{flex:1;padding:20px;overflow-y:auto;display:none;background:var(--bg-void);}
-  .crm-view.active{display:block;}
-  .section-title{
-    font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--neon-cyan);
-    letter-spacing:2px;margin:16px 0 10px;
-  }
-  .crm-search{
-    width:100%;max-width:400px;padding:10px 14px;border-radius:8px;
-    background:var(--bg-panel-2);border:1px solid var(--line);color:var(--text-hi);
-    font-family:'Rajdhani',sans-serif;font-size:14px;margin-bottom:16px;
-  }
-  .crm-table{width:100%;border-collapse:collapse;margin-bottom:20px;}
-  .crm-table th{
-    text-align:left;font-size:11px;letter-spacing:1px;text-transform:uppercase;
-    color:var(--text-low);padding:8px 10px;border-bottom:1px solid var(--line);
-  }
-  .crm-table td{
-    padding:10px;border-bottom:1px solid rgba(51,42,77,0.5);font-size:13px;font-weight:600;
-  }
-  .crm-edit-btn{
-    background:transparent;border:1px solid var(--line);color:var(--neon-cyan);
-    font-size:11px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;
-    letter-spacing:0.5px;text-transform:uppercase;margin-right:4px;
-  }
-  .crm-delete-btn{
-    background:transparent;border:1px solid var(--neon-red);color:var(--neon-red);
-    font-size:11px;font-weight:700;padding:6px 10px;border-radius:6px;cursor:pointer;
-    letter-spacing:0.5px;text-transform:uppercase;
-  }
-  .crm-empty{color:var(--text-low);padding:20px;text-align:center;font-size:13px;}
+    /* Renderizado de Mobiliario y Muebles */
+    .furniture {
+      position: absolute;
+      background: #2a303c;
+      border: 2px solid #4a5264;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: move;
+      touch-action: none;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+      box-sizing: border-box;
+    }
 
-  .checkin-item{
-    display:flex;align-items:center;justify-content:space-between;
-    background:var(--bg-panel-2);border:1px solid var(--line);
-    padding:10px 14px;border-radius:8px;margin-bottom:8px;gap:12px;
-  }
-  .checkin-info{display:flex;flex-direction:column;gap:2px;}
-  .checkin-name{font-weight:700;font-size:15px;color:var(--neon-cyan);}
-  .checkin-sub{font-size:12px;color:var(--text-mid);}
-</style>
+    .furniture.selected {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 12px rgba(243, 186, 47, 0.6);
+    }
+
+    .furniture.multi-selected {
+      border-color: var(--neon-amber) !important;
+      box-shadow: 0 0 10px rgba(255, 183, 3, 0.4);
+    }
+
+    .furniture.locked {
+      border-style: dashed;
+      opacity: 0.85;
+    }
+
+    .furniture.dragging {
+      opacity: 0.7;
+    }
+
+    .furniture.est-disponible {
+      border-color: var(--neon-green);
+    }
+
+    .furniture.est-reservada {
+      border-color: var(--neon-amber);
+      background: #3d2e05;
+    }
+
+    .furniture.est-ocupada {
+      border-color: var(--neon-red);
+      background: #3d0e18;
+    }
+
+    .furniture .pax {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: var(--accent);
+      color: #000000;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 10px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    }
+
+    .furniture .title-txt {
+      font-size: 11px;
+      word-break: break-word;
+      padding: 2px;
+      line-height: 1.2;
+    }
+
+    .furniture .sub-txt {
+      font-size: 9px;
+      color: var(--text-low);
+      margin-top: 2px;
+    }
+
+    /* Puntos de Resize (Manijas de Redimensión) */
+    .resize-handle {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: var(--accent);
+      border-radius: 50%;
+      border: 1px solid #000;
+    }
+
+    .resize-handle.nw { top: -5px; left: -5px; cursor: nwse-resize; }
+    .resize-handle.ne { top: -5px; right: -5px; cursor: nesw-resize; }
+    .resize-handle.sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
+    .resize-handle.se { bottom: -5px; right: -5px; cursor: nwse-resize; }
+
+    /* Panel Derecho de Meseros */
+    #waiters-panel {
+      width: 240px;
+      background: var(--panel-bg);
+      border-left: 1px solid var(--panel-border);
+      padding: 12px;
+      overflow-y: auto;
+    }
+
+    #waiters-panel.hidden {
+      display: none;
+    }
+
+    .waiter-card {
+      background: #202530;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    .waiter-card-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: var(--accent);
+    }
+
+    .waiter-tables {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .table-badge {
+      background: #2a303c;
+      font-size: 10px;
+      padding: 3px 6px;
+      border-radius: 4px;
+      border: 1px solid #4a5264;
+    }
+
+    .table-badge.res {
+      border-color: var(--neon-amber);
+      color: var(--neon-amber);
+    }
+
+    .table-badge.ocu {
+      border-color: var(--neon-red);
+      color: var(--neon-red);
+    }
+
+    /* Barra de Herramientas Flotante Multi-Selección */
+    #multi-tools {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--panel-bg);
+      border: 1px solid var(--accent);
+      padding: 8px 18px;
+      border-radius: 30px;
+      display: none;
+      align-items: center;
+      gap: 14px;
+      z-index: 20;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+    }
+
+    #multi-tools.active {
+      display: flex;
+    }
+
+    /* Selector Flotante Modo Limpio */
+    #floating-clean-toggle {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      display: none;
+      z-index: 30;
+    }
+
+    #floating-clean-toggle.visible {
+      display: block;
+    }
+
+    /* Vista CRM / Tablas */
+    #view-crm {
+      display: none;
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      background: var(--bg-dark);
+    }
+
+    #view-crm.active {
+      display: block;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid var(--panel-border);
+      padding: 10px 12px;
+      text-align: left;
+    }
+
+    th {
+      background: var(--panel-bg);
+      color: var(--text-low);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      background: #12151c;
+    }
+
+    .crm-edit-btn, .crm-delete-btn {
+      padding: 4px 8px;
+      font-size: 11px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .crm-edit-btn {
+      background: var(--accent);
+      color: #000000;
+    }
+
+    .crm-delete-btn {
+      background: var(--neon-red);
+      color: #ffffff;
+      margin-left: 4px;
+    }
+
+    /* Modales y Capas Overlays */
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      width: 400px;
+      max-width: 92%;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+    }
+
+    .modal h3 {
+      font-size: 16px;
+      color: var(--accent);
+      border-bottom: 1px solid var(--panel-border);
+      padding-bottom: 8px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .estado-selector {
+      display: flex;
+      gap: 6px;
+    }
+
+    .estado-btn {
+      flex: 1;
+      padding: 8px;
+      font-size: 11px;
+      background: #202530;
+      border: 1px solid var(--panel-border);
+      color: #ffffff;
+      border-radius: 4px;
+      cursor: pointer;
+      text-align: center;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+
+    .estado-btn.sel-disponible {
+      border-color: var(--neon-green);
+      background: rgba(6, 214, 160, 0.15);
+      color: var(--neon-green);
+    }
+
+    .estado-btn.sel-reservada {
+      border-color: var(--neon-amber);
+      background: rgba(255, 183, 3, 0.15);
+      color: var(--neon-amber);
+    }
+
+    .estado-btn.sel-ocupada {
+      border-color: var(--neon-red);
+      background: rgba(239, 71, 111, 0.15);
+      color: var(--neon-red);
+    }
+
+    .ghost {
+      position: fixed;
+      pointer-events: none;
+      opacity: 0.6;
+      z-index: 2000;
+      background: var(--accent);
+      border-radius: 4px;
+    }
+
+    .checkin-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid var(--panel-border);
+      background: #11141a;
+      margin-bottom: 4px;
+      border-radius: 4px;
+    }
+
+    .checkin-info {
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+      gap: 2px;
+    }
+
+    .checkin-name {
+      font-weight: bold;
+      color: #ffffff;
+    }
+
+    .checkin-sub {
+      color: var(--text-low);
+      font-size: 11px;
+    }
+  </style>
 </head>
 <body>
 
-<header id="main-header">
-  <h1>CRYPTO <span>·</span> FLOOR</h1>
-  <div class="header-controls">
-    <button class="btn-action-top btn-clean-mode" id="btn-clean-mode">👁️ Modo Operación</button>
-    <button class="btn-action-top btn-fullscreen" id="btn-fullscreen">🔍 Full Screen</button>
-    <button class="btn-action-top" id="btn-quick-checkin">⚡ Recepción / Check-in</button>
-    <button class="btn-action-top" id="btn-add-batch-res" style="background:var(--neon-cyan);color:#000;">+ Cargar Reservas Hoy</button>
-    <button class="mode-btn" id="btn-toggle-multi">Selección Múltiple</button>
-    <input type="date" id="f-fecha">
-    <div class="floor-toggle">
-      <button id="floor-pb" class="active">PB</button>
-      <button id="floor-pa">PA</button>
+  <!-- Encabezado y Navegación Principal -->
+  <header id="main-header">
+    <div class="nav-tabs">
+      <button class="tab-btn active" id="tab-plano">📐 Plano Interactive</button>
+      <button class="tab-btn" id="tab-crm">📊 CRM y Reservas</button>
+      <div class="floor-toggle">
+        <button id="floor-pb" class="active">Planta Baja (PB)</button>
+        <button id="floor-pa">Planta Alta (PA)</button>
+      </div>
     </div>
-    <nav>
-      <button id="tab-plano" class="active">Plano</button>
-      <button id="tab-crm">CRM & Reservas</button>
-    </nav>
-  </div>
-</header>
 
-<!-- Botón flotante que aparece cuando se oculta el header para cambiar de planta o salir del modo limpio -->
-<div class="floating-clean-toggle" id="floating-clean-toggle">
-  <div class="floor-toggle" style="background:var(--bg-panel-2);box-shadow:0 0 15px rgba(0,0,0,0.5);">
-    <button id="float-floor-pb" class="active">PB</button>
-    <button id="float-floor-pa">PA</button>
-  </div>
-  <button class="btn-action-top btn-clean-mode" id="btn-exit-clean" style="padding:8px 12px;">❌ Ver Menú</button>
-</div>
+    <div class="controls">
+      <input type="date" id="f-fecha">
+      <button class="btn" id="btn-quick-checkin">⚡ Check-in Rápido</button>
+      <button class="btn" id="btn-add-batch-res">📦 Carga Masiva</button>
+      <button class="btn" id="btn-toggle-multi">☑ Multi-Selección</button>
+      <button class="btn" id="btn-clean-mode">🧹 Modo Operación</button>
+      <button class="btn" id="btn-fullscreen">🔍 Full Screen</button>
+    </div>
+  </header>
 
-<div class="app" id="app-container">
-  <div class="multi-tools" id="multi-tools">
-    <span id="multi-count" style="font-size:12px;font-weight:700;color:#fff;">0 seleccionados</span>
-    <button class="btn-multi-del" id="btn-del-multi">Eliminar Todos</button>
-  </div>
-
-  <div id="view-plano" style="display:flex;flex:1;">
-    <div class="sidebar" id="sidebar-panel">
-      <h3>Mobiliario</h3>
+  <!-- Contenedor Principal de la Aplicación -->
+  <div id="app-container">
+    <!-- Panel Lateral Paleta de Objetos -->
+    <sidebar id="sidebar-panel">
+      <span style="font-size: 11px; color: var(--text-low); font-weight: bold; letter-spacing: 0.5px;">ELEMENTOS DE PLANO</span>
       <div class="palette-grid">
-        <div class="palette-item" data-tipo="mesa" id="pal-mesa"><span>Mesa</span></div>
-        <div class="palette-item" data-tipo="sillon" id="pal-sillon"><span>Sillón</span></div>
-        <div class="palette-item" data-tipo="bocina" id="pal-bocina"><span>🔊 Bocina</span></div>
-        <div class="palette-item" data-tipo="cristal" id="pal-cristal"><span>Cristal</span></div>
-        <div class="palette-item" data-tipo="dj" id="pal-dj"><span>DJ/Cabina</span></div>
-        <div class="palette-item" data-tipo="barra" id="pal-barra"><span>Barra</span></div>
-        <div class="palette-item" data-tipo="entrada" id="pal-entrada"><span>Entrada</span></div>
-        <div class="palette-item" data-tipo="salida" id="pal-salida"><span>Salida</span></div>
-        <div class="palette-item" data-tipo="wc" id="pal-wc"><span>WC</span></div>
-        <div class="palette-item" data-tipo="pasillo" id="pal-pasillo"><span>Pasillo WC</span></div>
-        <div class="palette-item" data-tipo="caja" id="pal-caja"><span>Caja</span></div>
-        <div class="palette-item" data-tipo="escaleras" id="pal-escaleras"><span>Escaleras</span></div>
+        <div class="pal-item" id="pal-mesa">🔲 Mesa</div>
+        <div class="pal-item" id="pal-sillon">🛋️ Sillón</div>
+        <div class="pal-item" id="pal-bocina">🔊 Bocina</div>
+        <div class="pal-item" id="pal-cristal">🪟 Balcón</div>
+        <div class="pal-item" id="pal-dj">🎧 Cabina DJ</div>
+        <div class="pal-item" id="pal-barra">🍸 Barra</div>
+        <div class="pal-item" id="pal-entrada">🚪 Entrada</div>
+        <div class="pal-item" id="pal-salida">🚪 Salida</div>
+        <div class="pal-item" id="pal-wc">🚻 Baños</div>
+        <div class="pal-item" id="pal-pasillo">🚶 Pasillo</div>
+        <div class="pal-item" id="pal-caja">💻 Caja</div>
+        <div class="pal-item" id="pal-escaleras">🪜 Escaleras</div>
       </div>
-      <div class="legend">
-        <div><span class="dot d-disp"></span>Disponible</div>
-        <div><span class="dot d-res"></span>Reservada</div>
-        <div><span class="dot d-ocu"></span>Ocupada</div>
+    </sidebar>
+
+    <!-- Área Principal de Renderizado del Plano -->
+    <div class="main-view">
+      <div id="view-plano">
+        <div id="canvas"></div>
+      </div>
+
+      <!-- Vista Alternativa de CRM y Registros -->
+      <div id="view-crm">
+        <h3 style="color: var(--accent); margin-bottom: 8px;">Reservaciones de la Jornada</h3>
+        <input type="text" id="reser-search" placeholder="Buscar por cliente, mesa o mesero..." style="margin-bottom: 12px; width: 320px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Planta</th>
+              <th>Mesa</th>
+              <th>Cliente</th>
+              <th>Teléfono</th>
+              <th>Personas</th>
+              <th>Mesero</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="reser-tbody"></tbody>
+        </table>
+        <div id="reser-empty" style="padding: 20px; color: var(--text-low); text-align: center; display:none;">No hay reservaciones encontradas.</div>
+
+        <h3 style="color: var(--accent); margin-top: 36px; margin-bottom: 8px;">Directorio Global de Clientes CRM</h3>
+        <input type="text" id="crm-search" placeholder="Buscar cliente por nombre o teléfono..." style="margin-bottom: 12px; width: 320px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre Completo</th>
+              <th>Teléfono Contacto</th>
+              <th>Total Visitas</th>
+              <th>Última Mesa</th>
+              <th>Preferencias / Notas</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="crm-tbody"></tbody>
+        </table>
+        <div id="crm-empty" style="padding: 20px; color: var(--text-low); text-align: center; display:none;">No se encontraron clientes registrados.</div>
+      </div>
+
+      <!-- Herramientas flotantes para selección múltiple -->
+      <div id="multi-tools">
+        <span id="multi-count" style="font-size: 12px; font-weight: bold; color: var(--accent);">0 elementos seleccionados</span>
+        <button class="btn" id="btn-del-multi" style="background: var(--neon-red); color: #ffffff;">Eliminar Seleccionados</button>
+      </div>
+
+      <!-- Botón flotante para salir del modo de operación limpia -->
+      <div id="floating-clean-toggle">
+        <div class="floor-toggle" style="display:inline-flex; margin-right: 10px;">
+          <button id="float-floor-pb" class="active">PB</button>
+          <button id="float-floor-pa">PA</button>
+        </div>
+        <button class="btn primary" id="btn-exit-clean">Salir Modo Operación</button>
       </div>
     </div>
 
-    <div class="canvas-wrap">
-      <div id="canvas"></div>
-    </div>
-
-    <div class="waiters-panel" id="waiters-panel">
-      <h3>Meseros & Asignación</h3>
+    <!-- Panel Lateral de Asignación de Meseros -->
+    <div id="waiters-panel">
+      <span style="font-size: 11px; color: var(--text-low); font-weight: bold; letter-spacing: 0.5px; display: block; margin-bottom: 12px;">MESEROS Y ASIGNACIONES</span>
       <div id="waiters-list"></div>
     </div>
   </div>
 
-  <div id="view-crm" class="crm-view">
-    <div class="section-title">Base de Datos de Reservaciones</div>
-    <input type="text" class="crm-search" id="reser-search" placeholder="Buscar reserva por fecha, cliente o mesero...">
-    <table class="crm-table">
-      <thead>
-        <tr>
-          <th>Fecha</th><th>Planta</th><th>Mesa</th><th>Cliente</th><th>Teléfono</th><th>Pax</th><th>Mesero</th><th>Estado</th><th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="reser-tbody"></tbody>
-    </table>
-    <div class="crm-empty" id="reser-empty" style="display:none;">No se encontraron reservaciones con ese criterio.</div>
-
-    <div class="section-title">Directorio de Clientes (CRM)</div>
-    <input type="text" class="crm-search" id="crm-search" placeholder="Buscar cliente por nombre o teléfono">
-    <table class="crm-table">
-      <thead>
-        <tr><th>Cliente</th><th>Teléfono</th><th>Visitas</th><th>Última mesa</th><th>Preferencias</th><th>Acciones</th></tr>
-      </thead>
-      <tbody id="crm-tbody"></tbody>
-    </table>
-    <div class="crm-empty" id="crm-empty" style="display:none;">Aún no hay clientes registrados. Se agregan automáticamente al guardar una reserva.</div>
-  </div>
-</div>
-
-<div class="overlay" id="overlay">
-  <div class="modal">
-    <h2 id="modal-title">Elemento</h2>
-
-    <div class="field">
-      <label>Etiqueta / Nombre</label>
-      <input type="text" id="f-nombre" placeholder="Ej. Mesa 1, Cristal VIP, DJ, etc.">
-    </div>
-
-    <div class="dim-row">
-      <div class="field">
-        <label>Ancho (px)</label>
-        <input type="number" id="f-ancho" min="20" max="800">
+  <!-- MODAL 1: Configuración de Elemento / Reservación -->
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <h3 id="modal-title">Propiedades del Elemento</h3>
+      <div>
+        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Nombre o Identificador</label>
+        <input type="text" id="f-nombre" style="width:100%;">
       </div>
-      <div class="field">
-        <label>Alto (px)</label>
-        <input type="number" id="f-alto" min="20" max="800">
+      <div style="display:flex; gap:8px;">
+        <div style="flex:1;">
+          <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Ancho (Pixeles)</label>
+          <input type="number" id="f-ancho" style="width:100%;">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Alto (Pixeles)</label>
+          <input type="number" id="f-alto" style="width:100%;">
+        </div>
       </div>
-    </div>
-
-    <div class="field">
-      <label>Posición y Orientación</label>
-      <div class="control-row">
-        <button class="rotate-btn" id="btn-rotate">&#8635; Rotar 90° (<span id="rotate-value">0°</span>)</button>
-        <button class="lock-btn" id="btn-lock">🔓 Libres</button>
+      <div style="display:flex; gap:12px; align-items:center; margin-top: 4px;">
+        <button class="btn" id="btn-rotate">Rotar 90°</button>
+        <span id="rotate-value" style="font-size:12px; font-weight:bold; color:var(--accent);">0°</span>
+        <button class="btn" id="btn-lock" style="margin-left:auto;">🔓 Posición Libre</button>
       </div>
-    </div>
 
-    <div id="reserva-fields">
-      <div class="field">
-        <label>Estado</label>
-        <div class="estado-row">
-          <button class="estado-btn" data-estado="disponible">Disponible</button>
-          <button class="estado-btn" data-estado="reservada">Reservada</button>
-          <button class="estado-btn" data-estado="ocupada">Ocupada</button>
+      <!-- Campos Exclusivos para Muebles Tipo Mesa -->
+      <div id="reserva-fields" style="border-top: 1px solid var(--panel-border); padding-top: 12px; margin-top: 6px;">
+        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom: 6px;">Estado Actual de la Mesa</label>
+        <div class="estado-selector">
+          <div class="estado-btn" data-estado="disponible">Disponible</div>
+          <div class="estado-btn" data-estado="reservada">Reservada</div>
+          <div class="estado-btn" data-estado="ocupada">Ocupada</div>
+        </div>
+        <div style="margin-top: 10px;">
+          <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Cliente Reservante</label>
+          <input type="text" id="f-cliente" style="width:100%;">
+        </div>
+        <div style="display:flex; gap:8px; margin-top: 8px;">
+          <div style="flex:1;">
+            <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Teléfono</label>
+            <input type="text" id="f-telefono" style="width:100%;">
+          </div>
+          <div style="width:90px;">
+            <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Personas (Pax)</label>
+            <input type="number" id="f-personas" style="width:100%;">
+          </div>
+        </div>
+        <div style="margin-top: 8px;">
+          <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Mesero Asignado</label>
+          <input type="text" id="f-mesero" style="width:100%;">
+        </div>
+        <div style="margin-top: 8px;">
+          <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Notas y Especificaciones</label>
+          <textarea id="f-notas" style="width:100%; height:50px; resize:none;"></textarea>
         </div>
       </div>
 
-      <div class="field">
-        <label>Cliente / Nombre Reserva</label>
-        <input type="text" id="f-cliente" placeholder="Nombre de la reserva">
+      <div class="modal-actions">
+        <button class="btn" id="btn-delete" style="background:var(--neon-red); color:#ffffff; margin-right:auto;">Eliminar</button>
+        <button class="btn" id="btn-cancel">Cancelar</button>
+        <button class="btn primary" id="btn-save">Guardar Cambios</button>
       </div>
-      <div class="field">
-        <label>Teléfono</label>
-        <input type="tel" id="f-telefono" placeholder="55 1234 5678">
-      </div>
-      <div class="field">
-        <label>Personas</label>
-        <input type="number" id="f-personas" min="0" placeholder="0">
-      </div>
-      <div class="field">
-        <label>Mesero Asignado</label>
-        <input type="text" id="f-mesero" placeholder="Nombre del mesero">
-      </div>
-      <div class="field">
-        <label>Notas</label>
-        <textarea id="f-notas" placeholder="Instrucciones especiales..."></textarea>
-      </div>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn danger" id="btn-delete">Eliminar Elemento</button>
-      <button class="btn" id="btn-cancel">Cerrar</button>
-      <button class="btn primary" id="btn-save">Guardar</button>
     </div>
   </div>
-</div>
 
-<div class="overlay" id="overlay-batch">
-  <div class="modal" style="width:420px;">
-    <h2>Cargar Reservas del Día</h2>
-    <div class="field">
-      <label>Pega o escribe las reservas (Una por línea):</label>
-      <textarea id="batch-text" style="height:140px;font-family:monospace;font-size:12px;" placeholder="Ejemplo:&#10;Juan Perez, 5512345678, 4, Mesa 1, Carlos&#10;Maria Lopez, 5587654321, 2, PB_M2, Luis&#10;Pedro Gomez, 5599887766, 6"></textarea>
-    </div>
-    <div style="font-size:11px;color:var(--text-low);margin-bottom:10px;">
-      Formatos aceptados:<br>
-      • <b>Nombre, Telefono, Personas, Mesa, Mesero</b><br>
-      • O simplemente <b>Nombre del Cliente</b>
-    </div>
-    <div class="modal-actions">
-      <button class="btn" id="btn-batch-cancel">Cancelar</button>
-      <button class="btn primary" id="btn-batch-save">Procesar Reservas</button>
+  <!-- MODAL 2: Editar Registro de Cliente CRM -->
+  <div class="overlay" id="overlay-cli">
+    <div class="modal">
+      <h3>Editar Ficha de Cliente CRM</h3>
+      <div>
+        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Nombre Completo</label>
+        <input type="text" id="c-nombre" style="width:100%;">
+      </div>
+      <div>
+        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Teléfono de Contacto</label>
+        <input type="text" id="c-telefono" style="width:100%;">
+      </div>
+      <div>
+        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Preferencias / Consumo</label>
+        <textarea id="c-preferencias" style="width:100%; height:70px; resize:none;"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="btn-cli-cancel">Cancelar</button>
+        <button class="btn primary" id="btn-cli-save">Actualizar Cliente</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="overlay" id="overlay-checkin">
-  <div class="modal" style="width:450px;">
-    <h2>Recepción & Acomodo de Clientes</h2>
-    <div class="field">
-      <input type="text" id="checkin-search" placeholder="🔍 Buscar cliente por nombre..." style="font-size:15px;padding:10px;">
-    </div>
-    <div id="checkin-list" style="max-height:300px;overflow-y:auto;margin-bottom:12px;"></div>
-    <div class="modal-actions">
-      <button class="btn" id="btn-checkin-close">Cerrar</button>
+  <!-- MODAL 3: Carga Masiva de Reservas por Lote -->
+  <div class="overlay" id="overlay-batch">
+    <div class="modal">
+      <h3>Carga Masiva por Formato</h3>
+      <p style="font-size: 11px; color: var(--text-low); line-height: 1.4;">
+        Introduce tus reservas separadas por salto de línea usando el siguiente orden:<br>
+        <b style="color:var(--accent);">Nombre, Teléfono, Cantidad Personas, Mesa, Mesero</b>
+      </p>
+      <textarea id="batch-text" style="height: 140px; font-family: monospace; font-size: 12px;" placeholder="Juan Perez, 55501928, 4, Mesa 1, Carlos&#10;Maria Gomez, 55581920, 2, Mesa 3, Ana"></textarea>
+      <div class="modal-actions">
+        <button class="btn" id="btn-batch-cancel">Cancelar</button>
+        <button class="btn primary" id="btn-batch-save">Procesar Reservas</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="overlay" id="overlay-cli">
-  <div class="modal">
-    <h2>Editar cliente</h2>
-    <div class="field">
-      <label>Nombre</label>
-      <input type="text" id="c-nombre">
-    </div>
-    <div class="field">
-      <label>Teléfono</label>
-      <input type="tel" id="c-telefono">
-    </div>
-    <div class="field">
-      <label>Preferencias</label>
-      <textarea id="c-preferencias" placeholder="Preferencias del cliente..."></textarea>
-    </div>
-    <div class="modal-actions">
-      <button class="btn" id="btn-cli-cancel">Cerrar</button>
-      <button class="btn primary" id="btn-cli-save">Guardar</button>
+  <!-- MODAL 4: Check-in Rápido -->
+  <div class="overlay" id="overlay-checkin">
+    <div class="modal" style="width: 480px;">
+      <h3>Check-in Rápido de Comensales</h3>
+      <input type="text" id="checkin-search" placeholder="Filtrar por nombre de reservación...">
+      <div id="checkin-list" style="max-height: 280px; overflow-y: auto; margin-top: 10px;"></div>
+      <div class="modal-actions">
+        <button class="btn" id="btn-checkin-close">Cerrar</button>
+      </div>
     </div>
   </div>
-</div>
 
-<script>
-(function(){
-  // Pantalla Completa
+  <!-- LÓGICA COMPLETA DE NAVEGACIÓN Y MANIPULACIÓN DEL DOM -->
+  <script>
+  // Control de Pantalla Completa
   const btnFs = document.getElementById('btn-fullscreen');
   btnFs.addEventListener('click', () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.log("Error al intentar pantalla completa: ", err.message);
-      });
-      btnFs.textContent = '❌ Salir Full';
+      document.documentElement.requestFullscreen().catch(err => console.error(err.message));
+      btnFs.textContent = '❌ Salir FullScreen';
     } else {
       document.exitFullscreen();
       btnFs.textContent = '🔍 Full Screen';
     }
   });
 
-  // Modo Operación (Esconder Header, Mobiliario y Meseros)
+  // Modo Limpio Operativo
   const btnCleanMode = document.getElementById('btn-clean-mode');
   const btnExitClean = document.getElementById('btn-exit-clean');
   const mainHeader = document.getElementById('main-header');
@@ -630,8 +809,8 @@
   const appContainer = document.getElementById('app-container');
   const floatingToggle = document.getElementById('floating-clean-toggle');
 
-  function toggleCleanMode(enable){
-    if(enable){
+  function toggleCleanMode(enable) {
+    if (enable) {
       mainHeader.classList.add('hidden-elements');
       sidebarPanel.classList.add('hidden');
       waitersPanel.classList.add('hidden');
@@ -649,42 +828,42 @@
   btnCleanMode.addEventListener('click', () => toggleCleanMode(true));
   btnExitClean.addEventListener('click', () => toggleCleanMode(false));
 
+  // Claves para el almacenamiento local
   const STORAGE_KEY_LAYOUT = 'crypto_floor_layout_v3';
   const STORAGE_KEY_RESERVAS = 'crypto_floor_daily_reservas_v3';
   const STORAGE_KEY_CLI = 'crypto_floor_clientes';
 
-  const DEFAULT_LAYOUT_PB = [
-    { id: 'pb_dj', tipo: 'dj', nombre: 'DJ / CABINA', x: 12, y: 8, anchoPx: 140, altoPx: 60, rotacion: 0, locked: false },
+  // Layouts por Defecto
+  window.DEFAULT_LAYOUT_PB = [
+    { id: 'pb_dj', tipo: 'dj', nombre: 'CABINA DJ', x: 12, y: 8, anchoPx: 140, altoPx: 60, rotacion: 0, locked: false },
     { id: 'pb_b1', tipo: 'bocina', nombre: '🔊 BOX L', x: 5, y: 8, anchoPx: 45, altoPx: 45, rotacion: 0, locked: false },
     { id: 'pb_b2', tipo: 'bocina', nombre: '🔊 BOX R', x: 20, y: 8, anchoPx: 45, altoPx: 45, rotacion: 0, locked: false },
-    { id: 'pb_bar', tipo: 'barra', nombre: 'BARRA DE TRAGOS', x: 50, y: 8, anchoPx: 300, altoPx: 50, rotacion: 0, locked: false },
-    { id: 'pb_wc', tipo: 'wc', nombre: 'WC', x: 90, y: 8, anchoPx: 90, altoPx: 50, rotacion: 0, locked: false },
+    { id: 'pb_bar', tipo: 'barra', nombre: 'BARRA PRINCIPAL', x: 50, y: 8, anchoPx: 300, altoPx: 50, rotacion: 0, locked: false },
+    { id: 'pb_wc', tipo: 'wc', nombre: 'BAÑOS PB', x: 90, y: 8, anchoPx: 90, altoPx: 50, rotacion: 0, locked: false },
     { id: 'pb_pas', tipo: 'pasillo', nombre: 'PASILLO BAÑOS', x: 90, y: 15, anchoPx: 90, altoPx: 30, rotacion: 0, locked: false },
-    { id: 'pb_ent', tipo: 'entrada', nombre: 'ENTRADA', x: 8, y: 92, anchoPx: 80, altoPx: 40, rotacion: 0, locked: false },
-
-    { id: 'pb_s0', tipo: 'sillon', nombre: 'Sillón VIP 1', x: 15, y: 25, anchoPx: 110, altoPx: 38, rotacion: 0, locked: false },
+    { id: 'pb_ent', tipo: 'entrada', nombre: 'ACCESO', x: 8, y: 92, anchoPx: 80, altoPx: 40, rotacion: 0, locked: false },
+    { id: 'pb_s0', tipo: 'sillon', nombre: 'SILLÓN VIP 1', x: 15, y: 25, anchoPx: 110, altoPx: 38, rotacion: 0, locked: false },
     { id: 'pb_m1', tipo: 'mesa', nombre: 'Mesa 1', x: 15, y: 35, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false },
     { id: 'pb_m2', tipo: 'mesa', nombre: 'Mesa 2', x: 15, y: 48, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false },
     { id: 'pb_m3', tipo: 'mesa', nombre: 'Mesa 3', x: 15, y: 60, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false },
-    
     { id: 'pb_m4', tipo: 'mesa', nombre: 'Mesa 4', x: 35, y: 35, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false },
     { id: 'pb_m5', tipo: 'mesa', nombre: 'Mesa 5', x: 35, y: 48, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false },
-    { id: 'pb_s1', tipo: 'sillon', nombre: 'Sillón VIP 2', x: 35, y: 60, anchoPx: 110, altoPx: 38, rotacion: 0, locked: false },
-
+    { id: 'pb_s1', tipo: 'sillon', nombre: 'SILLÓN VIP 2', x: 35, y: 60, anchoPx: 110, altoPx: 38, rotacion: 0, locked: false },
     { id: 'pb_m6', tipo: 'mesa', nombre: 'Mesa 6', x: 55, y: 35, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false },
     { id: 'pb_m7', tipo: 'mesa', nombre: 'Mesa 7', x: 55, y: 48, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false }
   ];
 
-  const DEFAULT_LAYOUT_PA = [
+  window.DEFAULT_LAYOUT_PA = [
     { id: 'pa_cri', tipo: 'cristal', nombre: 'BALCÓN CRISTAL', x: 50, y: 15, anchoPx: 400, altoPx: 15, rotacion: 0, locked: false },
     { id: 'pa_m1', tipo: 'mesa', nombre: 'Mesa PA1', x: 85, y: 25, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false },
     { id: 'pa_m2', tipo: 'mesa', nombre: 'Mesa PA2', x: 85, y: 40, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false },
     { id: 'pa_m3', tipo: 'mesa', nombre: 'Mesa PA3', x: 85, y: 55, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false }
   ];
 
-  let layoutsData = JSON.parse(localStorage.getItem(STORAGE_KEY_LAYOUT) || '{}');
-  let reservasData = JSON.parse(localStorage.getItem(STORAGE_KEY_RESERVAS) || '{}');
-  let clientes = JSON.parse(localStorage.getItem(STORAGE_KEY_CLI) || '[]');
+  // Estado Global de la Aplicación
+  window.layoutsData = JSON.parse(localStorage.getItem(STORAGE_KEY_LAYOUT) || '{}');
+  window.reservasData = JSON.parse(localStorage.getItem(STORAGE_KEY_RESERVAS) || '{}');
+  window.clientes = JSON.parse(localStorage.getItem(STORAGE_KEY_CLI) || '[]');
 
   const canvas = document.getElementById('canvas');
   const overlay = document.getElementById('overlay');
@@ -699,74 +878,84 @@
   let selectedEstado = 'disponible';
   let currentRotation = 0;
   let isLocked = false;
-
   let currentFloor = 'PB';
+
   const fechaInput = document.getElementById('f-fecha');
-  
   function todayStr(){
     const d = new Date();
-    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
   fechaInput.value = todayStr();
 
-  function getLayout(){
-    if(!layoutsData[currentFloor]) {
-      layoutsData[currentFloor] = JSON.parse(JSON.stringify(currentFloor === 'PB' ? DEFAULT_LAYOUT_PB : DEFAULT_LAYOUT_PA));
+  function getLayout() {
+    if (!window.layoutsData[currentFloor]) {
+      window.layoutsData[currentFloor] = JSON.parse(JSON.stringify(currentFloor === 'PB' ? window.DEFAULT_LAYOUT_PB : window.DEFAULT_LAYOUT_PA));
       saveLayouts();
     }
-    return layoutsData[currentFloor];
+    return window.layoutsData[currentFloor];
   }
 
-  function getReserva(muebleId){
+  function getReserva(muebleId) {
     const dateKey = fechaInput.value;
-    if(!reservasData[dateKey]) reservasData[dateKey] = {};
-    if(!reservasData[dateKey][muebleId]){
-      reservasData[dateKey][muebleId] = {
+    if (!window.reservasData[dateKey]) window.reservasData[dateKey] = {};
+    if (!window.reservasData[dateKey][muebleId]) {
+      window.reservasData[dateKey][muebleId] = {
         estado: 'disponible', cliente: '', telefono: '', personas: 0, mesero: '', notas: ''
       };
     }
-    return reservasData[dateKey][muebleId];
+    return window.reservasData[dateKey][muebleId];
   }
 
-  function saveLayouts(){ localStorage.setItem(STORAGE_KEY_LAYOUT, JSON.stringify(layoutsData)); }
-  function saveReservas(){ localStorage.setItem(STORAGE_KEY_RESERVAS, JSON.stringify(reservasData)); }
-  function saveCli(){ localStorage.setItem(STORAGE_KEY_CLI, JSON.stringify(clientes)); }
+  function saveLayouts() {
+    localStorage.setItem(STORAGE_KEY_LAYOUT, JSON.stringify(window.layoutsData));
+    if (typeof window.saveToCloud === 'function') window.saveToCloud();
+  }
 
-  function pctPos(clientX, clientY){
+  function saveReservas() {
+    localStorage.setItem(STORAGE_KEY_RESERVAS, JSON.stringify(window.reservasData));
+    if (typeof window.saveToCloud === 'function') window.saveToCloud();
+  }
+
+  function saveCli() {
+    localStorage.setItem(STORAGE_KEY_CLI, JSON.stringify(window.clientes));
+    if (typeof window.saveToCloud === 'function') window.saveToCloud();
+  }
+
+  function pctPos(clientX, clientY) {
     const r = canvas.getBoundingClientRect();
     let x = ((clientX - r.left) / r.width) * 100;
     let y = ((clientY - r.top) / r.height) * 100;
     x = Math.max(2, Math.min(98, x));
     y = Math.max(2, Math.min(98, y));
-    return {x,y};
+    return { x, y };
   }
 
   canvas.addEventListener('pointerdown', (e) => {
-    if(e.target === canvas) {
+    if (e.target === canvas) {
       selectedIds.clear();
       renderFurniture();
     }
   });
 
-  function renderFurniture(){
+  window.renderFurniture = function() {
     canvas.querySelectorAll('.furniture').forEach(el => el.remove());
-    
+
     getLayout().forEach(item => {
       const el = document.createElement('div');
       const res = getReserva(item.id);
 
       el.className = `furniture ${item.tipo}`;
-      if(item.tipo === 'mesa') el.classList.add(`est-${res.estado}`);
-      if(item.locked) el.classList.add('locked');
-      
-      if(selectedIds.has(item.id)){
+      if (item.tipo === 'mesa') el.classList.add(`est-${res.estado}`);
+      if (item.locked) el.classList.add('locked');
+
+      if (selectedIds.has(item.id)) {
         el.classList.add(multiSelectMode ? 'multi-selected' : 'selected');
       }
 
       el.style.left = item.x + '%';
       el.style.top = item.y + '%';
-      if(item.anchoPx) el.style.width = item.anchoPx + 'px';
-      if(item.altoPx) el.style.height = item.altoPx + 'px';
+      if (item.anchoPx) el.style.width = item.anchoPx + 'px';
+      if (item.altoPx) el.style.height = item.altoPx + 'px';
 
       const rot = item.rotacion || 0;
       el.style.transform = `translate(-50%,-50%) rotate(${rot}deg)`;
@@ -781,15 +970,15 @@
 
       const mainTxt = document.createElement('div');
       mainTxt.className = 'title-txt';
-      
-      if(item.tipo === 'mesa' && res.cliente) {
+
+      if (item.tipo === 'mesa' && res.cliente) {
         mainTxt.textContent = res.cliente;
       } else {
         mainTxt.textContent = item.nombre || item.tipo.toUpperCase();
       }
       inner.appendChild(mainTxt);
 
-      if(item.tipo === 'mesa' && res.mesero) {
+      if (item.tipo === 'mesa' && res.mesero) {
         const subTxt = document.createElement('div');
         subTxt.className = 'sub-txt';
         subTxt.textContent = 'M: ' + res.mesero;
@@ -798,7 +987,7 @@
 
       el.appendChild(inner);
 
-      if(item.tipo === 'mesa' && res.personas > 0){
+      if (item.tipo === 'mesa' && res.personas > 0) {
         const pax = document.createElement('div');
         pax.className = 'pax';
         pax.style.transform = `rotate(${-rot}deg)`;
@@ -806,7 +995,7 @@
         el.appendChild(pax);
       }
 
-      if(!multiSelectMode && selectedIds.has(item.id) && !item.locked){
+      if (!multiSelectMode && selectedIds.has(item.id) && !item.locked) {
         ['se', 'sw', 'ne', 'nw'].forEach(pos => {
           const handle = document.createElement('div');
           handle.className = `resize-handle ${pos}`;
@@ -821,9 +1010,9 @@
 
     renderWaiters();
     updateMultiBar();
-  }
+  };
 
-  function attachResizeHandle(handle, item, pos){
+  function attachResizeHandle(handle, item, pos) {
     handle.addEventListener('pointerdown', (e) => {
       e.stopPropagation();
       e.preventDefault();
@@ -834,7 +1023,7 @@
       const startW = item.anchoPx || 60;
       const startH = item.altoPx || 50;
 
-      function onMove(ev){
+      function onMove(ev) {
         const dx = ev.clientX - startX;
         const dy = ev.clientY - startY;
 
@@ -846,7 +1035,7 @@
         renderFurniture();
       }
 
-      function onUp(ev){
+      function onUp(ev) {
         handle.releasePointerCapture(ev.pointerId);
         handle.removeEventListener('pointermove', onMove);
         handle.removeEventListener('pointerup', onUp);
@@ -858,45 +1047,48 @@
     });
   }
 
-  function attachDrag(el, item){
+  function attachDrag(el, item) {
     let startX, startY, moved, pointerId;
-    
+
     el.addEventListener('pointerdown', (e) => {
-      if(e.target.classList.contains('resize-handle')) return;
+      if (e.target.classList.contains('resize-handle')) return;
       e.stopPropagation();
       pointerId = e.pointerId;
       el.setPointerCapture(pointerId);
-      startX = e.clientX; startY = e.clientY;
+      startX = e.clientX;
+      startY = e.clientY;
       moved = false;
-      if(!item.locked) el.classList.add('dragging');
+      if (!item.locked) el.classList.add('dragging');
     });
 
     el.addEventListener('pointermove', (e) => {
-      if(item.locked) return;
-      if(e.pointerId !== pointerId || !el.hasPointerCapture(pointerId)) return;
-      const dx = e.clientX - startX, dy = e.clientY - startY;
-      if(Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
-      if(moved){
+      if (item.locked) return;
+      if (e.pointerId !== pointerId || !el.hasPointerCapture(pointerId)) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+      if (moved) {
         const p = pctPos(e.clientX, e.clientY);
-        item.x = p.x; item.y = p.y;
+        item.x = p.x;
+        item.y = p.y;
         el.style.left = item.x + '%';
         el.style.top = item.y + '%';
       }
     });
 
     el.addEventListener('pointerup', (e) => {
-      if(pointerId !== e.pointerId) return;
+      if (pointerId !== e.pointerId) return;
       el.releasePointerCapture(pointerId);
       el.classList.remove('dragging');
 
-      if(moved && !item.locked){
+      if (moved && !item.locked) {
         saveLayouts();
       } else {
-        if(multiSelectMode){
-          if(selectedIds.has(item.id)) selectedIds.delete(item.id);
+        if (multiSelectMode) {
+          if (selectedIds.has(item.id)) selectedIds.delete(item.id);
           else selectedIds.add(item.id);
         } else {
-          if(selectedIds.has(item.id)) {
+          if (selectedIds.has(item.id)) {
             openModal(item.id);
           } else {
             selectedIds.clear();
@@ -908,10 +1100,10 @@
     });
   }
 
-  function setupPaletteDrag(paletteId, tipo){
+  function setupPaletteDrag(paletteId, tipo) {
     const src = document.getElementById(paletteId);
-    if(!src) return;
-    
+    if (!src) return;
+
     src.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       const ghost = src.cloneNode(true);
@@ -920,13 +1112,13 @@
       document.body.appendChild(ghost);
       moveGhost(ghost, e.clientX, e.clientY);
 
-      function onMove(ev){ moveGhost(ghost, ev.clientX, ev.clientY); }
-      function onUp(ev){
+      function onMove(ev) { moveGhost(ghost, ev.clientX, ev.clientY); }
+      function onUp(ev) {
         document.removeEventListener('pointermove', onMove);
         document.removeEventListener('pointerup', onUp);
         ghost.remove();
         const r = canvas.getBoundingClientRect();
-        if(ev.clientX > r.left && ev.clientX < r.right && ev.clientY > r.top && ev.clientY < r.bottom){
+        if (ev.clientX > r.left && ev.clientX < r.right && ev.clientY > r.top && ev.clientY < r.bottom) {
           const p = pctPos(ev.clientX, ev.clientY);
           const defaultSizes = {
             mesa: {a: 65, h: 65}, sillon: {a: 110, h: 38}, bocina: {a: 45, h: 45}, cristal: {a: 120, h: 15},
@@ -957,9 +1149,9 @@
     });
   }
 
-  function moveGhost(ghost, x, y){
-    ghost.style.left = (x - ghost.offsetWidth/2) + 'px';
-    ghost.style.top = (y - ghost.offsetHeight/2) + 'px';
+  function moveGhost(ghost, x, y) {
+    ghost.style.left = (x - ghost.offsetWidth / 2) + 'px';
+    ghost.style.top = (y - ghost.offsetHeight / 2) + 'px';
   }
 
   ['mesa','sillon','bocina','cristal','dj','barra','entrada','salida','wc','pasillo','caja','escaleras'].forEach(t => {
@@ -974,19 +1166,19 @@
     renderFurniture();
   });
 
-  function updateMultiBar(){
+  function updateMultiBar() {
     const bar = document.getElementById('multi-tools');
     const countTxt = document.getElementById('multi-count');
-    if(multiSelectMode && selectedIds.size > 0){
+    if (multiSelectMode && selectedIds.size > 0) {
       bar.classList.add('active');
-      countTxt.textContent = `${selectedIds.size} seleccionados`;
+      countTxt.textContent = `${selectedIds.size} elementos seleccionados`;
     } else {
       bar.classList.remove('active');
     }
   }
 
   document.getElementById('btn-del-multi').addEventListener('click', () => {
-    layoutsData[currentFloor] = getLayout().filter(item => !selectedIds.has(item.id));
+    window.layoutsData[currentFloor] = getLayout().filter(item => !selectedIds.has(item.id));
     selectedIds.clear();
     saveLayouts();
     renderFurniture();
@@ -996,28 +1188,28 @@
   document.getElementById('btn-batch-cancel').onclick = () => overlayBatch.classList.remove('open');
   document.getElementById('btn-batch-save').onclick = () => {
     const rawText = document.getElementById('batch-text').value.trim();
-    if(!rawText) return;
+    if (!rawText) return;
 
     const dateKey = fechaInput.value;
-    if(!reservasData[dateKey]) reservasData[dateKey] = {};
+    if (!window.reservasData[dateKey]) window.reservasData[dateKey] = {};
 
     const lines = rawText.split('\n');
     lines.forEach((line, index) => {
       const parts = line.split(',').map(s => s.trim());
-      if(parts[0]){
+      if (parts[0]) {
         let targetId = 'res_batch_' + Date.now() + '_' + index;
         let mesaAsignada = parts[3] || '';
 
-        if(mesaAsignada){
+        if (mesaAsignada) {
           ['PB','PA'].forEach(p => {
-            if(layoutsData[p]){
-              const match = layoutsData[p].find(m => m.nombre.toLowerCase() === mesaAsignada.toLowerCase() || m.id.toLowerCase() === mesaAsignada.toLowerCase());
-              if(match) targetId = match.id;
+            if (window.layoutsData[p]) {
+              const match = window.layoutsData[p].find(m => m.nombre.toLowerCase() === mesaAsignada.toLowerCase() || m.id.toLowerCase() === mesaAsignada.toLowerCase());
+              if (match) targetId = match.id;
             }
           });
         }
 
-        reservasData[dateKey][targetId] = {
+        window.reservasData[dateKey][targetId] = {
           estado: 'reservada',
           cliente: parts[0] || '',
           telefono: parts[1] || '',
@@ -1026,11 +1218,11 @@
           notas: 'Carga por lote'
         };
 
-        if(parts[0]){
-          let cli = clientes.find(c => c.nombre.toLowerCase() === parts[0].toLowerCase());
-          if(!cli){
-            cli = { id:'cli_'+Date.now(), nombre:parts[0], telefono:parts[1]||'', visitas:0, ultimaVisita:'', preferencias:'' };
-            clientes.push(cli);
+        if (parts[0]) {
+          let cli = window.clientes.find(c => c.nombre.toLowerCase() === parts[0].toLowerCase());
+          if (!cli) {
+            cli = { id: 'cli_' + Date.now(), nombre: parts[0], telefono: parts[1] || '', visitas: 0, ultimaVisita: '', preferencias: '' };
+            window.clientes.push(cli);
           }
           cli.visitas += 1;
           saveCli();
@@ -1052,35 +1244,35 @@
   document.getElementById('btn-checkin-close').onclick = () => overlayCheckin.classList.remove('open');
   document.getElementById('checkin-search').oninput = renderCheckinList;
 
-  function renderCheckinList(){
+  function renderCheckinList() {
     const container = document.getElementById('checkin-list');
     const filter = document.getElementById('checkin-search').value.toLowerCase();
     container.innerHTML = '';
 
     const dateKey = fechaInput.value;
-    const currentRes = reservasData[dateKey] || {};
+    const currentRes = window.reservasData[dateKey] || {};
 
     let list = [];
     Object.keys(currentRes).forEach(mId => {
       const r = currentRes[mId];
-      if(r && r.cliente){
+      if (r && r.cliente) {
         list.push({ mId, ...r });
       }
     });
 
     let filtered = list.filter(r => r.cliente.toLowerCase().includes(filter));
 
-    if(filtered.length === 0){
-      container.innerHTML = '<div style="color:var(--text-low);text-align:center;padding:20px;">No hay reservas registradas para esta fecha.</div>';
+    if (filtered.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-low);text-align:center;padding:20px;">No hay reservaciones para esta fecha.</div>';
       return;
     }
 
     filtered.forEach(item => {
       let mesaText = 'Sin Mesa Asignada';
       ['PB','PA'].forEach(p => {
-        if(layoutsData[p]){
-          const m = layoutsData[p].find(x => x.id === item.mId);
-          if(m) mesaText = `${p} - ${m.nombre}`;
+        if (window.layoutsData[p]) {
+          const m = window.layoutsData[p].find(x => x.id === item.mId);
+          if (m) mesaText = `${p} - ${m.nombre}`;
         }
       });
 
@@ -1091,15 +1283,15 @@
           <span class="checkin-name">${item.cliente} (${item.personas || 0} pax)</span>
           <span class="checkin-sub">Mesa Actual: <b>${mesaText}</b> | Estado: <b style="color:var(--neon-amber)">${item.estado}</b></span>
         </div>
-        <button class="btn primary" style="padding:6px 12px;font-size:11px;">Asignar / Ocupar</button>
+        <button class="btn primary" style="padding:6px 12px;font-size:11px;">Ocupar Mesa</button>
       `;
 
       row.querySelector('button').onclick = () => {
         overlayCheckin.classList.remove('open');
-        if(item.mId && !item.mId.startsWith('res_batch_')){
+        if (item.mId && !item.mId.startsWith('res_batch_')) {
           openModal(item.mId);
         } else {
-          alert('Selecciona una mesa disponible en el mapa para asignar a ' + item.cliente);
+          alert('Selecciona una mesa en el mapa para asignar a ' + item.cliente);
           window.pendingAssignClient = item;
         }
       };
@@ -1108,7 +1300,7 @@
     });
   }
 
-  function renderWaiters(){
+  function renderWaiters() {
     const container = document.getElementById('waiters-list');
     container.innerHTML = '';
 
@@ -1116,19 +1308,19 @@
     const mapWaiters = {};
 
     currentLayout.forEach(item => {
-      if(item.tipo === 'mesa'){
+      if (item.tipo === 'mesa') {
         const res = getReserva(item.id);
         const mesero = res.mesero ? res.mesero.trim() : null;
-        if(mesero){
-          if(!mapWaiters[mesero]) mapWaiters[mesero] = [];
+        if (mesero) {
+          if (!mapWaiters[mesero]) mapWaiters[mesero] = [];
           mapWaiters[mesero].push({ item, res });
         }
       }
     });
 
     const names = Object.keys(mapWaiters);
-    if(names.length === 0){
-      container.innerHTML = '<div style="color:var(--text-low);font-size:12px;text-align:center;padding:10px;">Sin meseros asignados en esta fecha.</div>';
+    if (names.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-low);font-size:11px;text-align:center;padding:10px;">Sin meseros asignados hoy.</div>';
       return;
     }
 
@@ -1138,7 +1330,7 @@
 
       const header = document.createElement('div');
       header.className = 'waiter-card-header';
-      header.innerHTML = `<span class="waiter-name">${name}</span><span class="waiter-count">${mapWaiters[name].length} mesa(s)</span>`;
+      header.innerHTML = `<span>${name}</span><span>${mapWaiters[name].length} mesas</span>`;
       card.appendChild(header);
 
       const tablesDiv = document.createElement('div');
@@ -1159,9 +1351,9 @@
     });
   }
 
-  function openModal(id){
+  function openModal(id) {
     const item = getLayout().find(f => f.id === id);
-    if(!item) return;
+    if (!item) return;
     activeElementId = id;
 
     document.getElementById('modal-title').textContent = item.nombre || item.tipo.toUpperCase();
@@ -1175,11 +1367,11 @@
     updateLockState();
 
     const resFields = document.getElementById('reserva-fields');
-    if(item.tipo === 'mesa'){
+    if (item.tipo === 'mesa') {
       resFields.style.display = 'block';
       let res = getReserva(item.id);
 
-      if(window.pendingAssignClient){
+      if (window.pendingAssignClient) {
         res.cliente = window.pendingAssignClient.cliente;
         res.telefono = window.pendingAssignClient.telefono;
         res.personas = window.pendingAssignClient.personas;
@@ -1202,25 +1394,25 @@
     overlay.classList.add('open');
   }
 
-  function closeModal(){
+  function closeModal() {
     overlay.classList.remove('open');
     activeElementId = null;
   }
 
-  function updateEstadoButtons(){
+  function updateEstadoButtons() {
     document.querySelectorAll('.estado-btn').forEach(b => {
       b.classList.remove('sel-disponible','sel-reservada','sel-ocupada');
-      if(b.dataset.estado === selectedEstado) b.classList.add('sel-' + selectedEstado);
+      if (b.dataset.estado === selectedEstado) b.classList.add('sel-' + selectedEstado);
     });
   }
 
-  function updateRotateValue(){
+  function updateRotateValue() {
     document.getElementById('rotate-value').textContent = currentRotation + '°';
   }
 
-  function updateLockState(){
+  function updateLockState() {
     const btn = document.getElementById('btn-lock');
-    if(isLocked){
+    if (isLocked) {
       btn.textContent = '🔒 Fijado';
       btn.classList.add('locked');
     } else {
@@ -1244,11 +1436,11 @@
   });
 
   document.getElementById('btn-cancel').addEventListener('click', closeModal);
-  overlay.addEventListener('pointerdown', (e) => { if(e.target === overlay) closeModal(); });
+  overlay.addEventListener('pointerdown', (e) => { if (e.target === overlay) closeModal(); });
 
   document.getElementById('btn-save').addEventListener('click', () => {
     const item = getLayout().find(f => f.id === activeElementId);
-    if(!item) return;
+    if (!item) return;
 
     item.nombre = document.getElementById('f-nombre').value.trim() || item.tipo.toUpperCase();
     item.anchoPx = parseInt(document.getElementById('f-ancho').value) || 50;
@@ -1256,7 +1448,7 @@
     item.rotacion = currentRotation;
     item.locked = isLocked;
 
-    if(item.tipo === 'mesa'){
+    if (item.tipo === 'mesa') {
       const res = getReserva(item.id);
       res.estado = selectedEstado;
       res.cliente = document.getElementById('f-cliente').value.trim();
@@ -1267,11 +1459,11 @@
 
       saveReservas();
 
-      if(res.cliente){
-        let cli = clientes.find(c => c.nombre.toLowerCase() === res.cliente.toLowerCase() && (res.telefono ? c.telefono === res.telefono : true));
-        if(!cli){
-          cli = { id:'cli_'+Date.now(), nombre:res.cliente, telefono:res.telefono, visitas:0, ultimaVisita:'', preferencias:'' };
-          clientes.push(cli);
+      if (res.cliente) {
+        let cli = window.clientes.find(c => c.nombre.toLowerCase() === res.cliente.toLowerCase() && (res.telefono ? c.telefono === res.telefono : true));
+        if (!cli) {
+          cli = { id: 'cli_' + Date.now(), nombre: res.cliente, telefono: res.telefono, visitas: 0, ultimaVisita: '', preferencias: '' };
+          window.clientes.push(cli);
         }
         cli.visitas += 1;
         cli.ultimaVisita = item.nombre;
@@ -1288,7 +1480,7 @@
   document.getElementById('btn-delete').addEventListener('click', () => {
     const arr = getLayout();
     const idx = arr.findIndex(f => f.id === activeElementId);
-    if(idx > -1) arr.splice(idx, 1);
+    if (idx > -1) arr.splice(idx, 1);
     selectedIds.clear();
     saveLayouts();
     renderFurniture();
@@ -1296,12 +1488,12 @@
     closeModal();
   });
 
-  function renderAllCRM(){
+  window.renderAllCRM = function() {
     renderReservationsTable();
     renderCRMTable();
-  }
+  };
 
-  function renderReservationsTable(){
+  function renderReservationsTable() {
     const tbody = document.getElementById('reser-tbody');
     const empty = document.getElementById('reser-empty');
     const filter = (document.getElementById('reser-search').value || '').toLowerCase();
@@ -1309,16 +1501,16 @@
 
     let totalReservas = [];
 
-    Object.keys(reservasData).forEach(fecha => {
-      Object.keys(reservasData[fecha]).forEach(muebleId => {
-        const res = reservasData[fecha][muebleId];
-        if(res && (res.cliente || res.estado !== 'disponible')){
+    Object.keys(window.reservasData).forEach(fecha => {
+      Object.keys(window.reservasData[fecha]).forEach(muebleId => {
+        const res = window.reservasData[fecha][muebleId];
+        if (res && (res.cliente || res.estado !== 'disponible')) {
           let nombreMueble = muebleId;
           let planta = 'PB';
           ['PB','PA'].forEach(p => {
-            if(layoutsData[p]){
-              const match = layoutsData[p].find(m => m.id === muebleId);
-              if(match) { nombreMueble = match.nombre; planta = p; }
+            if (window.layoutsData[p]) {
+              const match = window.layoutsData[p].find(m => m.id === muebleId);
+              if (match) { nombreMueble = match.nombre; planta = p; }
             }
           });
 
@@ -1335,7 +1527,7 @@
       return c.includes(filter) || f.includes(filter) || m.includes(filter) || mesa.includes(filter);
     });
 
-    if(filtered.length === 0){
+    if (filtered.length === 0) {
       empty.style.display = 'block';
       return;
     }
@@ -1347,7 +1539,7 @@
         <td>${r.fecha}</td>
         <td>${r.planta}</td>
         <td>${r.nombreMueble}</td>
-        <td>${r.res.cliente || '<em style="color:var(--text-low)">Sin nombre</em>'}</td>
+        <td>${r.res.cliente || '<em style="color:var(--text-low)">Sin especificar</em>'}</td>
         <td>${r.res.telefono || '-'}</td>
         <td>${r.res.personas || 0}</td>
         <td>${r.res.mesero || '-'}</td>
@@ -1361,10 +1553,10 @@
     });
   }
 
-  window.editReser = function(fecha, planta, muebleId){
+  window.editReser = function(fecha, planta, muebleId) {
     fechaInput.value = fecha;
     currentFloor = planta;
-    
+
     document.querySelectorAll('.floor-toggle button').forEach(b => b.classList.remove('active'));
     document.getElementById(currentFloor === 'PB' ? 'floor-pb' : 'floor-pa').classList.add('active');
     document.getElementById(currentFloor === 'PB' ? 'float-floor-pb' : 'float-floor-pa').classList.add('active');
@@ -1374,25 +1566,25 @@
     openModal(muebleId);
   };
 
-  window.deleteReser = function(fecha, muebleId){
-    if(!confirm('¿Deseas eliminar esta reservación?')) return;
-    if(reservasData[fecha] && reservasData[fecha][muebleId]){
-      delete reservasData[fecha][muebleId];
+  window.deleteReser = function(fecha, muebleId) {
+    if (!confirm('¿Deseas eliminar permanentemente esta reservación?')) return;
+    if (window.reservasData[fecha] && window.reservasData[fecha][muebleId]) {
+      delete window.reservasData[fecha][muebleId];
       saveReservas();
       renderFurniture();
       renderAllCRM();
     }
   };
 
-  function renderCRMTable(){
+  function renderCRMTable() {
     const tbody = document.getElementById('crm-tbody');
     const empty = document.getElementById('crm-empty');
     const filter = (document.getElementById('crm-search').value || '').toLowerCase();
     tbody.innerHTML = '';
 
-    let list = clientes.filter(c => c.nombre.toLowerCase().includes(filter) || (c.telefono||'').includes(filter));
+    let list = window.clientes.filter(c => c.nombre.toLowerCase().includes(filter) || (c.telefono || '').includes(filter));
 
-    if(list.length === 0){
+    if (list.length === 0) {
       empty.style.display = 'block';
       return;
     }
@@ -1415,9 +1607,9 @@
     });
   }
 
-  window.editClient = function(id){
-    const cli = clientes.find(c => c.id === id);
-    if(!cli) return;
+  window.editClient = function(id) {
+    const cli = window.clientes.find(c => c.id === id);
+    if (!cli) return;
     activeClienteId = id;
     document.getElementById('c-nombre').value = cli.nombre;
     document.getElementById('c-telefono').value = cli.telefono || '';
@@ -1425,17 +1617,17 @@
     overlayCli.classList.add('open');
   };
 
-  window.deleteClient = function(id){
-    if(!confirm('¿Eliminar este cliente del CRM?')) return;
-    clientes = clientes.filter(c => c.id !== id);
+  window.deleteClient = function(id) {
+    if (!confirm('¿Eliminar registro de cliente del CRM?')) return;
+    window.clientes = window.clientes.filter(c => c.id !== id);
     saveCli();
     renderCRMTable();
   };
 
   document.getElementById('btn-cli-cancel').onclick = () => overlayCli.classList.remove('open');
   document.getElementById('btn-cli-save').onclick = () => {
-    const cli = clientes.find(c => c.id === activeClienteId);
-    if(cli){
+    const cli = window.clientes.find(c => c.id === activeClienteId);
+    if (cli) {
       cli.nombre = document.getElementById('c-nombre').value.trim();
       cli.telefono = document.getElementById('c-telefono').value.trim();
       cli.preferencias = document.getElementById('c-preferencias').value.trim();
@@ -1448,8 +1640,8 @@
   document.getElementById('reser-search').addEventListener('input', renderReservationsTable);
   document.getElementById('crm-search').addEventListener('input', renderCRMTable);
 
-  function switchTab(tab){
-    if(tab === 'plano'){
+  function switchTab(tab) {
+    if (tab === 'plano') {
       document.getElementById('view-plano').style.display = 'flex';
       document.getElementById('view-crm').classList.remove('active');
       document.getElementById('tab-plano').classList.add('active');
@@ -1467,10 +1659,10 @@
   document.getElementById('tab-plano').onclick = () => switchTab('plano');
   document.getElementById('tab-crm').onclick = () => switchTab('crm');
 
-  function changeFloor(floor){
+  function changeFloor(floor) {
     currentFloor = floor;
     document.querySelectorAll('.floor-toggle button').forEach(b => b.classList.remove('active'));
-    if(floor === 'PB'){
+    if (floor === 'PB') {
       document.getElementById('floor-pb').classList.add('active');
       document.getElementById('float-floor-pb').classList.add('active');
     } else {
@@ -1491,9 +1683,55 @@
     renderAllCRM();
   });
 
+  // Inicialización de Renderizado Local Inicial
   renderFurniture();
   renderAllCRM();
-})();
-</script>
+  </script>
+
+  <!-- MÓDULO FIREBASE SDK Y BASE DE DATOS EN TIEMPO REAL FIRESTORE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD-SSoIuhjOJDfzudLh1SkD1mNAFNSFQHE",
+      authDomain: "cryptofloor.firebaseapp.com",
+      projectId: "cryptofloor",
+      storageBucket: "cryptofloor.firebasestorage.app",
+      messagingSenderId: "444731213340",
+      appId: "1:444731213340:web:1eba6436521da6772d81d9",
+      measurementId: "G-NXD59V1JYH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Escucha remota Firestore en tiempo real para múltiples dispositivos
+    onSnapshot(doc(db, "crypto_data", "main_config"), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        window.layoutsData = data.layouts || { PB: window.DEFAULT_LAYOUT_PB, PA: window.DEFAULT_LAYOUT_PA };
+        window.reservasData = data.reservas || {};
+        window.clientes = data.clientes || [];
+        if (typeof window.renderFurniture === 'function') window.renderFurniture();
+        if (typeof window.renderAllCRM === 'function') window.renderAllCRM();
+      } else {
+        window.saveToCloud();
+      }
+    });
+
+    // Guardado persistente inmediato en Firestore
+    window.saveToCloud = async function() {
+      try {
+        await setDoc(doc(db, "crypto_data", "main_config"), {
+          layouts: typeof window.layoutsData !== 'undefined' ? window.layoutsData : {},
+          reservas: typeof window.reservasData !== 'undefined' ? window.reservasData : {},
+          clientes: typeof window.clientes !== 'undefined' ? window.clientes : []
+        });
+      } catch (e) {
+        console.error("Error de actualización en la nube Firebase: ", e);
+      }
+    };
+  </script>
 </body>
 </html>
