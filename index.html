@@ -16,9 +16,10 @@
       --neon-amber: #ffb703;
       --neon-green: #06d6a0;
       --neon-red: #ef476f;
+      --neon-purple: #a855f7;
+      --neon-blue: #3b82f6;
       --text-main: #f8fafc;
       --text-low: #64748b;
-      --glass-bg: rgba(15, 17, 23, 0.75);
     }
 
     * {
@@ -89,6 +90,17 @@
       border-color: var(--accent);
       box-shadow: 0 0 16px var(--panel-border-glow);
       font-weight: 700;
+    }
+
+    .btn.preset-btn {
+      background: rgba(168, 85, 247, 0.15);
+      border-color: var(--neon-purple);
+      color: #e9d5ff;
+    }
+
+    .btn.preset-btn:hover {
+      background: rgba(168, 85, 247, 0.3);
+      box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
     }
 
     .floor-toggle {
@@ -213,12 +225,14 @@
       background-size: 24px 24px;
     }
 
-    /* Renderizado de Mobiliario y Muebles */
+    /* =========================================================
+       NUEVO DISEÑO ESTÉTICO DE MOBILIARIO Y ELEMENTOS DE PLANO
+       ========================================================= */
     .furniture {
       position: absolute;
       background: rgba(22, 26, 36, 0.9);
       border: 2px solid #3b4354;
-      border-radius: 10px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -230,17 +244,69 @@
       text-align: center;
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
       box-sizing: border-box;
-      backdrop-filter: blur(4px);
+      backdrop-filter: blur(8px);
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
 
+    /* DISEÑO MEJORADO: MESAS */
+    .furniture.mesa {
+      background: radial-gradient(circle, rgba(26, 34, 46, 0.95) 0%, rgba(15, 20, 28, 0.95) 100%);
+      border: 2px solid var(--neon-green);
+      border-radius: 12px;
+      box-shadow: 0 0 14px rgba(6, 214, 160, 0.25), inset 0 0 10px rgba(6, 214, 160, 0.1);
+    }
+    /* Sillas decorativas a los lados de la mesa */
+    .furniture.mesa::before, .furniture.mesa::after {
+      content: '';
+      position: absolute;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+    }
+    .furniture.mesa::before { top: -6px; left: 20%; width: 60%; height: 4px; }
+    .furniture.mesa::after { bottom: -6px; left: 20%; width: 60%; height: 4px; }
+
+    /* DISEÑO MEJORADO: SILLONES VIP */
+    .furniture.sillon {
+      background: linear-gradient(135deg, rgba(45, 27, 78, 0.95) 0%, rgba(20, 12, 35, 0.95) 100%);
+      border: 2px solid var(--neon-purple);
+      border-radius: 14px;
+      box-shadow: 0 0 16px rgba(168, 85, 247, 0.35), inset 0 2px 6px rgba(255, 255, 255, 0.15);
+    }
+
+    /* DISEÑO MEJORADO: CABINA DJ */
+    .furniture.dj {
+      background: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
+      border: 2px solid var(--neon-blue);
+      border-radius: 12px;
+      box-shadow: 0 0 18px rgba(59, 130, 246, 0.4), inset 0 0 12px rgba(59, 130, 246, 0.2);
+    }
+
+    /* DISEÑO MEJORADO: BARRA */
+    .furniture.barra {
+      background: linear-gradient(90deg, #1e1b18 0%, #3a3022 50%, #1e1b18 100%);
+      border: 2px solid #f59e0b;
+      border-top: 4px solid #fbbf24;
+      border-radius: 8px;
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
+    }
+
+    /* DISEÑO MEJORADO: BOCINA */
+    .furniture.bocina {
+      background: #111827;
+      border: 2px solid #00f2fe;
+      border-radius: 8px;
+      box-shadow: 0 0 12px rgba(0, 242, 254, 0.3);
+    }
+
+    /* ESTADOS DE MESAS */
     .furniture.selected {
       border-color: var(--accent) !important;
-      box-shadow: 0 0 18px rgba(243, 186, 47, 0.7);
+      box-shadow: 0 0 22px rgba(243, 186, 47, 0.8) !important;
     }
 
     .furniture.multi-selected {
       border-color: var(--neon-amber) !important;
-      box-shadow: 0 0 14px rgba(255, 183, 3, 0.5);
+      box-shadow: 0 0 16px rgba(255, 183, 3, 0.6) !important;
     }
 
     .furniture.locked {
@@ -255,19 +321,19 @@
 
     .furniture.est-disponible {
       border-color: var(--neon-green);
-      box-shadow: 0 0 10px rgba(6, 214, 160, 0.2);
+      box-shadow: 0 0 12px rgba(6, 214, 160, 0.25);
     }
 
     .furniture.est-reservada {
       border-color: var(--neon-amber);
-      background: rgba(61, 46, 5, 0.85);
-      box-shadow: 0 0 10px rgba(255, 183, 3, 0.2);
+      background: rgba(61, 46, 5, 0.9);
+      box-shadow: 0 0 12px rgba(255, 183, 3, 0.3);
     }
 
     .furniture.est-ocupada {
       border-color: var(--neon-red);
-      background: rgba(61, 14, 24, 0.85);
-      box-shadow: 0 0 10px rgba(239, 71, 111, 0.2);
+      background: rgba(61, 14, 24, 0.9);
+      box-shadow: 0 0 12px rgba(239, 71, 111, 0.3);
     }
 
     .furniture .pax {
@@ -285,6 +351,7 @@
       align-items: center;
       justify-content: center;
       box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      z-index: 2;
     }
 
     .furniture .title-txt {
@@ -309,6 +376,7 @@
       background: var(--accent);
       border-radius: 50%;
       border: 1px solid #000;
+      z-index: 5;
     }
 
     .resize-handle.nw { top: -5px; left: -5px; cursor: nwse-resize; }
@@ -394,7 +462,7 @@
       display: flex;
     }
 
-    /* CONTROLES MODO OPERACIÓN LIMPIO (UBICACIÓN EXACTA SOLICITADA) */
+    /* CONTROLES MODO OPERACIÓN LIMPIO */
     #floating-clean-toggle {
       position: absolute;
       inset: 0;
@@ -493,7 +561,7 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.82);
       backdrop-filter: blur(10px);
       display: none;
       align-items: center;
@@ -510,7 +578,7 @@
       border: 1px solid var(--panel-border);
       border-top: 1px solid rgba(243, 186, 47, 0.5);
       border-radius: 20px;
-      width: 420px;
+      width: 440px;
       max-width: 92%;
       padding: 24px;
       display: flex;
@@ -586,32 +654,32 @@
       border-radius: 8px;
     }
 
-    .checkin-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px;
+    .preset-slot {
+      background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--panel-border);
-      background: rgba(255, 255, 255, 0.02);
-      margin-bottom: 6px;
-      border-radius: 10px;
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
     }
 
-    .checkin-info {
+    .preset-info {
       display: flex;
       flex-direction: column;
-      font-size: 12px;
-      gap: 3px;
+      gap: 2px;
     }
 
-    .checkin-name {
+    .preset-title {
       font-weight: 700;
+      font-size: 13px;
       color: #ffffff;
     }
 
-    .checkin-sub {
+    .preset-status {
+      font-size: 10px;
       color: var(--text-low);
-      font-size: 11px;
     }
   </style>
 </head>
@@ -630,6 +698,7 @@
 
     <div class="controls">
       <input type="date" id="f-fecha">
+      <button class="btn preset-btn" id="btn-open-presets">✨ Plantillas (Presets)</button>
       <button class="btn" id="btn-quick-checkin">⚡ Check-in Rápido</button>
       <button class="btn" id="btn-add-batch-res">📦 Carga Masiva</button>
       <button class="btn" id="btn-toggle-multi">☑ Multi-Selección</button>
@@ -645,7 +714,7 @@
       <span style="font-size: 10px; color: var(--text-low); font-weight: 800; letter-spacing: 0.8px;">ELEMENTOS DE PLANO</span>
       <div class="palette-grid">
         <div class="pal-item" id="pal-mesa">🔲 Mesa (50x50)</div>
-        <div class="pal-item" id="pal-sillon">🛋️ Sillón</div>
+        <div class="pal-item" id="pal-sillon">🛋️ Sillón VIP</div>
         <div class="pal-item" id="pal-bocina">🔊 Bocina</div>
         <div class="pal-item" id="pal-cristal">🪟 Balcón</div>
         <div class="pal-item" id="pal-dj">🎧 Cabina DJ</div>
@@ -657,6 +726,7 @@
         <div class="pal-item" id="pal-caja">💻 Caja</div>
         <div class="pal-item" id="pal-escaleras">🪜 Escaleras</div>
       </div>
+      <button class="btn" id="btn-clear-day" style="margin-top:auto; background:rgba(239, 71, 111, 0.15); border-color:var(--neon-red); color:var(--neon-red);">🗑️ Vaciar Plano de Hoy</button>
     </sidebar>
 
     <!-- Área Principal de Renderizado del Plano -->
@@ -711,7 +781,7 @@
         <button class="btn" id="btn-del-multi" style="background: var(--neon-red); color: #ffffff;">Eliminar Seleccionados</button>
       </div>
 
-      <!-- POSICIONAMIENTO EN MODO OPERACIÓN: IZQUIERDA Y CENTRO -->
+      <!-- CONTROLES MODO OPERACIÓN -->
       <div id="floating-clean-toggle">
         <div class="clean-btn-exit">
           <button class="btn primary" id="btn-exit-clean">← Salir Modo Operación</button>
@@ -732,7 +802,21 @@
     </div>
   </div>
 
-  <!-- MODAL 1: Configuración de Elemento / Reservación Elegante (Sin Notas) -->
+  <!-- MODAL: Gestor de Plantillas (Presets - Max 5) -->
+  <div class="overlay" id="overlay-presets">
+    <div class="modal" style="width: 520px;">
+      <h3>Gestor de Plantillas (Máximo 5)</h3>
+      <p style="font-size: 11px; color: var(--text-low);">Guarda configuraciones de plano frecuentes (ej. Fin de semana, Evento privado) y aplícalas al día seleccionado en un clic.</p>
+      
+      <div id="presets-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px;"></div>
+
+      <div class="modal-actions">
+        <button class="btn" id="btn-close-presets">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 1: Configuración de Elemento / Reservación -->
   <div class="overlay" id="overlay">
     <div class="modal">
       <h3 id="modal-title">Propiedades del Elemento</h3>
@@ -756,7 +840,6 @@
         <button class="btn" id="btn-lock" style="margin-left:auto;">🔓 Posición Libre</button>
       </div>
 
-      <!-- Campos de Reserva Rediseñados (SIN NOTAS) -->
       <div id="reserva-fields" style="border-top: 1px solid var(--panel-border); padding-top: 14px; margin-top: 6px;">
         <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom: 8px; font-weight:700;">Estado Actual de la Mesa</label>
         <div class="estado-selector">
@@ -815,7 +898,7 @@
     </div>
   </div>
 
-  <!-- MODAL 3: Carga Masiva de Reservas por Lote -->
+  <!-- MODAL 3: Carga Masiva de Reservas -->
   <div class="overlay" id="overlay-batch">
     <div class="modal">
       <h3>Carga Masiva por Formato</h3>
@@ -843,9 +926,9 @@
     </div>
   </div>
 
-  <!-- LÓGICA COMPLETA DE APLICACIÓN -->
+  <!-- LÓGICA COMPLETA Y SISTEMA DE DÍAS INDEPENDIENTES / PRESETS -->
   <script>
-  // Control de Pantalla Completa
+  // Control Fullscreen
   const btnFs = document.getElementById('btn-fullscreen');
   btnFs.addEventListener('click', () => {
     if (!document.fullscreenElement) {
@@ -857,7 +940,7 @@
     }
   });
 
-  // Modo Limpio Operativo
+  // Modo Operación Limpio
   const btnCleanMode = document.getElementById('btn-clean-mode');
   const btnExitClean = document.getElementById('btn-exit-clean');
   const mainHeader = document.getElementById('main-header');
@@ -885,46 +968,22 @@
   btnCleanMode.addEventListener('click', () => toggleCleanMode(true));
   btnExitClean.addEventListener('click', () => toggleCleanMode(false));
 
-  const STORAGE_KEY_LAYOUT = 'crypto_floor_layout_v3';
+  const STORAGE_KEY_LAYOUT = 'crypto_floor_layouts_by_date_v4';
   const STORAGE_KEY_RESERVAS = 'crypto_floor_daily_reservas_v3';
   const STORAGE_KEY_CLI = 'crypto_floor_clientes';
-
-  // Layouts por Defecto (MESAS 50x50 POR DEFECTO)
-  window.DEFAULT_LAYOUT_PB = [
-    { id: 'pb_dj', tipo: 'dj', nombre: 'CABINA DJ', x: 12, y: 8, anchoPx: 140, altoPx: 60, rotacion: 0, locked: false },
-    { id: 'pb_b1', tipo: 'bocina', nombre: '🔊 BOX L', x: 5, y: 8, anchoPx: 45, altoPx: 45, rotacion: 0, locked: false },
-    { id: 'pb_b2', tipo: 'bocina', nombre: '🔊 BOX R', x: 20, y: 8, anchoPx: 45, altoPx: 45, rotacion: 0, locked: false },
-    { id: 'pb_bar', tipo: 'barra', nombre: 'BARRA PRINCIPAL', x: 50, y: 8, anchoPx: 300, altoPx: 50, rotacion: 0, locked: false },
-    { id: 'pb_wc', tipo: 'wc', nombre: 'BAÑOS PB', x: 90, y: 8, anchoPx: 90, altoPx: 50, rotacion: 0, locked: false },
-    { id: 'pb_pas', tipo: 'pasillo', nombre: 'PASILLO BAÑOS', x: 90, y: 15, anchoPx: 90, altoPx: 30, rotacion: 0, locked: false },
-    { id: 'pb_ent', tipo: 'entrada', nombre: 'ACCESO', x: 8, y: 92, anchoPx: 80, altoPx: 40, rotacion: 0, locked: false },
-    { id: 'pb_s0', tipo: 'sillon', nombre: 'SILLÓN VIP 1', x: 15, y: 25, anchoPx: 110, altoPx: 38, rotacion: 0, locked: false },
-    { id: 'pb_m1', tipo: 'mesa', nombre: 'Mesa 1', x: 15, y: 35, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false },
-    { id: 'pb_m2', tipo: 'mesa', nombre: 'Mesa 2', x: 15, y: 48, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false },
-    { id: 'pb_m3', tipo: 'mesa', nombre: 'Mesa 3', x: 15, y: 60, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false },
-    { id: 'pb_m4', tipo: 'mesa', nombre: 'Mesa 4', x: 35, y: 35, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false },
-    { id: 'pb_m5', tipo: 'mesa', nombre: 'Mesa 5', x: 35, y: 48, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false },
-    { id: 'pb_s1', tipo: 'sillon', nombre: 'SILLÓN VIP 2', x: 35, y: 60, anchoPx: 110, altoPx: 38, rotacion: 0, locked: false },
-    { id: 'pb_m6', tipo: 'mesa', nombre: 'Mesa 6', x: 55, y: 35, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false },
-    { id: 'pb_m7', tipo: 'mesa', nombre: 'Mesa 7', x: 55, y: 48, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false }
-  ];
-
-  window.DEFAULT_LAYOUT_PA = [
-    { id: 'pa_cri', tipo: 'cristal', nombre: 'BALCÓN CRISTAL', x: 50, y: 15, anchoPx: 400, altoPx: 15, rotacion: 0, locked: false },
-    { id: 'pa_m1', tipo: 'mesa', nombre: 'Mesa PA1', x: 85, y: 25, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false },
-    { id: 'pa_m2', tipo: 'mesa', nombre: 'Mesa PA2', x: 85, y: 40, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false },
-    { id: 'pa_m3', tipo: 'mesa', nombre: 'Mesa PA3', x: 85, y: 55, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false }
-  ];
+  const STORAGE_KEY_PRESETS = 'crypto_floor_presets_v1';
 
   window.layoutsData = JSON.parse(localStorage.getItem(STORAGE_KEY_LAYOUT) || '{}');
   window.reservasData = JSON.parse(localStorage.getItem(STORAGE_KEY_RESERVAS) || '{}');
   window.clientes = JSON.parse(localStorage.getItem(STORAGE_KEY_CLI) || '[]');
+  window.presetsData = JSON.parse(localStorage.getItem(STORAGE_KEY_PRESETS) || '{}');
 
   const canvas = document.getElementById('canvas');
   const overlay = document.getElementById('overlay');
   const overlayCli = document.getElementById('overlay-cli');
   const overlayBatch = document.getElementById('overlay-batch');
   const overlayCheckin = document.getElementById('overlay-checkin');
+  const overlayPresets = document.getElementById('overlay-presets');
 
   let selectedIds = new Set();
   let multiSelectMode = false;
@@ -942,12 +1001,16 @@
   }
   fechaInput.value = todayStr();
 
+  // OBTENER PLANO: Si el día no existe en layoutsData, INICIA TOTALMENTE VACÍO []
   function getLayout() {
-    if (!window.layoutsData[currentFloor]) {
-      window.layoutsData[currentFloor] = JSON.parse(JSON.stringify(currentFloor === 'PB' ? window.DEFAULT_LAYOUT_PB : window.DEFAULT_LAYOUT_PA));
-      saveLayouts();
+    const dateKey = fechaInput.value;
+    if (!window.layoutsData[dateKey]) {
+      window.layoutsData[dateKey] = { PB: [], PA: [] };
     }
-    return window.layoutsData[currentFloor];
+    if (!window.layoutsData[dateKey][currentFloor]) {
+      window.layoutsData[dateKey][currentFloor] = [];
+    }
+    return window.layoutsData[dateKey][currentFloor];
   }
 
   function getReserva(muebleId) {
@@ -976,6 +1039,11 @@
     if (typeof window.saveToCloud === 'function') window.saveToCloud();
   }
 
+  function savePresets() {
+    localStorage.setItem(STORAGE_KEY_PRESETS, JSON.stringify(window.presetsData));
+    if (typeof window.saveToCloud === 'function') window.saveToCloud();
+  }
+
   function pctPos(clientX, clientY) {
     const r = canvas.getBoundingClientRect();
     let x = ((clientX - r.left) / r.width) * 100;
@@ -995,7 +1063,8 @@
   window.renderFurniture = function() {
     canvas.querySelectorAll('.furniture').forEach(el => el.remove());
 
-    getLayout().forEach(item => {
+    const currentList = getLayout();
+    currentList.forEach(item => {
       const el = document.createElement('div');
       const res = getReserva(item.id);
 
@@ -1016,13 +1085,13 @@
       el.style.transform = `translate(-50%,-50%) rotate(${rot}deg)`;
       el.dataset.id = item.id;
 
-      // ORIENTACIÓN DINÁMICA DEL TEXTO SEGÚN ÁNGULO
+      // Compensación de texto para facilitar lectura
       const normRot = ((rot % 360) + 360) % 360;
       let textAngleCompensation = -rot;
       if (normRot === 90 || normRot === 270) {
-        textAngleCompensation = -rot + 90; // Letras en vertical para lectura lateral
+        textAngleCompensation = -rot + 90;
       } else if (normRot === 180) {
-        textAngleCompensation = 0; // Letras corregidas para vista frontal
+        textAngleCompensation = 0;
       }
 
       const inner = document.createElement('div');
@@ -1186,7 +1255,7 @@
         if (ev.clientX > r.left && ev.clientX < r.right && ev.clientY > r.top && ev.clientY < r.bottom) {
           const p = pctPos(ev.clientX, ev.clientY);
           const defaultSizes = {
-            mesa: {a: 50, h: 50}, sillon: {a: 110, h: 38}, bocina: {a: 45, h: 45}, cristal: {a: 120, h: 15},
+            mesa: {a: 50, h: 50}, sillon: {a: 110, h: 42}, bocina: {a: 45, h: 45}, cristal: {a: 120, h: 15},
             dj: {a: 120, h: 50}, entrada: {a: 80, h: 40}, salida: {a: 80, h: 40},
             wc: {a: 80, h: 50}, pasillo: {a: 100, h: 30}, barra: {a: 180, h: 45},
             caja: {a: 70, h: 40}, escaleras: {a: 80, h: 60}
@@ -1195,7 +1264,7 @@
           const newItem = {
             id: 'item_' + Date.now(),
             tipo: tipo,
-            nombre: tipo === 'bocina' ? '🔊 BOCINA' : tipo.toUpperCase(),
+            nombre: tipo === 'bocina' ? '🔊 BOCINA' : tipo === 'sillon' ? 'SILLÓN VIP' : tipo.toUpperCase(),
             x: p.x, y: p.y,
             anchoPx: size.a,
             altoPx: size.h,
@@ -1223,6 +1292,18 @@
     setupPaletteDrag('pal-' + t, t);
   });
 
+  // Vaciar día actual
+  document.getElementById('btn-clear-day').onclick = () => {
+    if (confirm('¿Vaciar todo el plano del día seleccionado?')) {
+      const dateKey = fechaInput.value;
+      window.layoutsData[dateKey] = { PB: [], PA: [] };
+      selectedIds.clear();
+      saveLayouts();
+      renderFurniture();
+    }
+  };
+
+  // MULTI-SELECCIÓN
   const multiBtn = document.getElementById('btn-toggle-multi');
   multiBtn.addEventListener('click', () => {
     multiSelectMode = !multiSelectMode;
@@ -1243,178 +1324,96 @@
   }
 
   document.getElementById('btn-del-multi').addEventListener('click', () => {
-    window.layoutsData[currentFloor] = getLayout().filter(item => !selectedIds.has(item.id));
+    const dateKey = fechaInput.value;
+    window.layoutsData[dateKey][currentFloor] = getLayout().filter(item => !selectedIds.has(item.id));
     selectedIds.clear();
     saveLayouts();
     renderFurniture();
   });
 
-  document.getElementById('btn-add-batch-res').onclick = () => overlayBatch.classList.add('open');
-  document.getElementById('btn-batch-cancel').onclick = () => overlayBatch.classList.remove('open');
-  document.getElementById('btn-batch-save').onclick = () => {
-    const rawText = document.getElementById('batch-text').value.trim();
-    if (!rawText) return;
-
-    const dateKey = fechaInput.value;
-    if (!window.reservasData[dateKey]) window.reservasData[dateKey] = {};
-
-    const lines = rawText.split('\n');
-    lines.forEach((line, index) => {
-      const parts = line.split(',').map(s => s.trim());
-      if (parts[0]) {
-        let targetId = 'res_batch_' + Date.now() + '_' + index;
-        let mesaAsignada = parts[3] || '';
-
-        if (mesaAsignada) {
-          ['PB','PA'].forEach(p => {
-            if (window.layoutsData[p]) {
-              const match = window.layoutsData[p].find(m => m.nombre.toLowerCase() === mesaAsignada.toLowerCase() || m.id.toLowerCase() === mesaAsignada.toLowerCase());
-              if (match) targetId = match.id;
-            }
-          });
-        }
-
-        window.reservasData[dateKey][targetId] = {
-          estado: 'reservada',
-          cliente: parts[0] || '',
-          telefono: parts[1] || '',
-          personas: parseInt(parts[2]) || 0,
-          mesero: parts[4] || ''
-        };
-
-        if (parts[0]) {
-          let cli = window.clientes.find(c => c.nombre.toLowerCase() === parts[0].toLowerCase());
-          if (!cli) {
-            cli = { id: 'cli_' + Date.now(), nombre: parts[0], telefono: parts[1] || '', visitas: 0, ultimaVisita: '', preferencias: '' };
-            window.clientes.push(cli);
-          }
-          cli.visitas += 1;
-          saveCli();
-        }
-      }
-    });
-
-    saveReservas();
-    renderFurniture();
-    renderAllCRM();
-    document.getElementById('batch-text').value = '';
-    overlayBatch.classList.remove('open');
+  // SISTEMA DE PLANTILLAS / PRESETS (MÁXIMO 5)
+  document.getElementById('btn-open-presets').onclick = () => {
+    renderPresetsModal();
+    overlayPresets.classList.add('open');
   };
+  document.getElementById('btn-close-presets').onclick = () => overlayPresets.classList.remove('open');
 
-  document.getElementById('btn-quick-checkin').onclick = () => {
-    renderCheckinList();
-    overlayCheckin.classList.add('open');
-  };
-  document.getElementById('btn-checkin-close').onclick = () => overlayCheckin.classList.remove('open');
-  document.getElementById('checkin-search').oninput = renderCheckinList;
-
-  function renderCheckinList() {
-    const container = document.getElementById('checkin-list');
-    const filter = document.getElementById('checkin-search').value.toLowerCase();
+  function renderPresetsModal() {
+    const container = document.getElementById('presets-container');
     container.innerHTML = '';
 
-    const dateKey = fechaInput.value;
-    const currentRes = window.reservasData[dateKey] || {};
+    for (let slot = 1; slot <= 5; slot++) {
+      const pData = window.presetsData[slot];
+      const div = document.createElement('div');
+      div.className = 'preset-slot';
 
-    let list = [];
-    Object.keys(currentRes).forEach(mId => {
-      const r = currentRes[mId];
-      if (r && r.cliente) {
-        list.push({ mId, ...r });
+      if (pData) {
+        div.innerHTML = `
+          <div class="preset-info">
+            <span class="preset-title">Plantilla ${slot}: ${pData.name}</span>
+            <span class="preset-status">Guardada con elementos en PB y PA</span>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn primary" style="font-size:11px; padding:6px 10px;" onclick="window.applyPreset(${slot})">Cargar a Hoy</button>
+            <button class="btn" style="font-size:11px; padding:6px 10px;" onclick="window.saveCurrentToPreset(${slot})">Sobrescribir</button>
+            <button class="btn" style="font-size:11px; padding:6px 10px; background:var(--neon-red);" onclick="window.deletePreset(${slot})">🗑️</button>
+          </div>
+        `;
+      } else {
+        div.innerHTML = `
+          <div class="preset-info">
+            <span class="preset-title" style="color:var(--text-low);">Plantilla ${slot} (Vacía)</span>
+            <span class="preset-status">Sin diseño asignado</span>
+          </div>
+          <button class="btn preset-btn" style="font-size:11px; padding:6px 12px;" onclick="window.saveCurrentToPreset(${slot})">💾 Guardar Plano Actual</button>
+        `;
       }
-    });
-
-    let filtered = list.filter(r => r.cliente.toLowerCase().includes(filter));
-
-    if (filtered.length === 0) {
-      container.innerHTML = '<div style="color:var(--text-low);text-align:center;padding:20px;">No hay reservaciones para esta fecha.</div>';
-      return;
+      container.appendChild(div);
     }
+  }
 
-    filtered.forEach(item => {
-      let mesaText = 'Sin Mesa Asignada';
-      ['PB','PA'].forEach(p => {
-        if (window.layoutsData[p]) {
-          const m = window.layoutsData[p].find(x => x.id === item.mId);
-          if (m) mesaText = `${p} - ${m.nombre}`;
-        }
-      });
+  window.saveCurrentToPreset = function(slot) {
+    const name = prompt(`Introduce un nombre para la Plantilla ${slot}:`, window.presetsData[slot]?.name || `Diseño Config ${slot}`);
+    if (!name) return;
 
-      const row = document.createElement('div');
-      row.className = 'checkin-item';
-      row.innerHTML = `
-        <div class="checkin-info">
-          <span class="checkin-name">${item.cliente} (${item.personas || 0} pax)</span>
-          <span class="checkin-sub">Mesa Actual: <b>${mesaText}</b> | Estado: <b style="color:var(--neon-amber)">${item.estado}</b></span>
-        </div>
-        <button class="btn primary" style="padding:6px 12px;font-size:11px;">Ocupar Mesa</button>
-      `;
+    const dateKey = fechaInput.value;
+    const currentDayData = window.layoutsData[dateKey] || { PB: [], PA: [] };
 
-      row.querySelector('button').onclick = () => {
-        overlayCheckin.classList.remove('open');
-        if (item.mId && !item.mId.startsWith('res_batch_')) {
-          openModal(item.mId);
-        } else {
-          alert('Selecciona una mesa en el mapa para asignar a ' + item.cliente);
-          window.pendingAssignClient = item;
-        }
+    window.presetsData[slot] = {
+      name: name,
+      PB: JSON.parse(JSON.stringify(currentDayData.PB || [])),
+      PA: JSON.parse(JSON.stringify(currentDayData.PA || []))
+    };
+
+    savePresets();
+    renderPresetsModal();
+  };
+
+  window.applyPreset = function(slot) {
+    const pData = window.presetsData[slot];
+    if (!pData) return;
+
+    if (confirm(`¿Cargar "${pData.name}" en la fecha ${fechaInput.value}? Se reemplazará el plano actual de esta fecha.`)) {
+      const dateKey = fechaInput.value;
+      window.layoutsData[dateKey] = {
+        PB: JSON.parse(JSON.stringify(pData.PB || [])),
+        PA: JSON.parse(JSON.stringify(pData.PA || []))
       };
-
-      container.appendChild(row);
-    });
-  }
-
-  function renderWaiters() {
-    const container = document.getElementById('waiters-list');
-    container.innerHTML = '';
-
-    const currentLayout = getLayout();
-    const mapWaiters = {};
-
-    currentLayout.forEach(item => {
-      if (item.tipo === 'mesa') {
-        const res = getReserva(item.id);
-        const mesero = res.mesero ? res.mesero.trim() : null;
-        if (mesero) {
-          if (!mapWaiters[mesero]) mapWaiters[mesero] = [];
-          mapWaiters[mesero].push({ item, res });
-        }
-      }
-    });
-
-    const names = Object.keys(mapWaiters);
-    if (names.length === 0) {
-      container.innerHTML = '<div style="color:var(--text-low);font-size:11px;text-align:center;padding:10px;">Sin meseros asignados hoy.</div>';
-      return;
+      saveLayouts();
+      renderFurniture();
+      overlayPresets.classList.remove('open');
     }
+  };
 
-    names.forEach(name => {
-      const card = document.createElement('div');
-      card.className = 'waiter-card';
+  window.deletePreset = function(slot) {
+    if (confirm(`¿Eliminar la Plantilla ${slot}?`)) {
+      delete window.presetsData[slot];
+      savePresets();
+      renderPresetsModal();
+    }
+  };
 
-      const header = document.createElement('div');
-      header.className = 'waiter-card-header';
-      header.innerHTML = `<span>${name}</span><span>${mapWaiters[name].length} mesas</span>`;
-      card.appendChild(header);
-
-      const tablesDiv = document.createElement('div');
-      tablesDiv.className = 'waiter-tables';
-
-      mapWaiters[name].forEach(obj => {
-        const badge = document.createElement('div');
-        badge.className = 'table-badge ' + (obj.res.estado === 'reservada' ? 'res' : obj.res.estado === 'ocupada' ? 'ocu' : '');
-        const displayName = obj.res.cliente ? `${obj.item.nombre} (${obj.res.cliente})` : obj.item.nombre;
-        badge.textContent = displayName;
-        badge.style.cursor = 'pointer';
-        badge.onclick = () => openModal(obj.item.id);
-        tablesDiv.appendChild(badge);
-      });
-
-      card.appendChild(tablesDiv);
-      container.appendChild(card);
-    });
-  }
-
+  // OPERACIONES DE MUEBLES Y RESERVAS
   function openModal(id) {
     const item = getLayout().find(f => f.id === id);
     if (!item) return;
@@ -1550,6 +1549,176 @@
     closeModal();
   });
 
+  // CARGA MASIVA Y CHECK-IN
+  document.getElementById('btn-add-batch-res').onclick = () => overlayBatch.classList.add('open');
+  document.getElementById('btn-batch-cancel').onclick = () => overlayBatch.classList.remove('open');
+  document.getElementById('btn-batch-save').onclick = () => {
+    const rawText = document.getElementById('batch-text').value.trim();
+    if (!rawText) return;
+
+    const dateKey = fechaInput.value;
+    if (!window.reservasData[dateKey]) window.reservasData[dateKey] = {};
+
+    const lines = rawText.split('\n');
+    lines.forEach((line, index) => {
+      const parts = line.split(',').map(s => s.trim());
+      if (parts[0]) {
+        let targetId = 'res_batch_' + Date.now() + '_' + index;
+        let mesaAsignada = parts[3] || '';
+
+        if (mesaAsignada && window.layoutsData[dateKey]) {
+          ['PB','PA'].forEach(p => {
+            if (window.layoutsData[dateKey][p]) {
+              const match = window.layoutsData[dateKey][p].find(m => m.nombre.toLowerCase() === mesaAsignada.toLowerCase() || m.id.toLowerCase() === mesaAsignada.toLowerCase());
+              if (match) targetId = match.id;
+            }
+          });
+        }
+
+        window.reservasData[dateKey][targetId] = {
+          estado: 'reservada',
+          cliente: parts[0] || '',
+          telefono: parts[1] || '',
+          personas: parseInt(parts[2]) || 0,
+          mesero: parts[4] || ''
+        };
+
+        if (parts[0]) {
+          let cli = window.clientes.find(c => c.nombre.toLowerCase() === parts[0].toLowerCase());
+          if (!cli) {
+            cli = { id: 'cli_' + Date.now(), nombre: parts[0], telefono: parts[1] || '', visitas: 0, ultimaVisita: '', preferencias: '' };
+            window.clientes.push(cli);
+          }
+          cli.visitas += 1;
+          saveCli();
+        }
+      }
+    });
+
+    saveReservas();
+    renderFurniture();
+    renderAllCRM();
+    document.getElementById('batch-text').value = '';
+    overlayBatch.classList.remove('open');
+  };
+
+  document.getElementById('btn-quick-checkin').onclick = () => {
+    renderCheckinList();
+    overlayCheckin.classList.add('open');
+  };
+  document.getElementById('btn-checkin-close').onclick = () => overlayCheckin.classList.remove('open');
+  document.getElementById('checkin-search').oninput = renderCheckinList;
+
+  function renderCheckinList() {
+    const container = document.getElementById('checkin-list');
+    const filter = document.getElementById('checkin-search').value.toLowerCase();
+    container.innerHTML = '';
+
+    const dateKey = fechaInput.value;
+    const currentRes = window.reservasData[dateKey] || {};
+
+    let list = [];
+    Object.keys(currentRes).forEach(mId => {
+      const r = currentRes[mId];
+      if (r && r.cliente) list.push({ mId, ...r });
+    });
+
+    let filtered = list.filter(r => r.cliente.toLowerCase().includes(filter));
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-low);text-align:center;padding:20px;">No hay reservaciones para esta fecha.</div>';
+      return;
+    }
+
+    filtered.forEach(item => {
+      let mesaText = 'Sin Mesa Asignada';
+      const dayLayout = window.layoutsData[dateKey];
+      if (dayLayout) {
+        ['PB','PA'].forEach(p => {
+          if (dayLayout[p]) {
+            const m = dayLayout[p].find(x => x.id === item.mId);
+            if (m) mesaText = `${p} - ${m.nombre}`;
+          }
+        });
+      }
+
+      const row = document.createElement('div');
+      row.className = 'preset-slot';
+      row.style.marginBottom = '6px';
+      row.innerHTML = `
+        <div class="preset-info">
+          <span class="preset-title">${item.cliente} (${item.personas || 0} pax)</span>
+          <span class="preset-status">Mesa: <b>${mesaText}</b> | Estado: <b style="color:var(--neon-amber)">${item.estado}</b></span>
+        </div>
+        <button class="btn primary" style="padding:6px 12px;font-size:11px;">Ocupar Mesa</button>
+      `;
+
+      row.querySelector('button').onclick = () => {
+        overlayCheckin.classList.remove('open');
+        if (item.mId && !item.mId.startsWith('res_batch_')) {
+          openModal(item.mId);
+        } else {
+          alert('Selecciona una mesa en el mapa para asignar a ' + item.cliente);
+          window.pendingAssignClient = item;
+        }
+      };
+
+      container.appendChild(row);
+    });
+  }
+
+  function renderWaiters() {
+    const container = document.getElementById('waiters-list');
+    container.innerHTML = '';
+
+    const currentLayout = getLayout();
+    const mapWaiters = {};
+
+    currentLayout.forEach(item => {
+      if (item.tipo === 'mesa') {
+        const res = getReserva(item.id);
+        const mesero = res.mesero ? res.mesero.trim() : null;
+        if (mesero) {
+          if (!mapWaiters[mesero]) mapWaiters[mesero] = [];
+          mapWaiters[mesero].push({ item, res });
+        }
+      }
+    });
+
+    const names = Object.keys(mapWaiters);
+    if (names.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-low);font-size:11px;text-align:center;padding:10px;">Sin meseros asignados hoy.</div>';
+      return;
+    }
+
+    names.forEach(name => {
+      const card = document.createElement('div');
+      card.className = 'waiter-card';
+
+      const header = document.createElement('div');
+      header.className = 'waiter-card-header';
+      header.innerHTML = `<span>${name}</span><span>${mapWaiters[name].length} mesas</span>`;
+      card.appendChild(header);
+
+      const tablesDiv = document.createElement('div');
+      tablesDiv.className = 'waiter-tables';
+
+      mapWaiters[name].forEach(obj => {
+        const badge = document.createElement('div');
+        badge.className = 'table-badge ' + (obj.res.estado === 'reservada' ? 'res' : obj.res.estado === 'ocupada' ? 'ocu' : '');
+        const displayName = obj.res.cliente ? `${obj.item.nombre} (${obj.res.cliente})` : obj.item.nombre;
+        badge.textContent = displayName;
+        badge.style.cursor = 'pointer';
+        badge.onclick = () => openModal(obj.item.id);
+        tablesDiv.appendChild(badge);
+      });
+
+      card.appendChild(tablesDiv);
+      container.appendChild(card);
+    });
+  }
+
+  // TABLA DE RESERVAS Y CRM GLOBAL
   window.renderAllCRM = function() {
     renderReservationsTable();
     renderCRMTable();
@@ -1569,12 +1738,16 @@
         if (res && (res.cliente || res.estado !== 'disponible')) {
           let nombreMueble = muebleId;
           let planta = 'PB';
-          ['PB','PA'].forEach(p => {
-            if (window.layoutsData[p]) {
-              const match = window.layoutsData[p].find(m => m.id === muebleId);
-              if (match) { nombreMueble = match.nombre; planta = p; }
-            }
-          });
+
+          const dayLayout = window.layoutsData[fecha];
+          if (dayLayout) {
+            ['PB','PA'].forEach(p => {
+              if (dayLayout[p]) {
+                const match = dayLayout[p].find(m => m.id === muebleId);
+                if (match) { nombreMueble = match.nombre; planta = p; }
+              }
+            });
+          }
 
           totalReservas.push({ fecha, planta, muebleId, nombreMueble, res });
         }
@@ -1740,7 +1913,9 @@
   document.getElementById('float-floor-pb').onclick = () => changeFloor('PB');
   document.getElementById('float-floor-pa').onclick = () => changeFloor('PA');
 
+  // AL CAMBIAR DE FECHA: Carga o inicializa en VACÍO
   fechaInput.addEventListener('change', () => {
+    selectedIds.clear();
     renderFurniture();
     renderAllCRM();
   });
@@ -1749,7 +1924,7 @@
   renderAllCRM();
   </script>
 
-  <!-- MÓDULO FIREBASE SDK Y BASE DE DATOS EN TIEMPO REAL FIRESTORE -->
+  <!-- FIREBASE REALTIME FIRESTORE SYNC -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -1769,18 +1944,20 @@
 
     let isRemoteChange = false;
 
-    onSnapshot(doc(db, "crypto_data", "main_config"), (docSnap) => {
+    onSnapshot(doc(db, "crypto_data", "main_config_v4"), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         isRemoteChange = true;
 
-        window.layoutsData = data.layouts || { PB: window.DEFAULT_LAYOUT_PB, PA: window.DEFAULT_LAYOUT_PA };
+        window.layoutsData = data.layouts || {};
         window.reservasData = data.reservas || {};
         window.clientes = data.clientes || [];
+        window.presetsData = data.presets || {};
 
         localStorage.setItem(STORAGE_KEY_LAYOUT, JSON.stringify(window.layoutsData));
         localStorage.setItem(STORAGE_KEY_RESERVAS, JSON.stringify(window.reservasData));
         localStorage.setItem(STORAGE_KEY_CLI, JSON.stringify(window.clientes));
+        localStorage.setItem(STORAGE_KEY_PRESETS, JSON.stringify(window.presetsData));
 
         if (typeof window.renderFurniture === 'function') window.renderFurniture();
         if (typeof window.renderAllCRM === 'function') window.renderAllCRM();
@@ -1790,20 +1967,21 @@
         window.saveToCloud();
       }
     }, (error) => {
-      console.error("Error al escuchar cambios en tiempo real:", error);
+      console.error("Error al escuchar cambios Firebase:", error);
     });
 
     window.saveToCloud = async function() {
       if (isRemoteChange) return;
 
       try {
-        await setDoc(doc(db, "crypto_data", "main_config"), {
+        await setDoc(doc(db, "crypto_data", "main_config_v4"), {
           layouts: typeof window.layoutsData !== 'undefined' ? window.layoutsData : {},
           reservas: typeof window.reservasData !== 'undefined' ? window.reservasData : {},
-          clientes: typeof window.clientes !== 'undefined' ? window.clientes : []
+          clientes: typeof window.clientes !== 'undefined' ? window.clientes : [],
+          presets: typeof window.presetsData !== 'undefined' ? window.presetsData : {}
         }, { merge: true });
       } catch (e) {
-        console.error("Error de actualización en la nube Firebase: ", e);
+        console.error("Error en sincronización Firebase: ", e);
       }
     };
   </script>
