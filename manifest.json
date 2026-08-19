@@ -1,8 +1,21 @@
 {
-  "name": "Crypto Floor",
-  "short_name": "Crypto",
+  "name": "CRYPTO — Plano de Sala & CRM",
+  "short_name": "Crypto Floor",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0710",
-  "theme_color": "#0a0710"
+  "theme_color": "#140e20",
+  "description": "Sistema de gestión de planos y reservas para Crypto Business Club",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/fluids/96/bitcoin.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "https://img.icons8.com/fluids/512/bitcoin.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
