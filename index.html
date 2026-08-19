@@ -1706,28 +1706,45 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    // Bandera para evitar que la recepción de datos remotos vuelva a activar el guardado
+    let isRemoteChange = false;
+
     // Escucha remota Firestore en tiempo real para múltiples dispositivos
     onSnapshot(doc(db, "crypto_data", "main_config"), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
+        isRemoteChange = true;
+
         window.layoutsData = data.layouts || { PB: window.DEFAULT_LAYOUT_PB, PA: window.DEFAULT_LAYOUT_PA };
         window.reservasData = data.reservas || {};
         window.clientes = data.clientes || [];
+
+        // Actualizar almacenamiento local para sincronía offline
+        localStorage.setItem(STORAGE_KEY_LAYOUT, JSON.stringify(window.layoutsData));
+        localStorage.setItem(STORAGE_KEY_RESERVAS, JSON.stringify(window.reservasData));
+        localStorage.setItem(STORAGE_KEY_CLI, JSON.stringify(window.clientes));
+
         if (typeof window.renderFurniture === 'function') window.renderFurniture();
         if (typeof window.renderAllCRM === 'function') window.renderAllCRM();
+
+        isRemoteChange = false;
       } else {
         window.saveToCloud();
       }
+    }, (error) => {
+      console.error("Error al escuchar cambios en tiempo real:", error);
     });
 
-    // Guardado persistente inmediato en Firestore
+    // Guardado persistente seguro en Firestore con merge
     window.saveToCloud = async function() {
+      if (isRemoteChange) return;
+
       try {
         await setDoc(doc(db, "crypto_data", "main_config"), {
           layouts: typeof window.layoutsData !== 'undefined' ? window.layoutsData : {},
           reservas: typeof window.reservasData !== 'undefined' ? window.reservasData : {},
           clientes: typeof window.clientes !== 'undefined' ? window.clientes : []
-        });
+        }, { merge: true });
       } catch (e) {
         console.error("Error de actualización en la nube Firebase: ", e);
       }
