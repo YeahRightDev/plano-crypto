@@ -91,6 +91,7 @@
   }
   .mode-btn.active{background:var(--neon-pink);color:#fff;border-color:var(--neon-pink);box-shadow:0 0 12px rgba(255,46,136,0.5);}
   .btn-action-top{background:var(--neon-purple);color:#fff;border-color:var(--neon-purple);box-shadow:0 0 10px rgba(139,92,246,0.4);}
+  .btn-fullscreen{background:#111827;border-color:var(--neon-cyan);color:var(--neon-cyan);box-shadow:0 0 10px rgba(38,245,224,0.3);}
 
   /* BARRA HERRAMIENTAS SELECCIÓN MÚLTIPLE */
   .multi-tools{
@@ -173,7 +174,6 @@
     box-shadow:0 0 15px rgba(255,46,136,0.6);
   }
 
-  /* Tiradores Táctiles Optimizado para Android (Área Táctil 48px) */
   .resize-handle{
     position:absolute;
     width:32px;height:32px;
@@ -192,7 +192,6 @@
   .resize-handle.ne{ top:-16px; right:-16px; cursor:nesw-resize; }
   .resize-handle.nw{ top:-16px; left:-16px; cursor:nwse-resize; }
 
-  /* Estilos específicos según tipo */
   .furniture.mesa{border-radius:10px;background:var(--neutral-table);}
   .furniture.sillon{border-radius:18px;background:#2d2642;border-color:#63538c;}
   .furniture.bocina{background:#111827;border-color:var(--neon-pink);color:var(--neon-pink);border-radius:4px;box-shadow:0 0 10px rgba(255,46,136,0.3);}
@@ -350,7 +349,6 @@
   }
   .crm-empty{color:var(--text-low);padding:20px;text-align:center;font-size:13px;}
 
-  /* LISTA ACOMPAÑAMIENTO / CHECK-IN */
   .checkin-item{
     display:flex;align-items:center;justify-content:space-between;
     background:var(--bg-panel-2);border:1px solid var(--line);
@@ -359,7 +357,6 @@
   .checkin-info{display:flex;flex-direction:column;gap:2px;}
   .checkin-name{font-weight:700;font-size:15px;color:var(--neon-cyan);}
   .checkin-sub{font-size:12px;color:var(--text-mid);}
-
 </style>
 </head>
 <body>
@@ -367,6 +364,7 @@
 <header>
   <h1>CRYPTO <span>·</span> FLOOR</h1>
   <div class="header-controls">
+    <button class="btn-action-top btn-fullscreen" id="btn-fullscreen">🔍 Full Screen</button>
     <button class="btn-action-top" id="btn-quick-checkin">⚡ Recepción / Check-in</button>
     <button class="btn-action-top" id="btn-add-batch-res" style="background:var(--neon-cyan);color:#000;">+ Cargar Reservas Hoy</button>
     <button class="mode-btn" id="btn-toggle-multi">Selección Múltiple</button>
@@ -383,7 +381,6 @@
 </header>
 
 <div class="app">
-  <!-- BARRA DE ACCIÓN MÚLTIPLE -->
   <div class="multi-tools" id="multi-tools">
     <span id="multi-count" style="font-size:12px;font-weight:700;color:#fff;">0 seleccionados</span>
     <button class="btn-multi-del" id="btn-del-multi">Eliminar Todos</button>
@@ -417,14 +414,12 @@
       <div id="canvas"></div>
     </div>
 
-    <!-- PANEL DE MESEROS A LA DERECHA -->
     <div class="waiters-panel" id="waiters-panel">
       <h3>Meseros & Asignación</h3>
       <div id="waiters-list"></div>
     </div>
   </div>
 
-  <!-- VISTA CRM Y BASE DE DATOS DE RESERVAS -->
   <div id="view-crm" class="crm-view">
     <div class="section-title">Base de Datos de Reservaciones</div>
     <input type="text" class="crm-search" id="reser-search" placeholder="Buscar reserva por fecha, cliente o mesero...">
@@ -450,7 +445,6 @@
   </div>
 </div>
 
-<!-- MODAL MUEBLE Y ESTRUCTURA -->
 <div class="overlay" id="overlay">
   <div class="modal">
     <h2 id="modal-title">Elemento</h2>
@@ -460,7 +454,6 @@
       <input type="text" id="f-nombre" placeholder="Ej. Mesa 1, Cristal VIP, DJ, etc.">
     </div>
 
-    <!-- Dimensiones Editables Tactiles -->
     <div class="dim-row">
       <div class="field">
         <label>Ancho (px)</label>
@@ -472,7 +465,6 @@
       </div>
     </div>
 
-    <!-- Controles de Fijar y Rotar -->
     <div class="field">
       <label>Posición y Orientación</label>
       <div class="control-row">
@@ -481,7 +473,6 @@
       </div>
     </div>
 
-    <!-- SECCIÓN DE RESERVA (SOLO PARA MESAS) -->
     <div id="reserva-fields">
       <div class="field">
         <label>Estado</label>
@@ -522,7 +513,6 @@
   </div>
 </div>
 
-<!-- MODAL LOTE DE RESERVAS EN PAQUETE -->
 <div class="overlay" id="overlay-batch">
   <div class="modal" style="width:420px;">
     <h2>Cargar Reservas del Día</h2>
@@ -542,7 +532,6 @@
   </div>
 </div>
 
-<!-- MODAL RECEPCIÓN Y ACOMODO EN VIVO (CHECK-IN) -->
 <div class="overlay" id="overlay-checkin">
   <div class="modal" style="width:450px;">
     <h2>Recepción & Acomodo de Clientes</h2>
@@ -556,7 +545,6 @@
   </div>
 </div>
 
-<!-- MODAL CLIENTE (CRM) -->
 <div class="overlay" id="overlay-cli">
   <div class="modal">
     <h2>Editar cliente</h2>
@@ -581,6 +569,20 @@
 
 <script>
 (function(){
+  // Función para activar / desactivar pantalla completa
+  const btnFs = document.getElementById('btn-fullscreen');
+  btnFs.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.log("Error al intentar pantalla completa: ", err.message);
+      });
+      btnFs.textContent = '❌ Salir Full';
+    } else {
+      document.exitFullscreen();
+      btnFs.textContent = '🔍 Full Screen';
+    }
+  });
+
   const STORAGE_KEY_LAYOUT = 'crypto_floor_layout_v3';
   const STORAGE_KEY_RESERVAS = 'crypto_floor_daily_reservas_v3';
   const STORAGE_KEY_CLI = 'crypto_floor_clientes';
@@ -738,7 +740,6 @@
         el.appendChild(pax);
       }
 
-      // Redimensionado táctil optimizado para tablets Android
       if(!multiSelectMode && selectedIds.has(item.id) && !item.locked){
         ['se', 'sw', 'ne', 'nw'].forEach(pos => {
           const handle = document.createElement('div');
@@ -899,7 +900,6 @@
     setupPaletteDrag('pal-' + t, t);
   });
 
-  // MULTI SELECCIÓN
   const multiBtn = document.getElementById('btn-toggle-multi');
   multiBtn.addEventListener('click', () => {
     multiSelectMode = !multiSelectMode;
@@ -926,7 +926,6 @@
     renderFurniture();
   });
 
-  /* ---------- BATCH LOAD RESERVATIONS ---------- */
   document.getElementById('btn-add-batch-res').onclick = () => overlayBatch.classList.add('open');
   document.getElementById('btn-batch-cancel').onclick = () => overlayBatch.classList.remove('open');
   document.getElementById('btn-batch-save').onclick = () => {
@@ -943,7 +942,6 @@
         let targetId = 'res_batch_' + Date.now() + '_' + index;
         let mesaAsignada = parts[3] || '';
 
-        // Buscar si existe la mesa especificada por su nombre o id
         if(mesaAsignada){
           ['PB','PA'].forEach(p => {
             if(layoutsData[p]){
@@ -954,7 +952,7 @@
         }
 
         reservasData[dateKey][targetId] = {
-          estado: mesaAsignada ? 'reservada' : 'reservada',
+          estado: 'reservada',
           cliente: parts[0] || '',
           telefono: parts[1] || '',
           personas: parseInt(parts[2]) || 0,
@@ -962,7 +960,6 @@
           notas: 'Carga por lote'
         };
 
-        // Guardar cliente CRM
         if(parts[0]){
           let cli = clientes.find(c => c.nombre.toLowerCase() === parts[0].toLowerCase());
           if(!cli){
@@ -982,7 +979,6 @@
     overlayBatch.classList.remove('open');
   };
 
-  /* ---------- CHECK-IN Y ACOMODO DE CLIENTES ---------- */
   document.getElementById('btn-quick-checkin').onclick = () => {
     renderCheckinList();
     overlayCheckin.classList.add('open');
@@ -1034,13 +1030,10 @@
 
       row.querySelector('button').onclick = () => {
         overlayCheckin.classList.remove('open');
-        // Si ya tiene una mesa asignada en el mapa, abrir directo su modal
         if(item.mId && !item.mId.startsWith('res_batch_')){
           openModal(item.mId);
         } else {
-          // Si no tiene mesa, permitirle seleccionar una mesa disponible
           alert('Selecciona una mesa disponible en el mapa para asignar a ' + item.cliente);
-          // Guardar cliente en cache temporal para que al hacer clic en una mesa se auto-asigne
           window.pendingAssignClient = item;
         }
       };
