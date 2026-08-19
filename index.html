@@ -84,11 +84,12 @@
     box-shadow:0 0 14px rgba(38,245,224,0.5);
   }
 
-  .mode-btn{
+  .mode-btn, .btn-action-top{
     background:var(--bg-panel);border:1px solid var(--line);color:var(--text-mid);
     padding:7px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;
   }
   .mode-btn.active{background:var(--neon-pink);color:#fff;border-color:var(--neon-pink);box-shadow:0 0 12px rgba(255,46,136,0.5);}
+  .btn-action-top{background:var(--neon-purple);color:#fff;border-color:var(--neon-purple);box-shadow:0 0 10px rgba(139,92,246,0.4);}
 
   /* BARRA HERRAMIENTAS SELECCIÓN MÚLTIPLE */
   .multi-tools{
@@ -171,24 +172,24 @@
     box-shadow:0 0 15px rgba(255,46,136,0.6);
   }
 
-  /* Tiradores Táctiles de Redimensionado Sensibles */
+  /* Tiradores Táctiles Optimizado para Android (Área Táctil 48px) */
   .resize-handle{
     position:absolute;
-    width:22px;height:22px;
+    width:32px;height:32px;
     background:var(--neon-cyan);
     border:2px solid #000;
     border-radius:50%;
     z-index:100;
-    box-shadow:0 0 10px rgba(38,245,224,0.9);
+    box-shadow:0 0 12px rgba(38,245,224,1);
     touch-action:none;
   }
   .resize-handle::after{
-    content:'';position:absolute;inset:-12px;
+    content:'';position:absolute;inset:-15px;
   }
-  .resize-handle.se{ bottom:-11px; right:-11px; cursor:nwse-resize; }
-  .resize-handle.sw{ bottom:-11px; left:-11px; cursor:nesw-resize; }
-  .resize-handle.ne{ top:-11px; right:-11px; cursor:nesw-resize; }
-  .resize-handle.nw{ top:-11px; left:-11px; cursor:nwse-resize; }
+  .resize-handle.se{ bottom:-16px; right:-16px; cursor:nwse-resize; }
+  .resize-handle.sw{ bottom:-16px; left:-16px; cursor:nesw-resize; }
+  .resize-handle.ne{ top:-16px; right:-16px; cursor:nesw-resize; }
+  .resize-handle.nw{ top:-16px; left:-16px; cursor:nwse-resize; }
 
   /* Estilos específicos según tipo */
   .furniture.mesa{border-radius:10px;background:var(--neutral-table);}
@@ -348,6 +349,16 @@
   }
   .crm-empty{color:var(--text-low);padding:20px;text-align:center;font-size:13px;}
 
+  /* LISTA ACOMPAÑAMIENTO / CHECK-IN */
+  .checkin-item{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--bg-panel-2);border:1px solid var(--line);
+    padding:10px 14px;border-radius:8px;margin-bottom:8px;gap:12px;
+  }
+  .checkin-info{display:flex;flex-direction:column;gap:2px;}
+  .checkin-name{font-weight:700;font-size:15px;color:var(--neon-cyan);}
+  .checkin-sub{font-size:12px;color:var(--text-mid);}
+
 </style>
 </head>
 <body>
@@ -355,6 +366,8 @@
 <header>
   <h1>CRYPTO <span>·</span> FLOOR</h1>
   <div class="header-controls">
+    <button class="btn-action-top" id="btn-quick-checkin">⚡ Recepción / Check-in</button>
+    <button class="btn-action-top" id="btn-add-batch-res" style="background:var(--neon-cyan);color:#000;">+ Cargar Reservas Hoy</button>
     <button class="mode-btn" id="btn-toggle-multi">Selección Múltiple</button>
     <input type="date" id="f-fecha">
     <div class="floor-toggle">
@@ -446,7 +459,7 @@
       <input type="text" id="f-nombre" placeholder="Ej. Mesa 1, Cristal VIP, DJ, etc.">
     </div>
 
-    <!-- Dimensiones Editables -->
+    <!-- Dimensiones Editables Tactiles -->
     <div class="dim-row">
       <div class="field">
         <label>Ancho (px)</label>
@@ -504,6 +517,40 @@
       <button class="btn danger" id="btn-delete">Eliminar Elemento</button>
       <button class="btn" id="btn-cancel">Cerrar</button>
       <button class="btn primary" id="btn-save">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL LOTE DE RESERVAS EN PAQUETE -->
+<div class="overlay" id="overlay-batch">
+  <div class="modal" style="width:420px;">
+    <h2>Cargar Reservas del Día</h2>
+    <div class="field">
+      <label>Pega o escribe las reservas (Una por línea):</label>
+      <textarea id="batch-text" style="height:140px;font-family:monospace;font-size:12px;" placeholder="Ejemplo:&#10;Juan Perez, 5512345678, 4, Mesa 1, Carlos&#10;Maria Lopez, 5587654321, 2, PB_M2, Luis&#10;Pedro Gomez, 5599887766, 6"></textarea>
+    </div>
+    <div style="font-size:11px;color:var(--text-low);margin-bottom:10px;">
+      Formatos aceptados:<br>
+      • <b>Nombre, Telefono, Personas, Mesa, Mesero</b><br>
+      • O simplemente <b>Nombre del Cliente</b>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="btn-batch-cancel">Cancelar</button>
+      <button class="btn primary" id="btn-batch-save">Procesar Reservas</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RECEPCIÓN Y ACOMODO EN VIVO (CHECK-IN) -->
+<div class="overlay" id="overlay-checkin">
+  <div class="modal" style="width:450px;">
+    <h2>Recepción & Acomodo de Clientes</h2>
+    <div class="field">
+      <input type="text" id="checkin-search" placeholder="🔍 Buscar cliente por nombre..." style="font-size:15px;padding:10px;">
+    </div>
+    <div id="checkin-list" style="max-height:300px;overflow-y:auto;margin-bottom:12px;"></div>
+    <div class="modal-actions">
+      <button class="btn" id="btn-checkin-close">Cerrar</button>
     </div>
   </div>
 </div>
@@ -573,6 +620,8 @@
   const canvas = document.getElementById('canvas');
   const overlay = document.getElementById('overlay');
   const overlayCli = document.getElementById('overlay-cli');
+  const overlayBatch = document.getElementById('overlay-batch');
+  const overlayCheckin = document.getElementById('overlay-checkin');
 
   let selectedIds = new Set();
   let multiSelectMode = false;
@@ -688,7 +737,7 @@
         el.appendChild(pax);
       }
 
-      // Redimensionado ultra-fluido si está seleccionado en modo normal
+      // Redimensionado táctil optimizado para tablets Android
       if(!multiSelectMode && selectedIds.has(item.id) && !item.locked){
         ['se', 'sw', 'ne', 'nw'].forEach(pos => {
           const handle = document.createElement('div');
@@ -876,6 +925,129 @@
     renderFurniture();
   });
 
+  /* ---------- BATCH LOAD RESERVATIONS ---------- */
+  document.getElementById('btn-add-batch-res').onclick = () => overlayBatch.classList.add('open');
+  document.getElementById('btn-batch-cancel').onclick = () => overlayBatch.classList.remove('open');
+  document.getElementById('btn-batch-save').onclick = () => {
+    const rawText = document.getElementById('batch-text').value.trim();
+    if(!rawText) return;
+
+    const dateKey = fechaInput.value;
+    if(!reservasData[dateKey]) reservasData[dateKey] = {};
+
+    const lines = rawText.split('\n');
+    lines.forEach((line, index) => {
+      const parts = line.split(',').map(s => s.trim());
+      if(parts[0]){
+        let targetId = 'res_batch_' + Date.now() + '_' + index;
+        let mesaAsignada = parts[3] || '';
+
+        // Buscar si existe la mesa especificada por su nombre o id
+        if(mesaAsignada){
+          ['PB','PA'].forEach(p => {
+            if(layoutsData[p]){
+              const match = layoutsData[p].find(m => m.nombre.toLowerCase() === mesaAsignada.toLowerCase() || m.id.toLowerCase() === mesaAsignada.toLowerCase());
+              if(match) targetId = match.id;
+            }
+          });
+        }
+
+        reservasData[dateKey][targetId] = {
+          estado: mesaAsignada ? 'reservada' : 'reservada',
+          cliente: parts[0] || '',
+          telefono: parts[1] || '',
+          personas: parseInt(parts[2]) || 0,
+          mesero: parts[4] || '',
+          notas: 'Carga por lote'
+        };
+
+        // Guardar cliente CRM
+        if(parts[0]){
+          let cli = clientes.find(c => c.nombre.toLowerCase() === parts[0].toLowerCase());
+          if(!cli){
+            cli = { id:'cli_'+Date.now(), nombre:parts[0], telefono:parts[1]||'', visitas:0, ultimaVisita:'', preferencias:'' };
+            clientes.push(cli);
+          }
+          cli.visitas += 1;
+          saveCli();
+        }
+      }
+    });
+
+    saveReservas();
+    renderFurniture();
+    renderAllCRM();
+    document.getElementById('batch-text').value = '';
+    overlayBatch.classList.remove('open');
+  };
+
+  /* ---------- CHECK-IN Y ACOMODO DE CLIENTES ---------- */
+  document.getElementById('btn-quick-checkin').onclick = () => {
+    renderCheckinList();
+    overlayCheckin.classList.add('open');
+  };
+  document.getElementById('btn-checkin-close').onclick = () => overlayCheckin.classList.remove('open');
+  document.getElementById('checkin-search').oninput = renderCheckinList;
+
+  function renderCheckinList(){
+    const container = document.getElementById('checkin-list');
+    const filter = document.getElementById('checkin-search').value.toLowerCase();
+    container.innerHTML = '';
+
+    const dateKey = fechaInput.value;
+    const currentRes = reservasData[dateKey] || {};
+
+    let list = [];
+    Object.keys(currentRes).forEach(mId => {
+      const r = currentRes[mId];
+      if(r && r.cliente){
+        list.push({ mId, ...r });
+      }
+    });
+
+    let filtered = list.filter(r => r.cliente.toLowerCase().includes(filter));
+
+    if(filtered.length === 0){
+      container.innerHTML = '<div style="color:var(--text-low);text-align:center;padding:20px;">No hay reservas registradas para esta fecha.</div>';
+      return;
+    }
+
+    filtered.forEach(item => {
+      let mesaText = 'Sin Mesa Asignada';
+      ['PB','PA'].forEach(p => {
+        if(layoutsData[p]){
+          const m = layoutsData[p].find(x => x.id === item.mId);
+          if(m) mesaText = `${p} - ${m.nombre}`;
+        }
+      });
+
+      const row = document.createElement('div');
+      row.className = 'checkin-item';
+      row.innerHTML = `
+        <div class="checkin-info">
+          <span class="checkin-name">${item.cliente} (${item.personas || 0} pax)</span>
+          <span class="checkin-sub">Mesa Actual: <b>${mesaText}</b> | Estado: <b style="color:var(--neon-amber)">${item.estado}</b></span>
+        </div>
+        <button class="btn primary" style="padding:6px 12px;font-size:11px;">Asignar / Ocupar</button>
+      `;
+
+      row.querySelector('button').onclick = () => {
+        overlayCheckin.classList.remove('open');
+        // Si ya tiene una mesa asignada en el mapa, abrir directo su modal
+        if(item.mId && !item.mId.startsWith('res_batch_')){
+          openModal(item.mId);
+        } else {
+          // Si no tiene mesa, permitirle seleccionar una mesa disponible
+          alert('Selecciona una mesa disponible en el mapa para asignar a ' + item.cliente);
+          // Guardar cliente en cache temporal para que al hacer clic en una mesa se auto-asigne
+          window.pendingAssignClient = item;
+        }
+      };
+
+      container.appendChild(row);
+    });
+  }
+
   function renderWaiters(){
     const container = document.getElementById('waiters-list');
     container.innerHTML = '';
@@ -945,7 +1117,17 @@
     const resFields = document.getElementById('reserva-fields');
     if(item.tipo === 'mesa'){
       resFields.style.display = 'block';
-      const res = getReserva(item.id);
+      let res = getReserva(item.id);
+
+      if(window.pendingAssignClient){
+        res.cliente = window.pendingAssignClient.cliente;
+        res.telefono = window.pendingAssignClient.telefono;
+        res.personas = window.pendingAssignClient.personas;
+        res.mesero = window.pendingAssignClient.mesero;
+        res.estado = 'ocupada';
+        window.pendingAssignClient = null;
+      }
+
       document.getElementById('f-cliente').value = res.cliente || '';
       document.getElementById('f-telefono').value = res.telefono || '';
       document.getElementById('f-personas').value = res.personas || '';
