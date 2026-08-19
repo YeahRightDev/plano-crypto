@@ -4,27 +4,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Crypto Floor - Sistema Integral de Gestión de Plano y CRM</title>
-
   <link rel="manifest" href="manifest.json">
-
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-dark: #0d0f12;
-      --panel-bg: #161920;
-      --panel-border: #262b36;
+      --bg-dark: #08090c;
+      --panel-bg: rgba(22, 25, 34, 0.85);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --panel-border-glow: rgba(243, 186, 47, 0.25);
       --accent: #f3ba2f;
       --neon-amber: #ffb703;
       --neon-green: #06d6a0;
       --neon-red: #ef476f;
-      --text-main: #f1f1f1;
-      --text-low: #8a93a0;
+      --text-main: #f8fafc;
+      --text-low: #64748b;
+      --glass-bg: rgba(15, 17, 23, 0.75);
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       user-select: none;
     }
 
@@ -39,14 +40,15 @@
 
     /* Header y Navegación Principal */
     header {
-      height: 60px;
+      height: 64px;
       background: var(--panel-bg);
       border-bottom: 1px solid var(--panel-border);
+      backdrop-filter: blur(16px);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 16px;
-      gap: 10px;
+      padding: 0 20px;
+      gap: 12px;
       z-index: 10;
     }
 
@@ -61,33 +63,39 @@
     }
 
     .tab-btn, .btn {
-      background: #202530;
+      background: rgba(255, 255, 255, 0.04);
       color: var(--text-main);
       border: 1px solid var(--panel-border);
-      padding: 8px 14px;
-      border-radius: 6px;
+      padding: 9px 16px;
+      border-radius: 10px;
       cursor: pointer;
       font-size: 13px;
       font-weight: 600;
-      transition: all 0.2s ease-in-out;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .tab-btn:hover, .btn:hover {
-      background: #2a3140;
-      border-color: #3d4659;
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
     }
 
     .tab-btn.active, .btn.primary {
-      background: var(--accent);
+      background: linear-gradient(135deg, #f3ba2f 0%, #e0a312 100%);
       color: #000000;
       border-color: var(--accent);
+      box-shadow: 0 0 16px var(--panel-border-glow);
+      font-weight: 700;
     }
 
     .floor-toggle {
       display: flex;
-      background: #000000;
-      border-radius: 6px;
-      padding: 2px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 12px;
+      padding: 3px;
       border: 1px solid var(--panel-border);
     }
 
@@ -95,37 +103,41 @@
       background: transparent;
       border: none;
       color: var(--text-low);
-      padding: 6px 12px;
-      border-radius: 4px;
+      padding: 7px 14px;
+      border-radius: 8px;
       cursor: pointer;
-      font-weight: bold;
-      transition: all 0.2s;
+      font-weight: 700;
+      font-size: 12px;
+      transition: all 0.2s ease;
     }
 
     .floor-toggle button.active {
-      background: var(--panel-bg);
-      color: var(--accent);
+      background: var(--accent);
+      color: #000000;
+      box-shadow: 0 2px 8px rgba(243, 186, 47, 0.3);
     }
 
     input[type="date"], input[type="text"], input[type="number"], textarea {
-      background: #0d0f12;
+      background: rgba(0, 0, 0, 0.4);
       border: 1px solid var(--panel-border);
       color: #ffffff;
-      padding: 8px 12px;
-      border-radius: 6px;
+      padding: 10px 14px;
+      border-radius: 10px;
       outline: none;
       font-size: 13px;
+      transition: all 0.2s ease;
     }
 
     input[type="date"]:focus, input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
       border-color: var(--accent);
+      box-shadow: 0 0 12px var(--panel-border-glow);
     }
 
     /* Layout Contenedor */
     #app-container {
       display: flex;
       flex: 1;
-      height: calc(100vh - 60px);
+      height: calc(100vh - 64px);
       position: relative;
     }
 
@@ -135,13 +147,14 @@
 
     /* Panel Lateral - Herramientas */
     sidebar {
-      width: 220px;
+      width: 230px;
       background: var(--panel-bg);
       border-right: 1px solid var(--panel-border);
-      padding: 12px;
+      backdrop-filter: blur(16px);
+      padding: 16px 12px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
       overflow-y: auto;
     }
 
@@ -156,27 +169,30 @@
     }
 
     .pal-item {
-      background: #202530;
+      background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--panel-border);
-      border-radius: 6px;
+      border-radius: 10px;
       padding: 12px 8px;
       text-align: center;
       font-size: 11px;
       cursor: grab;
-      font-weight: bold;
-      transition: background 0.2s;
+      font-weight: 700;
+      transition: all 0.2s ease;
+      color: var(--text-main);
     }
 
     .pal-item:hover {
-      background: #2c3342;
+      background: rgba(243, 186, 47, 0.1);
       border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
 
     /* Área Principal - Mapa Canvas */
     .main-view {
       flex: 1;
       position: relative;
-      background: #08090b;
+      background: #060709;
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -193,37 +209,38 @@
       position: relative;
       width: 100%;
       height: 100%;
-      background-image: radial-gradient(#202530 1px, transparent 1px);
-      background-size: 20px 20px;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+      background-size: 24px 24px;
     }
 
     /* Renderizado de Mobiliario y Muebles */
     .furniture {
       position: absolute;
-      background: #2a303c;
-      border: 2px solid #4a5264;
-      border-radius: 6px;
+      background: rgba(22, 26, 36, 0.9);
+      border: 2px solid #3b4354;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
       color: #ffffff;
       font-size: 11px;
-      font-weight: bold;
+      font-weight: 700;
       cursor: move;
       touch-action: none;
       text-align: center;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
       box-sizing: border-box;
+      backdrop-filter: blur(4px);
     }
 
     .furniture.selected {
       border-color: var(--accent) !important;
-      box-shadow: 0 0 12px rgba(243, 186, 47, 0.6);
+      box-shadow: 0 0 18px rgba(243, 186, 47, 0.7);
     }
 
     .furniture.multi-selected {
       border-color: var(--neon-amber) !important;
-      box-shadow: 0 0 10px rgba(255, 183, 3, 0.4);
+      box-shadow: 0 0 14px rgba(255, 183, 3, 0.5);
     }
 
     .furniture.locked {
@@ -232,21 +249,25 @@
     }
 
     .furniture.dragging {
-      opacity: 0.7;
+      opacity: 0.75;
+      transform: scale(1.02);
     }
 
     .furniture.est-disponible {
       border-color: var(--neon-green);
+      box-shadow: 0 0 10px rgba(6, 214, 160, 0.2);
     }
 
     .furniture.est-reservada {
       border-color: var(--neon-amber);
-      background: #3d2e05;
+      background: rgba(61, 46, 5, 0.85);
+      box-shadow: 0 0 10px rgba(255, 183, 3, 0.2);
     }
 
     .furniture.est-ocupada {
       border-color: var(--neon-red);
-      background: #3d0e18;
+      background: rgba(61, 14, 24, 0.85);
+      box-shadow: 0 0 10px rgba(239, 71, 111, 0.2);
     }
 
     .furniture .pax {
@@ -263,7 +284,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.6);
     }
 
     .furniture .title-txt {
@@ -271,6 +292,7 @@
       word-break: break-word;
       padding: 2px;
       line-height: 1.2;
+      transition: transform 0.2s ease;
     }
 
     .furniture .sub-txt {
@@ -279,7 +301,7 @@
       margin-top: 2px;
     }
 
-    /* Puntos de Resize (Manijas de Redimensión) */
+    /* Puntos de Resize */
     .resize-handle {
       position: absolute;
       width: 10px;
@@ -296,10 +318,11 @@
 
     /* Panel Derecho de Meseros */
     #waiters-panel {
-      width: 240px;
+      width: 250px;
       background: var(--panel-bg);
       border-left: 1px solid var(--panel-border);
-      padding: 12px;
+      backdrop-filter: blur(16px);
+      padding: 16px 12px;
       overflow-y: auto;
     }
 
@@ -308,10 +331,10 @@
     }
 
     .waiter-card {
-      background: #202530;
+      background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--panel-border);
-      border-radius: 6px;
-      padding: 10px;
+      border-radius: 12px;
+      padding: 12px;
       margin-bottom: 10px;
     }
 
@@ -319,7 +342,7 @@
       display: flex;
       justify-content: space-between;
       font-size: 12px;
-      font-weight: bold;
+      font-weight: 700;
       margin-bottom: 8px;
       color: var(--accent);
     }
@@ -327,15 +350,16 @@
     .waiter-tables {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
+      gap: 6px;
     }
 
     .table-badge {
-      background: #2a303c;
+      background: rgba(255, 255, 255, 0.05);
       font-size: 10px;
-      padding: 3px 6px;
-      border-radius: 4px;
-      border: 1px solid #4a5264;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--panel-border);
+      font-weight: 600;
     }
 
     .table-badge.res {
@@ -348,32 +372,33 @@
       color: var(--neon-red);
     }
 
-    /* Barra de Herramientas Flotante Multi-Selección */
+    /* Barra Flotante Multi-Selección */
     #multi-tools {
       position: absolute;
-      bottom: 20px;
+      bottom: 24px;
       left: 50%;
       transform: translateX(-50%);
-      background: var(--panel-bg);
+      background: rgba(22, 25, 34, 0.95);
       border: 1px solid var(--accent);
-      padding: 8px 18px;
-      border-radius: 30px;
+      padding: 10px 22px;
+      border-radius: 40px;
       display: none;
       align-items: center;
-      gap: 14px;
+      gap: 16px;
       z-index: 20;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.8);
+      backdrop-filter: blur(12px);
     }
 
     #multi-tools.active {
       display: flex;
     }
 
-    /* Selector Flotante Modo Limpio */
+    /* CONTROLES MODO OPERACIÓN LIMPIO (UBICACIÓN EXACTA SOLICITADA) */
     #floating-clean-toggle {
       position: absolute;
-      top: 15px;
-      right: 15px;
+      inset: 0;
+      pointer-events: none;
       display: none;
       z-index: 30;
     }
@@ -382,11 +407,26 @@
       display: block;
     }
 
-    /* Vista CRM / Tablas */
+    .clean-btn-exit {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      pointer-events: auto;
+    }
+
+    .clean-floor-toggle {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: auto;
+    }
+
+    /* Vista CRM */
     #view-crm {
       display: none;
       flex: 1;
-      padding: 24px;
+      padding: 28px;
       overflow-y: auto;
       background: var(--bg-dark);
     }
@@ -397,36 +437,42 @@
 
     table {
       width: 100%;
-      border-collapse: collapse;
-      margin-top: 12px;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 14px;
       font-size: 13px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--panel-border);
     }
 
     th, td {
-      border: 1px solid var(--panel-border);
-      padding: 10px 12px;
+      padding: 12px 16px;
       text-align: left;
+      border-bottom: 1px solid var(--panel-border);
     }
 
     th {
-      background: var(--panel-bg);
+      background: rgba(255, 255, 255, 0.03);
       color: var(--text-low);
       font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.8px;
+      font-weight: 700;
     }
 
     td {
-      background: #12151c;
+      background: rgba(18, 20, 28, 0.6);
     }
 
     .crm-edit-btn, .crm-delete-btn {
-      padding: 4px 8px;
+      padding: 6px 10px;
       font-size: 11px;
       border: none;
-      border-radius: 4px;
+      border-radius: 6px;
       cursor: pointer;
-      font-weight: bold;
+      font-weight: 700;
+      transition: opacity 0.2s;
     }
 
     .crm-edit-btn {
@@ -440,15 +486,15 @@
       margin-left: 4px;
     }
 
-    /* Modales y Capas Overlays */
+    /* Modales y Capas Overlays Elegantes */
     .overlay {
       position: fixed;
       top: 0;
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(3px);
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
       display: none;
       align-items: center;
       justify-content: center;
@@ -460,48 +506,56 @@
     }
 
     .modal {
-      background: var(--panel-bg);
+      background: rgba(22, 25, 34, 0.95);
       border: 1px solid var(--panel-border);
-      border-radius: 8px;
-      width: 400px;
+      border-top: 1px solid rgba(243, 186, 47, 0.5);
+      border-radius: 20px;
+      width: 420px;
       max-width: 92%;
-      padding: 20px;
+      padding: 24px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+      gap: 14px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+      animation: modalIn 0.25s ease-out;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .modal h3 {
-      font-size: 16px;
+      font-size: 18px;
+      font-weight: 800;
       color: var(--accent);
       border-bottom: 1px solid var(--panel-border);
-      padding-bottom: 8px;
+      padding-bottom: 10px;
     }
 
     .modal-actions {
       display: flex;
       justify-content: flex-end;
-      gap: 8px;
-      margin-top: 12px;
+      gap: 10px;
+      margin-top: 14px;
     }
 
     .estado-selector {
       display: flex;
-      gap: 6px;
+      gap: 8px;
     }
 
     .estado-btn {
       flex: 1;
-      padding: 8px;
+      padding: 10px;
       font-size: 11px;
-      background: #202530;
+      background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--panel-border);
       color: #ffffff;
-      border-radius: 4px;
+      border-radius: 8px;
       cursor: pointer;
       text-align: center;
-      font-weight: bold;
+      font-weight: 700;
       transition: all 0.2s;
     }
 
@@ -529,29 +583,29 @@
       opacity: 0.6;
       z-index: 2000;
       background: var(--accent);
-      border-radius: 4px;
+      border-radius: 8px;
     }
 
     .checkin-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px;
-      border-bottom: 1px solid var(--panel-border);
-      background: #11141a;
-      margin-bottom: 4px;
-      border-radius: 4px;
+      padding: 12px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.02);
+      margin-bottom: 6px;
+      border-radius: 10px;
     }
 
     .checkin-info {
       display: flex;
       flex-direction: column;
       font-size: 12px;
-      gap: 2px;
+      gap: 3px;
     }
 
     .checkin-name {
-      font-weight: bold;
+      font-weight: 700;
       color: #ffffff;
     }
 
@@ -566,7 +620,7 @@
   <!-- Encabezado y Navegación Principal -->
   <header id="main-header">
     <div class="nav-tabs">
-      <button class="tab-btn active" id="tab-plano">📐 Plano Interactive</button>
+      <button class="tab-btn active" id="tab-plano">📐 Plano Interactivo</button>
       <button class="tab-btn" id="tab-crm">📊 CRM y Reservas</button>
       <div class="floor-toggle">
         <button id="floor-pb" class="active">Planta Baja (PB)</button>
@@ -579,7 +633,7 @@
       <button class="btn" id="btn-quick-checkin">⚡ Check-in Rápido</button>
       <button class="btn" id="btn-add-batch-res">📦 Carga Masiva</button>
       <button class="btn" id="btn-toggle-multi">☑ Multi-Selección</button>
-      <button class="btn" id="btn-clean-mode">🧹 Modo Operación</button>
+      <button class="btn primary" id="btn-clean-mode">🧹 Modo Operación</button>
       <button class="btn" id="btn-fullscreen">🔍 Full Screen</button>
     </div>
   </header>
@@ -588,9 +642,9 @@
   <div id="app-container">
     <!-- Panel Lateral Paleta de Objetos -->
     <sidebar id="sidebar-panel">
-      <span style="font-size: 11px; color: var(--text-low); font-weight: bold; letter-spacing: 0.5px;">ELEMENTOS DE PLANO</span>
+      <span style="font-size: 10px; color: var(--text-low); font-weight: 800; letter-spacing: 0.8px;">ELEMENTOS DE PLANO</span>
       <div class="palette-grid">
-        <div class="pal-item" id="pal-mesa">🔲 Mesa</div>
+        <div class="pal-item" id="pal-mesa">🔲 Mesa (50x50)</div>
         <div class="pal-item" id="pal-sillon">🛋️ Sillón</div>
         <div class="pal-item" id="pal-bocina">🔊 Bocina</div>
         <div class="pal-item" id="pal-cristal">🪟 Balcón</div>
@@ -613,8 +667,8 @@
 
       <!-- Vista Alternativa de CRM y Registros -->
       <div id="view-crm">
-        <h3 style="color: var(--accent); margin-bottom: 8px;">Reservaciones de la Jornada</h3>
-        <input type="text" id="reser-search" placeholder="Buscar por cliente, mesa o mesero..." style="margin-bottom: 12px; width: 320px;">
+        <h3 style="color: var(--accent); margin-bottom: 12px; font-weight: 800;">Reservaciones de la Jornada</h3>
+        <input type="text" id="reser-search" placeholder="Buscar por cliente, mesa o mesero..." style="margin-bottom: 14px; width: 340px;">
         <table>
           <thead>
             <tr>
@@ -631,10 +685,10 @@
           </thead>
           <tbody id="reser-tbody"></tbody>
         </table>
-        <div id="reser-empty" style="padding: 20px; color: var(--text-low); text-align: center; display:none;">No hay reservaciones encontradas.</div>
+        <div id="reser-empty" style="padding: 24px; color: var(--text-low); text-align: center; display:none;">No hay reservaciones encontradas.</div>
 
-        <h3 style="color: var(--accent); margin-top: 36px; margin-bottom: 8px;">Directorio Global de Clientes CRM</h3>
-        <input type="text" id="crm-search" placeholder="Buscar cliente por nombre o teléfono..." style="margin-bottom: 12px; width: 320px;">
+        <h3 style="color: var(--accent); margin-top: 40px; margin-bottom: 12px; font-weight: 800;">Directorio Global de Clientes CRM</h3>
+        <input type="text" id="crm-search" placeholder="Buscar cliente por nombre o teléfono..." style="margin-bottom: 14px; width: 340px;">
         <table>
           <thead>
             <tr>
@@ -642,91 +696,91 @@
               <th>Teléfono Contacto</th>
               <th>Total Visitas</th>
               <th>Última Mesa</th>
-              <th>Preferencias / Notas</th>
+              <th>Preferencias</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="crm-tbody"></tbody>
         </table>
-        <div id="crm-empty" style="padding: 20px; color: var(--text-low); text-align: center; display:none;">No se encontraron clientes registrados.</div>
+        <div id="crm-empty" style="padding: 24px; color: var(--text-low); text-align: center; display:none;">No se encontraron clientes registrados.</div>
       </div>
 
       <!-- Herramientas flotantes para selección múltiple -->
       <div id="multi-tools">
-        <span id="multi-count" style="font-size: 12px; font-weight: bold; color: var(--accent);">0 elementos seleccionados</span>
+        <span id="multi-count" style="font-size: 12px; font-weight: 700; color: var(--accent);">0 elementos seleccionados</span>
         <button class="btn" id="btn-del-multi" style="background: var(--neon-red); color: #ffffff;">Eliminar Seleccionados</button>
       </div>
 
-      <!-- Botón flotante para salir del modo de operación limpia -->
+      <!-- POSICIONAMIENTO EN MODO OPERACIÓN: IZQUIERDA Y CENTRO -->
       <div id="floating-clean-toggle">
-        <div class="floor-toggle" style="display:inline-flex; margin-right: 10px;">
-          <button id="float-floor-pb" class="active">PB</button>
-          <button id="float-floor-pa">PA</button>
+        <div class="clean-btn-exit">
+          <button class="btn primary" id="btn-exit-clean">← Salir Modo Operación</button>
         </div>
-        <button class="btn primary" id="btn-exit-clean">Salir Modo Operación</button>
+        <div class="clean-floor-toggle">
+          <div class="floor-toggle">
+            <button id="float-floor-pb" class="active">Planta Baja (PB)</button>
+            <button id="float-floor-pa">Planta Alta (PA)</button>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- Panel Lateral de Asignación de Meseros -->
     <div id="waiters-panel">
-      <span style="font-size: 11px; color: var(--text-low); font-weight: bold; letter-spacing: 0.5px; display: block; margin-bottom: 12px;">MESEROS Y ASIGNACIONES</span>
+      <span style="font-size: 10px; color: var(--text-low); font-weight: 800; letter-spacing: 0.8px; display: block; margin-bottom: 14px;">MESEROS Y ASIGNACIONES</span>
       <div id="waiters-list"></div>
     </div>
   </div>
 
-  <!-- MODAL 1: Configuración de Elemento / Reservación -->
+  <!-- MODAL 1: Configuración de Elemento / Reservación Elegante (Sin Notas) -->
   <div class="overlay" id="overlay">
     <div class="modal">
       <h3 id="modal-title">Propiedades del Elemento</h3>
       <div>
-        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Nombre o Identificador</label>
+        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Nombre o Identificador</label>
         <input type="text" id="f-nombre" style="width:100%;">
       </div>
-      <div style="display:flex; gap:8px;">
+      <div style="display:flex; gap:10px;">
         <div style="flex:1;">
-          <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Ancho (Pixeles)</label>
+          <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Ancho (px)</label>
           <input type="number" id="f-ancho" style="width:100%;">
         </div>
         <div style="flex:1;">
-          <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Alto (Pixeles)</label>
+          <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Alto (px)</label>
           <input type="number" id="f-alto" style="width:100%;">
         </div>
       </div>
       <div style="display:flex; gap:12px; align-items:center; margin-top: 4px;">
         <button class="btn" id="btn-rotate">Rotar 90°</button>
-        <span id="rotate-value" style="font-size:12px; font-weight:bold; color:var(--accent);">0°</span>
+        <span id="rotate-value" style="font-size:13px; font-weight:800; color:var(--accent);">0°</span>
         <button class="btn" id="btn-lock" style="margin-left:auto;">🔓 Posición Libre</button>
       </div>
 
-      <!-- Campos Exclusivos para Muebles Tipo Mesa -->
-      <div id="reserva-fields" style="border-top: 1px solid var(--panel-border); padding-top: 12px; margin-top: 6px;">
-        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom: 6px;">Estado Actual de la Mesa</label>
+      <!-- Campos de Reserva Rediseñados (SIN NOTAS) -->
+      <div id="reserva-fields" style="border-top: 1px solid var(--panel-border); padding-top: 14px; margin-top: 6px;">
+        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom: 8px; font-weight:700;">Estado Actual de la Mesa</label>
         <div class="estado-selector">
           <div class="estado-btn" data-estado="disponible">Disponible</div>
           <div class="estado-btn" data-estado="reservada">Reservada</div>
           <div class="estado-btn" data-estado="ocupada">Ocupada</div>
         </div>
-        <div style="margin-top: 10px;">
-          <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Cliente Reservante</label>
-          <input type="text" id="f-cliente" style="width:100%;">
+        <div style="margin-top: 12px;">
+          <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Cliente Reservante</label>
+          <input type="text" id="f-cliente" placeholder="Nombre completo" style="width:100%;">
         </div>
-        <div style="display:flex; gap:8px; margin-top: 8px;">
+        <div style="display:flex; gap:10px; margin-top: 10px;">
           <div style="flex:1;">
-            <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Teléfono</label>
-            <input type="text" id="f-telefono" style="width:100%;">
+            <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Teléfono</label>
+            <input type="text" id="f-telefono" placeholder="+52 ..." style="width:100%;">
           </div>
-          <div style="width:90px;">
-            <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Personas (Pax)</label>
-            <input type="number" id="f-personas" style="width:100%;">
+          <div style="width:100px;">
+            <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Personas</label>
+            <input type="number" id="f-personas" placeholder="2" style="width:100%;">
           </div>
         </div>
-        <div style="margin-top: 8px;">
-          <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Mesero Asignado</label>
-          <input type="text" id="f-mesero" style="width:100%;">
-        </div>
-        <div style="margin-top: 8px;">
-          <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Notas y Especificaciones</label>
-          <textarea id="f-notas" style="width:100%; height:50px; resize:none;"></textarea>
+        <div style="margin-top: 10px;">
+          <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Mesero Asignado</label>
+          <input type="text" id="f-mesero" placeholder="Nombre del mesero" style="width:100%;">
         </div>
       </div>
 
@@ -743,15 +797,15 @@
     <div class="modal">
       <h3>Editar Ficha de Cliente CRM</h3>
       <div>
-        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Nombre Completo</label>
+        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Nombre Completo</label>
         <input type="text" id="c-nombre" style="width:100%;">
       </div>
       <div>
-        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Teléfono de Contacto</label>
+        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Teléfono de Contacto</label>
         <input type="text" id="c-telefono" style="width:100%;">
       </div>
       <div>
-        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:3px;">Preferencias / Consumo</label>
+        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Preferencias / Consumo</label>
         <textarea id="c-preferencias" style="width:100%; height:70px; resize:none;"></textarea>
       </div>
       <div class="modal-actions">
@@ -766,7 +820,7 @@
     <div class="modal">
       <h3>Carga Masiva por Formato</h3>
       <p style="font-size: 11px; color: var(--text-low); line-height: 1.4;">
-        Introduce tus reservas separadas por salto de línea usando el siguiente orden:<br>
+        Introduce tus reservas separadas por salto de línea usando el formato:<br>
         <b style="color:var(--accent);">Nombre, Teléfono, Cantidad Personas, Mesa, Mesero</b>
       </p>
       <textarea id="batch-text" style="height: 140px; font-family: monospace; font-size: 12px;" placeholder="Juan Perez, 55501928, 4, Mesa 1, Carlos&#10;Maria Gomez, 55581920, 2, Mesa 3, Ana"></textarea>
@@ -789,7 +843,7 @@
     </div>
   </div>
 
-  <!-- LÓGICA COMPLETA DE NAVEGACIÓN Y MANIPULACIÓN DEL DOM -->
+  <!-- LÓGICA COMPLETA DE APLICACIÓN -->
   <script>
   // Control de Pantalla Completa
   const btnFs = document.getElementById('btn-fullscreen');
@@ -831,12 +885,11 @@
   btnCleanMode.addEventListener('click', () => toggleCleanMode(true));
   btnExitClean.addEventListener('click', () => toggleCleanMode(false));
 
-  // Claves para el almacenamiento local
   const STORAGE_KEY_LAYOUT = 'crypto_floor_layout_v3';
   const STORAGE_KEY_RESERVAS = 'crypto_floor_daily_reservas_v3';
   const STORAGE_KEY_CLI = 'crypto_floor_clientes';
 
-  // Layouts por Defecto
+  // Layouts por Defecto (MESAS 50x50 POR DEFECTO)
   window.DEFAULT_LAYOUT_PB = [
     { id: 'pb_dj', tipo: 'dj', nombre: 'CABINA DJ', x: 12, y: 8, anchoPx: 140, altoPx: 60, rotacion: 0, locked: false },
     { id: 'pb_b1', tipo: 'bocina', nombre: '🔊 BOX L', x: 5, y: 8, anchoPx: 45, altoPx: 45, rotacion: 0, locked: false },
@@ -846,24 +899,23 @@
     { id: 'pb_pas', tipo: 'pasillo', nombre: 'PASILLO BAÑOS', x: 90, y: 15, anchoPx: 90, altoPx: 30, rotacion: 0, locked: false },
     { id: 'pb_ent', tipo: 'entrada', nombre: 'ACCESO', x: 8, y: 92, anchoPx: 80, altoPx: 40, rotacion: 0, locked: false },
     { id: 'pb_s0', tipo: 'sillon', nombre: 'SILLÓN VIP 1', x: 15, y: 25, anchoPx: 110, altoPx: 38, rotacion: 0, locked: false },
-    { id: 'pb_m1', tipo: 'mesa', nombre: 'Mesa 1', x: 15, y: 35, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false },
-    { id: 'pb_m2', tipo: 'mesa', nombre: 'Mesa 2', x: 15, y: 48, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false },
-    { id: 'pb_m3', tipo: 'mesa', nombre: 'Mesa 3', x: 15, y: 60, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false },
-    { id: 'pb_m4', tipo: 'mesa', nombre: 'Mesa 4', x: 35, y: 35, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false },
-    { id: 'pb_m5', tipo: 'mesa', nombre: 'Mesa 5', x: 35, y: 48, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false },
+    { id: 'pb_m1', tipo: 'mesa', nombre: 'Mesa 1', x: 15, y: 35, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false },
+    { id: 'pb_m2', tipo: 'mesa', nombre: 'Mesa 2', x: 15, y: 48, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false },
+    { id: 'pb_m3', tipo: 'mesa', nombre: 'Mesa 3', x: 15, y: 60, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false },
+    { id: 'pb_m4', tipo: 'mesa', nombre: 'Mesa 4', x: 35, y: 35, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false },
+    { id: 'pb_m5', tipo: 'mesa', nombre: 'Mesa 5', x: 35, y: 48, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false },
     { id: 'pb_s1', tipo: 'sillon', nombre: 'SILLÓN VIP 2', x: 35, y: 60, anchoPx: 110, altoPx: 38, rotacion: 0, locked: false },
-    { id: 'pb_m6', tipo: 'mesa', nombre: 'Mesa 6', x: 55, y: 35, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false },
-    { id: 'pb_m7', tipo: 'mesa', nombre: 'Mesa 7', x: 55, y: 48, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false }
+    { id: 'pb_m6', tipo: 'mesa', nombre: 'Mesa 6', x: 55, y: 35, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false },
+    { id: 'pb_m7', tipo: 'mesa', nombre: 'Mesa 7', x: 55, y: 48, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false }
   ];
 
   window.DEFAULT_LAYOUT_PA = [
     { id: 'pa_cri', tipo: 'cristal', nombre: 'BALCÓN CRISTAL', x: 50, y: 15, anchoPx: 400, altoPx: 15, rotacion: 0, locked: false },
-    { id: 'pa_m1', tipo: 'mesa', nombre: 'Mesa PA1', x: 85, y: 25, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false },
-    { id: 'pa_m2', tipo: 'mesa', nombre: 'Mesa PA2', x: 85, y: 40, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false },
-    { id: 'pa_m3', tipo: 'mesa', nombre: 'Mesa PA3', x: 85, y: 55, anchoPx: 65, altoPx: 65, rotacion: 0, locked: false }
+    { id: 'pa_m1', tipo: 'mesa', nombre: 'Mesa PA1', x: 85, y: 25, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false },
+    { id: 'pa_m2', tipo: 'mesa', nombre: 'Mesa PA2', x: 85, y: 40, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false },
+    { id: 'pa_m3', tipo: 'mesa', nombre: 'Mesa PA3', x: 85, y: 55, anchoPx: 50, altoPx: 50, rotacion: 0, locked: false }
   ];
 
-  // Estado Global de la Aplicación
   window.layoutsData = JSON.parse(localStorage.getItem(STORAGE_KEY_LAYOUT) || '{}');
   window.reservasData = JSON.parse(localStorage.getItem(STORAGE_KEY_RESERVAS) || '{}');
   window.clientes = JSON.parse(localStorage.getItem(STORAGE_KEY_CLI) || '[]');
@@ -903,7 +955,7 @@
     if (!window.reservasData[dateKey]) window.reservasData[dateKey] = {};
     if (!window.reservasData[dateKey][muebleId]) {
       window.reservasData[dateKey][muebleId] = {
-        estado: 'disponible', cliente: '', telefono: '', personas: 0, mesero: '', notas: ''
+        estado: 'disponible', cliente: '', telefono: '', personas: 0, mesero: ''
       };
     }
     return window.reservasData[dateKey][muebleId];
@@ -964,11 +1016,21 @@
       el.style.transform = `translate(-50%,-50%) rotate(${rot}deg)`;
       el.dataset.id = item.id;
 
+      // ORIENTACIÓN DINÁMICA DEL TEXTO SEGÚN ÁNGULO
+      const normRot = ((rot % 360) + 360) % 360;
+      let textAngleCompensation = -rot;
+      if (normRot === 90 || normRot === 270) {
+        textAngleCompensation = -rot + 90; // Letras en vertical para lectura lateral
+      } else if (normRot === 180) {
+        textAngleCompensation = 0; // Letras corregidas para vista frontal
+      }
+
       const inner = document.createElement('div');
-      inner.style.transform = `rotate(${-rot}deg)`;
+      inner.style.transform = `rotate(${textAngleCompensation}deg)`;
       inner.style.display = 'flex';
       inner.style.flexDirection = 'column';
       inner.style.alignItems = 'center';
+      inner.style.justifyContent = 'center';
       inner.style.width = '100%';
 
       const mainTxt = document.createElement('div');
@@ -1023,7 +1085,7 @@
 
       const startX = e.clientX;
       const startY = e.clientY;
-      const startW = item.anchoPx || 60;
+      const startW = item.anchoPx || 50;
       const startH = item.altoPx || 50;
 
       function onMove(ev) {
@@ -1033,8 +1095,8 @@
         let newW = startW + (pos.includes('e') ? dx : -dx);
         let newH = startH + (pos.includes('s') ? dy : -dy);
 
-        item.anchoPx = Math.max(25, Math.round(newW));
-        item.altoPx = Math.max(25, Math.round(newH));
+        item.anchoPx = Math.max(20, Math.round(newW));
+        item.altoPx = Math.max(20, Math.round(newH));
         renderFurniture();
       }
 
@@ -1124,12 +1186,12 @@
         if (ev.clientX > r.left && ev.clientX < r.right && ev.clientY > r.top && ev.clientY < r.bottom) {
           const p = pctPos(ev.clientX, ev.clientY);
           const defaultSizes = {
-            mesa: {a: 65, h: 65}, sillon: {a: 110, h: 38}, bocina: {a: 45, h: 45}, cristal: {a: 120, h: 15},
+            mesa: {a: 50, h: 50}, sillon: {a: 110, h: 38}, bocina: {a: 45, h: 45}, cristal: {a: 120, h: 15},
             dj: {a: 120, h: 50}, entrada: {a: 80, h: 40}, salida: {a: 80, h: 40},
             wc: {a: 80, h: 50}, pasillo: {a: 100, h: 30}, barra: {a: 180, h: 45},
             caja: {a: 70, h: 40}, escaleras: {a: 80, h: 60}
           };
-          const size = defaultSizes[tipo] || {a: 70, h: 50};
+          const size = defaultSizes[tipo] || {a: 50, h: 50};
           const newItem = {
             id: 'item_' + Date.now(),
             tipo: tipo,
@@ -1217,8 +1279,7 @@
           cliente: parts[0] || '',
           telefono: parts[1] || '',
           personas: parseInt(parts[2]) || 0,
-          mesero: parts[4] || '',
-          notas: 'Carga por lote'
+          mesero: parts[4] || ''
         };
 
         if (parts[0]) {
@@ -1361,7 +1422,7 @@
 
     document.getElementById('modal-title').textContent = item.nombre || item.tipo.toUpperCase();
     document.getElementById('f-nombre').value = item.nombre || '';
-    document.getElementById('f-ancho').value = item.anchoPx || 70;
+    document.getElementById('f-ancho').value = item.anchoPx || 50;
     document.getElementById('f-alto').value = item.altoPx || 50;
 
     currentRotation = item.rotacion || 0;
@@ -1387,7 +1448,6 @@
       document.getElementById('f-telefono').value = res.telefono || '';
       document.getElementById('f-personas').value = res.personas || '';
       document.getElementById('f-mesero').value = res.mesero || '';
-      document.getElementById('f-notas').value = res.notas || '';
       selectedEstado = res.estado || 'disponible';
       updateEstadoButtons();
     } else {
@@ -1458,7 +1518,6 @@
       res.telefono = document.getElementById('f-telefono').value.trim();
       res.personas = parseInt(document.getElementById('f-personas').value) || 0;
       res.mesero = document.getElementById('f-mesero').value.trim();
-      res.notas = document.getElementById('f-notas').value.trim();
 
       saveReservas();
 
@@ -1686,7 +1745,6 @@
     renderAllCRM();
   });
 
-  // Inicialización de Renderizado Local Inicial
   renderFurniture();
   renderAllCRM();
   </script>
@@ -1709,10 +1767,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Bandera para evitar que la recepción de datos remotos vuelva a activar el guardado
     let isRemoteChange = false;
 
-    // Escucha remota Firestore en tiempo real para múltiples dispositivos
     onSnapshot(doc(db, "crypto_data", "main_config"), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -1722,7 +1778,6 @@
         window.reservasData = data.reservas || {};
         window.clientes = data.clientes || [];
 
-        // Actualizar almacenamiento local para sincronía offline
         localStorage.setItem(STORAGE_KEY_LAYOUT, JSON.stringify(window.layoutsData));
         localStorage.setItem(STORAGE_KEY_RESERVAS, JSON.stringify(window.reservasData));
         localStorage.setItem(STORAGE_KEY_CLI, JSON.stringify(window.clientes));
@@ -1738,7 +1793,6 @@
       console.error("Error al escuchar cambios en tiempo real:", error);
     });
 
-    // Guardado persistente seguro en Firestore con merge
     window.saveToCloud = async function() {
       if (isRemoteChange) return;
 
