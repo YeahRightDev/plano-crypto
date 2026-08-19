@@ -46,6 +46,10 @@
     background:linear-gradient(180deg, var(--bg-panel-2), var(--bg-panel));
     border-bottom:1px solid var(--line);
     min-height:56px;
+    transition: all 0.3s ease;
+  }
+  header.hidden-elements {
+    display: none;
   }
   header h1{
     font-family:'Bebas Neue',sans-serif;
@@ -92,6 +96,21 @@
   .mode-btn.active{background:var(--neon-pink);color:#fff;border-color:var(--neon-pink);box-shadow:0 0 12px rgba(255,46,136,0.5);}
   .btn-action-top{background:var(--neon-purple);color:#fff;border-color:var(--neon-purple);box-shadow:0 0 10px rgba(139,92,246,0.4);}
   .btn-fullscreen{background:#111827;border-color:var(--neon-cyan);color:var(--neon-cyan);box-shadow:0 0 10px rgba(38,245,224,0.3);}
+  .btn-clean-mode{background:#1f132d;border-color:var(--neon-pink);color:var(--neon-pink);box-shadow:0 0 10px rgba(255,46,136,0.3);}
+
+  /* BOTÓN FLOTANTE MODO LIMPIO (CUANDO SE OCULTA EL HEADER) */
+  .floating-clean-toggle {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 200;
+    display: none;
+    gap: 8px;
+    align-items: center;
+  }
+  .floating-clean-toggle.visible {
+    display: flex;
+  }
 
   /* BARRA HERRAMIENTAS SELECCIÓN MÚLTIPLE */
   .multi-tools{
@@ -107,7 +126,8 @@
   }
 
   /* ---------- LAYOUT ---------- */
-  .app{display:flex;height:calc(100% - 56px);position:relative;}
+  .app{display:flex;height:calc(100% - 56px);position:relative;transition: height 0.3s ease;}
+  .app.full-height {height: 100%;}
 
   /* ---------- SIDEBAR ---------- */
   .sidebar{
@@ -117,6 +137,10 @@
     padding:10px;
     display:flex;flex-direction:column;gap:10px;
     overflow-y:auto;
+    transition: transform 0.3s ease, width 0.3s ease;
+  }
+  .sidebar.hidden {
+    display: none;
   }
   .sidebar h3{
     font-size:11px;letter-spacing:2px;color:var(--text-low);
@@ -235,6 +259,10 @@
     border-left:1px solid var(--line);
     padding:12px;display:flex;flex-direction:column;gap:12px;
     overflow-y:auto;
+    transition: transform 0.3s ease, width 0.3s ease;
+  }
+  .waiters-panel.hidden {
+    display: none;
   }
   .waiters-panel h3{
     font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;
@@ -361,9 +389,10 @@
 </head>
 <body>
 
-<header>
+<header id="main-header">
   <h1>CRYPTO <span>·</span> FLOOR</h1>
   <div class="header-controls">
+    <button class="btn-action-top btn-clean-mode" id="btn-clean-mode">👁️ Modo Operación</button>
     <button class="btn-action-top btn-fullscreen" id="btn-fullscreen">🔍 Full Screen</button>
     <button class="btn-action-top" id="btn-quick-checkin">⚡ Recepción / Check-in</button>
     <button class="btn-action-top" id="btn-add-batch-res" style="background:var(--neon-cyan);color:#000;">+ Cargar Reservas Hoy</button>
@@ -380,14 +409,23 @@
   </div>
 </header>
 
-<div class="app">
+<!-- Botón flotante que aparece cuando se oculta el header para cambiar de planta o salir del modo limpio -->
+<div class="floating-clean-toggle" id="floating-clean-toggle">
+  <div class="floor-toggle" style="background:var(--bg-panel-2);box-shadow:0 0 15px rgba(0,0,0,0.5);">
+    <button id="float-floor-pb" class="active">PB</button>
+    <button id="float-floor-pa">PA</button>
+  </div>
+  <button class="btn-action-top btn-clean-mode" id="btn-exit-clean" style="padding:8px 12px;">❌ Ver Menú</button>
+</div>
+
+<div class="app" id="app-container">
   <div class="multi-tools" id="multi-tools">
     <span id="multi-count" style="font-size:12px;font-weight:700;color:#fff;">0 seleccionados</span>
     <button class="btn-multi-del" id="btn-del-multi">Eliminar Todos</button>
   </div>
 
   <div id="view-plano" style="display:flex;flex:1;">
-    <div class="sidebar">
+    <div class="sidebar" id="sidebar-panel">
       <h3>Mobiliario</h3>
       <div class="palette-grid">
         <div class="palette-item" data-tipo="mesa" id="pal-mesa"><span>Mesa</span></div>
@@ -569,7 +607,7 @@
 
 <script>
 (function(){
-  // Función para activar / desactivar pantalla completa
+  // Pantalla Completa
   const btnFs = document.getElementById('btn-fullscreen');
   btnFs.addEventListener('click', () => {
     if (!document.fullscreenElement) {
@@ -582,6 +620,34 @@
       btnFs.textContent = '🔍 Full Screen';
     }
   });
+
+  // Modo Operación (Esconder Header, Mobiliario y Meseros)
+  const btnCleanMode = document.getElementById('btn-clean-mode');
+  const btnExitClean = document.getElementById('btn-exit-clean');
+  const mainHeader = document.getElementById('main-header');
+  const sidebarPanel = document.getElementById('sidebar-panel');
+  const waitersPanel = document.getElementById('waiters-panel');
+  const appContainer = document.getElementById('app-container');
+  const floatingToggle = document.getElementById('floating-clean-toggle');
+
+  function toggleCleanMode(enable){
+    if(enable){
+      mainHeader.classList.add('hidden-elements');
+      sidebarPanel.classList.add('hidden');
+      waitersPanel.classList.add('hidden');
+      appContainer.classList.add('full-height');
+      floatingToggle.classList.add('visible');
+    } else {
+      mainHeader.classList.remove('hidden-elements');
+      sidebarPanel.classList.remove('hidden');
+      waitersPanel.classList.remove('hidden');
+      appContainer.classList.remove('full-height');
+      floatingToggle.classList.remove('visible');
+    }
+  }
+
+  btnCleanMode.addEventListener('click', () => toggleCleanMode(true));
+  btnExitClean.addEventListener('click', () => toggleCleanMode(false));
 
   const STORAGE_KEY_LAYOUT = 'crypto_floor_layout_v3';
   const STORAGE_KEY_RESERVAS = 'crypto_floor_daily_reservas_v3';
@@ -1301,6 +1367,7 @@
     
     document.querySelectorAll('.floor-toggle button').forEach(b => b.classList.remove('active'));
     document.getElementById(currentFloor === 'PB' ? 'floor-pb' : 'floor-pa').classList.add('active');
+    document.getElementById(currentFloor === 'PB' ? 'float-floor-pb' : 'float-floor-pa').classList.add('active');
 
     switchTab('plano');
     renderFurniture();
@@ -1400,21 +1467,24 @@
   document.getElementById('tab-plano').onclick = () => switchTab('plano');
   document.getElementById('tab-crm').onclick = () => switchTab('crm');
 
-  document.getElementById('floor-pb').onclick = (e) => {
+  function changeFloor(floor){
+    currentFloor = floor;
     document.querySelectorAll('.floor-toggle button').forEach(b => b.classList.remove('active'));
-    e.target.classList.add('active');
-    currentFloor = 'PB';
+    if(floor === 'PB'){
+      document.getElementById('floor-pb').classList.add('active');
+      document.getElementById('float-floor-pb').classList.add('active');
+    } else {
+      document.getElementById('floor-pa').classList.add('active');
+      document.getElementById('float-floor-pa').classList.add('active');
+    }
     selectedIds.clear();
     renderFurniture();
-  };
+  }
 
-  document.getElementById('floor-pa').onclick = (e) => {
-    document.querySelectorAll('.floor-toggle button').forEach(b => b.classList.remove('active'));
-    e.target.classList.add('active');
-    currentFloor = 'PA';
-    selectedIds.clear();
-    renderFurniture();
-  };
+  document.getElementById('floor-pb').onclick = () => changeFloor('PB');
+  document.getElementById('floor-pa').onclick = () => changeFloor('PA');
+  document.getElementById('float-floor-pb').onclick = () => changeFloor('PB');
+  document.getElementById('float-floor-pa').onclick = () => changeFloor('PA');
 
   fechaInput.addEventListener('change', () => {
     renderFurniture();
