@@ -91,6 +91,21 @@
       font-weight: 700;
     }
 
+    /* REDISEÑO MODO OPERACIÓN - ALTO CONTRASTE NEÓN */
+    #btn-clean-mode {
+      background: linear-gradient(135deg, #06d6a0 0%, #059669 100%) !important;
+      color: #000000 !important;
+      font-weight: 800 !important;
+      border: 1px solid #06d6a0 !important;
+      box-shadow: 0 0 16px rgba(6, 214, 160, 0.6), inset 0 0 8px rgba(255, 255, 255, 0.4) !important;
+      animation: pulseNeon 2s infinite alternate;
+    }
+
+    @keyframes pulseNeon {
+      0% { box-shadow: 0 0 10px rgba(6, 214, 160, 0.5); }
+      100% { box-shadow: 0 0 22px rgba(6, 214, 160, 0.9), 0 0 30px rgba(6, 214, 160, 0.4); }
+    }
+
     .btn.preset-btn {
       background: rgba(168, 85, 247, 0.15);
       border-color: var(--neon-purple);
@@ -210,8 +225,11 @@
       width: 100%;
       height: 100%;
       display: flex;
+      position: relative;
+      overflow: hidden;
     }
 
+    /* CANVAS Y MARCA DE AGUA INTEGRADA */
     #canvas {
       flex: 1;
       position: relative;
@@ -219,6 +237,79 @@
       height: 100%;
       background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
       background-size: 24px 24px;
+      overflow: hidden;
+    }
+
+    #canvas::before {
+      content: 'CRYPTO FLOOR';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-20deg);
+      font-size: clamp(4rem, 12vw, 10rem);
+      font-weight: 900;
+      color: rgba(243, 186, 47, 0.035);
+      letter-spacing: 16px;
+      pointer-events: none;
+      user-select: none;
+      white-space: nowrap;
+      z-index: 0;
+      text-shadow: 0 0 30px rgba(243, 186, 47, 0.05);
+    }
+
+    #canvas-stage {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-origin: center center;
+      transition: transform 0.1s ease-out;
+      z-index: 1;
+    }
+
+    /* CONTROLES DE ZOOM TÁCTILES PARA TABLET */
+    .zoom-controls {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 50;
+      background: rgba(12, 15, 23, 0.92);
+      border: 1px solid var(--accent);
+      padding: 8px;
+      border-radius: 14px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px var(--panel-border-glow);
+    }
+
+    .btn-zoom {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--panel-border);
+      color: #ffffff;
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .btn-zoom:hover, .btn-zoom:active {
+      background: var(--accent);
+      color: #000000;
+      border-color: var(--accent);
+      box-shadow: 0 0 14px var(--panel-border-glow);
+    }
+
+    .btn-zoom-reset {
+      font-size: 10px !important;
+      font-weight: 800;
+      color: var(--accent);
     }
 
     .furniture {
@@ -445,12 +536,13 @@
       display: flex;
     }
 
+    /* REDISEÑO FLOTANTE MODO OPERACIÓN */
     #floating-clean-toggle {
       position: absolute;
       inset: 0;
       pointer-events: none;
       display: none;
-      z-index: 30;
+      z-index: 40;
     }
 
     #floating-clean-toggle.visible {
@@ -459,17 +551,30 @@
 
     .clean-btn-exit {
       position: absolute;
-      top: 16px;
-      left: 16px;
+      top: 18px;
+      left: 18px;
       pointer-events: auto;
+    }
+
+    #btn-exit-clean {
+      background: linear-gradient(135deg, #ef476f 0%, #d90429 100%) !important;
+      color: #ffffff !important;
+      border-color: var(--neon-red) !important;
+      box-shadow: 0 0 16px rgba(239, 71, 111, 0.6) !important;
+      font-weight: 800;
     }
 
     .clean-floor-toggle {
       position: absolute;
-      top: 16px;
+      top: 18px;
       left: 50%;
       transform: translateX(-50%);
       pointer-events: auto;
+      background: rgba(12, 15, 23, 0.92);
+      padding: 4px;
+      border-radius: 14px;
+      border: 1px solid var(--neon-green);
+      box-shadow: 0 0 20px rgba(6, 214, 160, 0.3);
     }
 
     #view-crm {
@@ -761,7 +866,7 @@
       <button class="btn" id="btn-quick-checkin">⚡ Check-in Rápido</button>
       <button class="btn" id="btn-add-batch-res">📦 Carga Masiva</button>
       <button class="btn" id="btn-toggle-multi">☑ Multi-Selección</button>
-      <button class="btn primary" id="btn-clean-mode">🧹 Modo Operación</button>
+      <button class="btn" id="btn-clean-mode">🧹 Modo Operación</button>
       <button class="btn" id="btn-fullscreen">🔍 Full Screen</button>
     </div>
   </header>
@@ -788,7 +893,16 @@
 
     <div class="main-view">
       <div id="view-plano">
-        <div id="canvas"></div>
+        <div id="canvas">
+          <div id="canvas-stage"></div>
+          
+          <!-- CONTROLES DE ZOOM TABLET -->
+          <div class="zoom-controls">
+            <button class="btn-zoom" id="btn-zoom-in" title="Acercar">➕</button>
+            <button class="btn-zoom btn-zoom-reset" id="btn-zoom-reset" title="Restablecer">100%</button>
+            <button class="btn-zoom" id="btn-zoom-out" title="Alejar">➖</button>
+          </div>
+        </div>
       </div>
 
       <div id="view-crm">
@@ -1080,6 +1194,7 @@
   window.presetsData = JSON.parse(localStorage.getItem(STORAGE_KEY_PRESETS) || '{}');
 
   const canvas = document.getElementById('canvas');
+  const canvasStage = document.getElementById('canvas-stage');
   const overlay = document.getElementById('overlay');
   const overlayCli = document.getElementById('overlay-cli');
   const overlayBatch = document.getElementById('overlay-batch');
@@ -1095,6 +1210,20 @@
   let currentRotation = 0;
   let isLocked = false;
   let currentFloor = 'PB';
+
+  // LÓGICA DE ZOOM
+  let currentZoom = 1.0;
+  const zoomResetBtn = document.getElementById('btn-zoom-reset');
+
+  function setZoom(val) {
+    currentZoom = Math.min(Math.max(0.5, val), 2.5);
+    canvasStage.style.transform = `scale(${currentZoom})`;
+    zoomResetBtn.textContent = `${Math.round(currentZoom * 100)}%`;
+  }
+
+  document.getElementById('btn-zoom-in').onclick = () => setZoom(currentZoom + 0.15);
+  document.getElementById('btn-zoom-out').onclick = () => setZoom(currentZoom - 0.15);
+  zoomResetBtn.onclick = () => setZoom(1.0);
 
   const fechaInput = document.getElementById('f-fecha');
   function todayStr(){
@@ -1146,7 +1275,7 @@
   }
 
   function pctPos(clientX, clientY) {
-    const r = canvas.getBoundingClientRect();
+    const r = canvasStage.getBoundingClientRect();
     let x = ((clientX - r.left) / r.width) * 100;
     let y = ((clientY - r.top) / r.height) * 100;
     x = Math.max(2, Math.min(98, x));
@@ -1155,14 +1284,14 @@
   }
 
   canvas.addEventListener('pointerdown', (e) => {
-    if (e.target === canvas) {
+    if (e.target === canvas || e.target === canvasStage) {
       selectedIds.clear();
       renderFurniture();
     }
   });
 
   window.renderFurniture = function() {
-    canvas.querySelectorAll('.furniture').forEach(el => el.remove());
+    canvasStage.querySelectorAll('.furniture').forEach(el => el.remove());
 
     const currentList = getLayout();
     currentList.forEach(item => {
@@ -1239,7 +1368,7 @@
       }
 
       attachDrag(el, item);
-      canvas.appendChild(el);
+      canvasStage.appendChild(el);
     });
 
     renderWaiters();
@@ -1258,8 +1387,8 @@
       const startH = item.altoPx || 50;
 
       function onMove(ev) {
-        const dx = ev.clientX - startX;
-        const dy = ev.clientY - startY;
+        const dx = (ev.clientX - startX) / currentZoom;
+        const dy = (ev.clientY - startY) / currentZoom;
 
         let newW = startW + (pos.includes('e') ? dx : -dx);
         let newH = startH + (pos.includes('s') ? dy : -dy);
@@ -1351,7 +1480,7 @@
         document.removeEventListener('pointermove', onMove);
         document.removeEventListener('pointerup', onUp);
         ghost.remove();
-        const r = canvas.getBoundingClientRect();
+        const r = canvasStage.getBoundingClientRect();
         if (ev.clientX > r.left && ev.clientX < r.right && ev.clientY > r.top && ev.clientY < r.bottom) {
           const p = pctPos(ev.clientX, ev.clientY);
           const defaultSizes = {
