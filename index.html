@@ -60,20 +60,21 @@
 
     header {
       height: 64px;
-      background: var(--panel-bg);
-      border-bottom: 1px solid var(--panel-border);
+      background: linear-gradient(180deg, rgba(10, 12, 17, 0.96) 0%, rgba(8, 9, 12, 0.98) 100%);
+      border-bottom: 1px solid rgba(243, 186, 47, 0.14);
       backdrop-filter: blur(16px);
       display: flex;
       align-items: center;
       justify-content: flex-start;
-      padding: 0 20px;
-      gap: 20px;
+      padding: 0 22px;
+      gap: 22px;
       z-index: 10;
       position: relative;
       overflow-x: auto;
       overflow-y: hidden;
       scrollbar-width: thin;
       scrollbar-color: var(--accent) rgba(255, 255, 255, 0.06);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
     }
 
     header::-webkit-scrollbar {
@@ -131,14 +132,15 @@
     }
 
     .tab-btn, .btn {
-      background: rgba(255, 255, 255, 0.04);
+      background: rgba(255, 255, 255, 0.03);
       color: var(--text-main);
-      border: 1px solid var(--panel-border);
+      border: 1px solid rgba(255, 255, 255, 0.07);
       padding: 9px 16px;
       border-radius: 10px;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 600;
+      letter-spacing: 0.2px;
       transition: all 0.2s ease;
       display: inline-flex;
       align-items: center;
@@ -146,16 +148,16 @@
     }
 
     .tab-btn:hover, .btn:hover {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(243, 186, 47, 0.3);
       transform: translateY(-1px);
     }
 
     .tab-btn.active, .btn.primary {
-      background: linear-gradient(135deg, #f3ba2f 0%, #e0a312 100%);
-      color: #000000;
+      background: linear-gradient(135deg, #f3ba2f 0%, #d99a1a 100%);
+      color: #0c0d10;
       border-color: var(--accent);
-      box-shadow: 0 0 16px var(--panel-border-glow);
+      box-shadow: 0 0 14px rgba(243, 186, 47, 0.22);
       font-weight: 700;
     }
 
@@ -188,8 +190,8 @@
     .floor-toggle {
       display: flex;
       background: rgba(0, 0, 0, 0.4);
-      border-radius: 12px;
-      padding: 3px;
+      border-radius: 8px;
+      padding: 2px;
       border: 1px solid var(--panel-border);
     }
 
@@ -197,11 +199,12 @@
       background: transparent;
       border: none;
       color: var(--text-low);
-      padding: 7px 14px;
-      border-radius: 8px;
+      padding: 5px 10px;
+      border-radius: 6px;
       cursor: pointer;
       font-weight: 700;
-      font-size: 12px;
+      font-size: 11px;
+      min-width: 30px;
       transition: all 0.2s ease;
     }
 
@@ -240,10 +243,10 @@
 
     sidebar {
       width: 230px;
-      background: var(--panel-bg);
-      border-right: 1px solid var(--panel-border);
+      background: linear-gradient(180deg, rgba(14, 16, 22, 0.92) 0%, rgba(10, 11, 15, 0.96) 100%);
+      border-right: 1px solid rgba(255, 255, 255, 0.06);
       backdrop-filter: blur(16px);
-      padding: 16px 12px;
+      padding: 18px 14px;
       display: flex;
       flex-direction: column;
       gap: 14px;
@@ -261,28 +264,34 @@
     }
 
     .pal-item {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--panel-border);
-      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-left: 2px solid rgba(243, 186, 47, 0.35);
+      border-radius: 8px;
       padding: 12px 8px;
       text-align: center;
-      font-size: 11px;
+      font-size: 10.5px;
+      letter-spacing: 0.3px;
       cursor: grab;
-      font-weight: 700;
+      font-weight: 600;
+      text-transform: uppercase;
       transition: all 0.2s ease;
       color: var(--text-main);
     }
 
     .pal-item:hover {
-      background: rgba(243, 186, 47, 0.1);
-      border-color: var(--accent);
+      background: rgba(243, 186, 47, 0.06);
+      border-color: rgba(243, 186, 47, 0.4);
+      border-left-color: var(--accent);
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3), 0 0 14px rgba(243, 186, 47, 0.35);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
     }
 
     sidebar > span {
       font-family: var(--font-display);
-      letter-spacing: 1.2px;
+      letter-spacing: 1.6px;
+      color: var(--accent);
+      opacity: 0.85;
     }
 
     .main-view {
@@ -601,10 +610,10 @@
 
     #waiters-panel {
       width: 250px;
-      background: var(--panel-bg);
-      border-left: 1px solid var(--panel-border);
+      background: linear-gradient(180deg, rgba(14, 16, 22, 0.92) 0%, rgba(10, 11, 15, 0.96) 100%);
+      border-left: 1px solid rgba(255, 255, 255, 0.06);
       backdrop-filter: blur(16px);
-      padding: 16px 12px;
+      padding: 18px 14px;
       overflow-y: auto;
     }
 
@@ -613,18 +622,25 @@
     }
 
     .waiter-card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--panel-border);
-      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-left: 2px solid rgba(168, 85, 247, 0.4);
+      border-radius: 10px;
       padding: 12px;
       margin-bottom: 10px;
+      transition: border-color 0.2s;
+    }
+
+    .waiter-card:hover {
+      border-left-color: var(--neon-purple);
     }
 
     .waiter-card-header {
       display: flex;
       justify-content: space-between;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 700;
+      letter-spacing: 0.2px;
       margin-bottom: 8px;
       color: var(--accent);
     }
@@ -636,11 +652,11 @@
     }
 
     .table-badge {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.04);
       font-size: 10px;
       padding: 4px 8px;
       border-radius: 6px;
-      border: 1px solid var(--panel-border);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       font-weight: 600;
     }
 
@@ -1015,11 +1031,11 @@
       <img src="logo.png" alt="CRYPTO Business Social Club" style="height: 38px; width: auto; object-fit: contain; margin-right: 8px; filter: drop-shadow(0 0 8px rgba(243, 186, 47, 0.45));">
     </div>
     <div class="nav-tabs">
-      <button class="tab-btn active" id="tab-plano">📐 Plano Interactivo</button>
-      <button class="tab-btn" id="tab-crm">📊 CRM y Reservas</button>
+      <button class="tab-btn active" id="tab-plano">Plano Interactivo</button>
+      <button class="tab-btn" id="tab-crm">CRM y Reservas</button>
       <div class="floor-toggle">
-        <button id="floor-pb" class="active">Planta Baja (PB)</button>
-        <button id="floor-pa">Planta Alta (PA)</button>
+        <button id="floor-pb" class="active">PB</button>
+        <button id="floor-pa">PA</button>
       </div>
     </div>
 
@@ -1037,20 +1053,21 @@
 
   <div id="app-container">
     <sidebar id="sidebar-panel">
-      <span style="font-size: 10px; color: var(--text-low); font-weight: 800; letter-spacing: 0.8px;">ELEMENTOS DE PLANO</span>
+      <span style="font-family: var(--font-display); font-size: 10px; color: var(--accent); opacity: 0.85; font-weight: 700; letter-spacing: 1.6px;">ELEMENTOS DE PLANO</span>
       <div class="palette-grid">
-        <div class="pal-item" id="pal-mesa">🔲 Mesa</div>
-        <div class="pal-item" id="pal-sillon">🛋️ Sillón</div>
-        <div class="pal-item" id="pal-bocina">🔊 Bocinas</div>
-        <div class="pal-item" id="pal-cristal">🪟 Cristales</div>
-        <div class="pal-item" id="pal-dj">🎧 Cabina DJ</div>
-        <div class="pal-item" id="pal-barra">🍸 Barra</div>
-        <div class="pal-item" id="pal-entrada">🚪 Entrada</div>
-        <div class="pal-item" id="pal-salida">🚪 Salida</div>
-        <div class="pal-item" id="pal-wc">🚻 Baños</div>
-        <div class="pal-item" id="pal-pasillo">🚶 Pasillo</div>
-        <div class="pal-item" id="pal-caja">💻 Caja</div>
-        <div class="pal-item" id="pal-escaleras">🪜 Escaleras</div>
+        <div class="pal-item" id="pal-mesa">Mesa</div>
+        <div class="pal-item" id="pal-mesa-doble">Mesa Doble</div>
+        <div class="pal-item" id="pal-sillon">Sillón</div>
+        <div class="pal-item" id="pal-bocina">Bocinas</div>
+        <div class="pal-item" id="pal-cristal">Cristales</div>
+        <div class="pal-item" id="pal-dj">Cabina DJ</div>
+        <div class="pal-item" id="pal-barra">Barra</div>
+        <div class="pal-item" id="pal-entrada">Entrada</div>
+        <div class="pal-item" id="pal-salida">Salida</div>
+        <div class="pal-item" id="pal-wc">Baños</div>
+        <div class="pal-item" id="pal-pasillo">Pasillo</div>
+        <div class="pal-item" id="pal-caja">Caja</div>
+        <div class="pal-item" id="pal-escaleras">Escaleras</div>
       </div>
       <button class="btn" id="btn-clear-day" style="margin-top:auto; background:rgba(239, 71, 111, 0.15); border-color:var(--neon-red); color:var(--neon-red);">🗑️ Vaciar Plano de Hoy</button>
     </sidebar>
@@ -1122,15 +1139,15 @@
         </div>
         <div class="clean-floor-toggle">
           <div class="floor-toggle">
-            <button id="float-floor-pb" class="active">Planta Baja (PB)</button>
-            <button id="float-floor-pa">Planta Alta (PA)</button>
+            <button id="float-floor-pb" class="active">PB</button>
+            <button id="float-floor-pa">PA</button>
           </div>
         </div>
       </div>
     </div>
 
     <div id="waiters-panel">
-      <span style="font-size: 10px; color: var(--text-low); font-weight: 800; letter-spacing: 0.8px; display: block; margin-bottom: 14px;">MESEROS Y ASIGNACIONES</span>
+      <span style="font-family: var(--font-display); font-size: 10px; color: var(--neon-purple); opacity: 0.9; font-weight: 700; letter-spacing: 1.6px; display: block; margin-bottom: 14px;">MESEROS Y ASIGNACIONES</span>
       <div id="waiters-list"></div>
     </div>
   </div>
@@ -1353,6 +1370,7 @@
   // Nombres visibles por defecto para cada tipo de elemento del plano
   const NOMBRES_DEFAULT = {
     mesa: 'MESA',
+    mesa_doble: 'MESA DOBLE',
     sillon: 'SILLÓN',
     bocina: 'BOCINA',
     cristal: 'CRISTALES',
@@ -1736,9 +1754,10 @@
     });
   }
 
-  function setupPaletteDrag(paletteId, tipo) {
+  function setupPaletteDrag(paletteId, tipo, paletteKey) {
     const src = document.getElementById(paletteId);
     if (!src) return;
+    const key = paletteKey || tipo;
 
     src.addEventListener('pointerdown', (e) => {
       e.preventDefault();
@@ -1757,16 +1776,16 @@
         if (ev.clientX > r.left && ev.clientX < r.right && ev.clientY > r.top && ev.clientY < r.bottom) {
           const p = pctPos(ev.clientX, ev.clientY);
           const defaultSizes = {
-            mesa: {a: 50, h: 50}, sillon: {a: 110, h: 42}, bocina: {a: 45, h: 45}, cristal: {a: 120, h: 15},
+            mesa: {a: 50, h: 50}, mesa_doble: {a: 100, h: 50}, sillon: {a: 110, h: 42}, bocina: {a: 45, h: 45}, cristal: {a: 120, h: 15},
             dj: {a: 120, h: 50}, entrada: {a: 80, h: 40}, salida: {a: 80, h: 40},
             wc: {a: 80, h: 50}, pasillo: {a: 100, h: 30}, barra: {a: 180, h: 45},
             caja: {a: 70, h: 40}, escaleras: {a: 80, h: 60}
           };
-          const size = defaultSizes[tipo] || {a: 50, h: 50};
+          const size = defaultSizes[key] || {a: 50, h: 50};
           const newItem = {
             id: 'item_' + Date.now(),
             tipo: tipo,
-            nombre: NOMBRES_DEFAULT[tipo] || tipo.toUpperCase(),
+            nombre: NOMBRES_DEFAULT[key] || tipo.toUpperCase(),
             x: p.x, y: p.y,
             anchoPx: size.a,
             altoPx: size.h,
@@ -1793,6 +1812,7 @@
   ['mesa','sillon','bocina','cristal','dj','barra','entrada','salida','wc','pasillo','caja','escaleras'].forEach(t => {
     setupPaletteDrag('pal-' + t, t);
   });
+  setupPaletteDrag('pal-mesa-doble', 'mesa', 'mesa_doble');
 
   document.getElementById('btn-clear-day').onclick = () => {
     if (confirm('¿Vaciar todo el plano del día seleccionado?')) {
@@ -1912,6 +1932,7 @@
     document.getElementById('sr-telefono').value = '';
     document.getElementById('sr-personas').value = '2';
     overlaySingleRes.classList.add('open');
+    if (document.activeElement) document.activeElement.blur();
   };
 
   document.getElementById('btn-sr-cancel').onclick = () => overlaySingleRes.classList.remove('open');
@@ -2019,6 +2040,7 @@
   document.getElementById('btn-open-presets').onclick = () => {
     renderPresetsModal();
     overlayPresets.classList.add('open');
+    if (document.activeElement) document.activeElement.blur();
   };
   document.getElementById('btn-close-presets').onclick = () => overlayPresets.classList.remove('open');
 
@@ -2140,6 +2162,7 @@
     }
 
     overlay.classList.add('open');
+    if (document.activeElement) document.activeElement.blur();
   }
 
   function closeModal() {
@@ -2255,9 +2278,9 @@
 
   document.getElementById('btn-add-batch-res').onclick = () => {
     batchContainer.innerHTML = '';
-    createBatchRow('Juan Perez', '55501928', 4, 'Mesa 1', 'Carlos');
-    createBatchRow('Maria Gomez', '55581920', 2, 'Mesa 3', 'Ana');
+    createBatchRow();
     overlayBatch.classList.add('open');
+    if (document.activeElement) document.activeElement.blur();
   };
 
   document.getElementById('btn-add-batch-row').onclick = () => createBatchRow();
@@ -2316,6 +2339,7 @@
   document.getElementById('btn-quick-checkin').onclick = () => {
     renderCheckinList();
     overlayCheckin.classList.add('open');
+    if (document.activeElement) document.activeElement.blur();
   };
   document.getElementById('btn-checkin-close').onclick = () => overlayCheckin.classList.remove('open');
   document.getElementById('checkin-search').oninput = renderCheckinList;
@@ -2562,6 +2586,7 @@
     document.getElementById('c-telefono').value = cli.telefono || '';
     document.getElementById('c-preferencias').value = cli.preferencias || '';
     overlayCli.classList.add('open');
+    if (document.activeElement) document.activeElement.blur();
   };
 
   window.deleteClient = function(id) {
