@@ -350,14 +350,15 @@
       animation: floorLightsDrift 24s ease-in-out infinite alternate;
     }
 
-    #canvas-stage {
-      width: 100%;
-      height: 100%;
-      position: relative;
-      transform-origin: center center;
-      transition: transform 0.1s ease-out;
-      z-index: 1;
-    }
+      #canvas-stage {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-origin: center center;
+    z-index: 1;
+    will-change: transform;
+    transform-style: preserve-3d;
+}
 
     /* CONTROLES DE ZOOM TÁCTILES PARA TABLET (movible) */
     .zoom-controls {
