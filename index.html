@@ -39,7 +39,6 @@
       flex-direction: column;
     }
 
-    /* Header y Navegación Principal */
     header {
       height: 64px;
       background: var(--panel-bg);
@@ -129,7 +128,7 @@
       box-shadow: 0 2px 8px rgba(243, 186, 47, 0.3);
     }
 
-    input[type="date"], input[type="text"], input[type="number"], textarea {
+    input[type="date"], input[type="text"], input[type="number"], textarea, select {
       background: rgba(0, 0, 0, 0.4);
       border: 1px solid var(--panel-border);
       color: #ffffff;
@@ -140,12 +139,11 @@
       transition: all 0.2s ease;
     }
 
-    input[type="date"]:focus, input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
+    input[type="date"]:focus, input[type="text"]:focus, input[type="number"]:focus, textarea:focus, select:focus {
       border-color: var(--accent);
       box-shadow: 0 0 12px var(--panel-border-glow);
     }
 
-    /* Layout Contenedor */
     #app-container {
       display: flex;
       flex: 1;
@@ -157,7 +155,6 @@
       height: 100vh;
     }
 
-    /* Panel Lateral - Herramientas */
     sidebar {
       width: 230px;
       background: var(--panel-bg);
@@ -200,7 +197,6 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
 
-    /* Área Principal - Mapa Canvas */
     .main-view {
       flex: 1;
       position: relative;
@@ -225,9 +221,6 @@
       background-size: 24px 24px;
     }
 
-    /* =========================================================
-       DISEÑO ESTÉTICO DE MOBILIARIO Y ELEMENTOS DE PLANO
-       ========================================================= */
     .furniture {
       position: absolute;
       background: rgba(22, 26, 36, 0.9);
@@ -248,7 +241,6 @@
       transition: border-color 0.2s, box-shadow 0.2s;
     }
 
-    /* DISEÑO MESAS */
     .furniture.mesa {
       background: radial-gradient(circle, rgba(26, 34, 46, 0.95) 0%, rgba(15, 20, 28, 0.95) 100%);
       border: 2px solid var(--neon-green);
@@ -264,7 +256,6 @@
     .furniture.mesa::before { top: -6px; left: 20%; width: 60%; height: 4px; }
     .furniture.mesa::after { bottom: -6px; left: 20%; width: 60%; height: 4px; }
 
-    /* DISEÑO SILLONES VIP */
     .furniture.sillon {
       background: linear-gradient(135deg, rgba(45, 27, 78, 0.95) 0%, rgba(20, 12, 35, 0.95) 100%);
       border: 2px solid var(--neon-purple);
@@ -272,7 +263,6 @@
       box-shadow: 0 0 16px rgba(168, 85, 247, 0.35), inset 0 2px 6px rgba(255, 255, 255, 0.15);
     }
 
-    /* DISEÑO CABINA DJ */
     .furniture.dj {
       background: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
       border: 2px solid var(--neon-blue);
@@ -280,7 +270,6 @@
       box-shadow: 0 0 18px rgba(59, 130, 246, 0.4), inset 0 0 12px rgba(59, 130, 246, 0.2);
     }
 
-    /* DISEÑO BARRA */
     .furniture.barra {
       background: linear-gradient(90deg, #1e1b18 0%, #3a3022 50%, #1e1b18 100%);
       border: 2px solid #f59e0b;
@@ -289,7 +278,6 @@
       box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
     }
 
-    /* DISEÑO BOCINA */
     .furniture.bocina {
       background: #111827;
       border: 2px solid #00f2fe;
@@ -297,7 +285,6 @@
       box-shadow: 0 0 12px rgba(0, 242, 254, 0.3);
     }
 
-    /* ESTADOS DE MESAS */
     .furniture.selected {
       border-color: var(--accent) !important;
       box-shadow: 0 0 22px rgba(243, 186, 47, 0.8) !important;
@@ -367,7 +354,6 @@
       margin-top: 2px;
     }
 
-    /* Puntos de Resize */
     .resize-handle {
       position: absolute;
       width: 10px;
@@ -383,7 +369,6 @@
     .resize-handle.sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
     .resize-handle.se { bottom: -5px; right: -5px; cursor: nwse-resize; }
 
-    /* Panel Derecho de Meseros */
     #waiters-panel {
       width: 250px;
       background: var(--panel-bg);
@@ -439,7 +424,6 @@
       color: var(--neon-red);
     }
 
-    /* Barra Flotante Multi-Selección */
     #multi-tools {
       position: absolute;
       bottom: 24px;
@@ -461,7 +445,6 @@
       display: flex;
     }
 
-    /* CONTROLES MODO OPERACIÓN LIMPIO */
     #floating-clean-toggle {
       position: absolute;
       inset: 0;
@@ -489,7 +472,6 @@
       pointer-events: auto;
     }
 
-    /* Vista CRM */
     #view-crm {
       display: none;
       flex: 1;
@@ -553,7 +535,6 @@
       margin-left: 4px;
     }
 
-    /* Modales y Capas Overlays */
     .overlay {
       position: fixed;
       top: 0;
@@ -577,8 +558,10 @@
       border: 1px solid var(--panel-border);
       border-top: 1px solid rgba(243, 186, 47, 0.5);
       border-radius: 20px;
-      width: 440px;
+      width: 480px;
       max-width: 92%;
+      max-height: 90vh;
+      overflow-y: auto;
       padding: 24px;
       display: flex;
       flex-direction: column;
@@ -644,6 +627,83 @@
       color: var(--neon-red);
     }
 
+    /* Búsqueda y Autocompletado con Lupa */
+    .search-box-container {
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .search-results-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: rgba(15, 18, 25, 0.98);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      max-height: 180px;
+      overflow-y: auto;
+      z-index: 100;
+      display: none;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+      margin-top: 4px;
+    }
+
+    .search-results-dropdown.visible {
+      display: block;
+    }
+
+    .search-res-item {
+      padding: 10px 14px;
+      font-size: 12px;
+      border-bottom: 1px solid var(--panel-border);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.15s;
+    }
+
+    .search-res-item:hover {
+      background: rgba(243, 186, 47, 0.15);
+    }
+
+    /* Filas dinámicas para Carga Masiva */
+    .batch-rows-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 280px;
+      overflow-y: auto;
+      margin-top: 10px;
+    }
+
+    .batch-row {
+      display: grid;
+      grid-template-columns: 2fr 1.5fr 1fr 1.2fr 1.5fr auto;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .batch-row input {
+      padding: 6px 8px;
+      font-size: 11px;
+    }
+
+    .btn-remove-row {
+      background: rgba(239, 71, 111, 0.2);
+      border: 1px solid var(--neon-red);
+      color: var(--neon-red);
+      border-radius: 6px;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
     .ghost {
       position: fixed;
       pointer-events: none;
@@ -684,7 +744,6 @@
 </head>
 <body>
 
-  <!-- Encabezado y Navegación Principal -->
   <header id="main-header">
     <div class="nav-tabs">
       <button class="tab-btn active" id="tab-plano">📐 Plano Interactivo</button>
@@ -697,7 +756,8 @@
 
     <div class="controls">
       <input type="date" id="f-fecha">
-      <button class="btn preset-btn" id="btn-open-presets">✨ Plantillas (Presets)</button>
+      <button class="btn primary" id="btn-open-add-reserva">➕ Nueva Reserva</button>
+      <button class="btn preset-btn" id="btn-open-presets">✨ Plantillas</button>
       <button class="btn" id="btn-quick-checkin">⚡ Check-in Rápido</button>
       <button class="btn" id="btn-add-batch-res">📦 Carga Masiva</button>
       <button class="btn" id="btn-toggle-multi">☑ Multi-Selección</button>
@@ -706,9 +766,7 @@
     </div>
   </header>
 
-  <!-- Contenedor Principal de la Aplicación -->
   <div id="app-container">
-    <!-- Panel Lateral Paleta de Objetos -->
     <sidebar id="sidebar-panel">
       <span style="font-size: 10px; color: var(--text-low); font-weight: 800; letter-spacing: 0.8px;">ELEMENTOS DE PLANO</span>
       <div class="palette-grid">
@@ -728,13 +786,11 @@
       <button class="btn" id="btn-clear-day" style="margin-top:auto; background:rgba(239, 71, 111, 0.15); border-color:var(--neon-red); color:var(--neon-red);">🗑️ Vaciar Plano de Hoy</button>
     </sidebar>
 
-    <!-- Área Principal de Renderizado del Plano -->
     <div class="main-view">
       <div id="view-plano">
         <div id="canvas"></div>
       </div>
 
-      <!-- Vista Alternativa de CRM y Registros -->
       <div id="view-crm">
         <h3 style="color: var(--accent); margin-bottom: 12px; font-weight: 800;">Reservaciones de la Jornada</h3>
         <input type="text" id="reser-search" placeholder="Buscar por cliente, mesa o mesero..." style="margin-bottom: 14px; width: 340px;">
@@ -774,13 +830,11 @@
         <div id="crm-empty" style="padding: 24px; color: var(--text-low); text-align: center; display:none;">No se encontraron clientes registrados.</div>
       </div>
 
-      <!-- Herramientas flotantes para selección múltiple -->
       <div id="multi-tools">
         <span id="multi-count" style="font-size: 12px; font-weight: 700; color: var(--accent);">0 elementos seleccionados</span>
         <button class="btn" id="btn-del-multi" style="background: var(--neon-red); color: #ffffff;">Eliminar Seleccionados</button>
       </div>
 
-      <!-- CONTROLES MODO OPERACIÓN -->
       <div id="floating-clean-toggle">
         <div class="clean-btn-exit">
           <button class="btn primary" id="btn-exit-clean">← Salir Modo Operación</button>
@@ -794,21 +848,48 @@
       </div>
     </div>
 
-    <!-- Panel Lateral de Asignación de Meseros -->
     <div id="waiters-panel">
       <span style="font-size: 10px; color: var(--text-low); font-weight: 800; letter-spacing: 0.8px; display: block; margin-bottom: 14px;">MESEROS Y ASIGNACIONES</span>
       <div id="waiters-list"></div>
     </div>
   </div>
 
-  <!-- MODAL: Gestor de Plantillas (Presets - Max 5) -->
+  <!-- MODAL: Formulario para Agregar Reserva Suelta -->
+  <div class="overlay" id="overlay-single-res">
+    <div class="modal">
+      <h3>➕ Registrar Nueva Reserva</h3>
+      <div>
+        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Nombre de la Reserva</label>
+        <input type="text" id="sr-nombre" placeholder="Ej. Juan Pérez" style="width:100%;">
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Teléfono</label>
+          <input type="text" id="sr-telefono" placeholder="+52 ..." style="width:100%;">
+        </div>
+        <div style="width:110px;">
+          <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Personas</label>
+          <input type="number" id="sr-personas" value="2" style="width:100%;">
+        </div>
+      </div>
+      <div>
+        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Fecha de Reserva</label>
+        <input type="date" id="sr-fecha" style="width:100%;">
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn" id="btn-sr-cancel">Cancelar</button>
+        <button class="btn primary" id="btn-sr-save">Guardar Reserva</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Plantillas -->
   <div class="overlay" id="overlay-presets">
     <div class="modal" style="width: 520px;">
       <h3>Gestor de Plantillas (Máximo 5)</h3>
-      <p style="font-size: 11px; color: var(--text-low);">Guarda configuraciones de plano frecuentes (ej. Fin de semana, Evento privado) y aplícalas al día seleccionado en un clic.</p>
-      
+      <p style="font-size: 11px; color: var(--text-low);">Guarda configuraciones de plano frecuentes y aplícalas al día seleccionado en un clic.</p>
       <div id="presets-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px;"></div>
-
       <div class="modal-actions">
         <button class="btn" id="btn-close-presets">Cerrar</button>
       </div>
@@ -819,10 +900,12 @@
   <div class="overlay" id="overlay">
     <div class="modal">
       <h3 id="modal-title">Propiedades del Elemento</h3>
+      
       <div>
-        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Nombre o Identificador</label>
+        <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Nombre o Identificador de Mesa</label>
         <input type="text" id="f-nombre" style="width:100%;">
       </div>
+
       <div style="display:flex; gap:10px;">
         <div style="flex:1;">
           <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Ancho (px)</label>
@@ -833,6 +916,7 @@
           <input type="number" id="f-alto" style="width:100%;">
         </div>
       </div>
+
       <div style="display:flex; gap:12px; align-items:center; margin-top: 4px;">
         <button class="btn" id="btn-rotate">Rotar 90°</button>
         <span id="rotate-value" style="font-size:13px; font-weight:800; color:var(--accent);">0°</span>
@@ -840,12 +924,21 @@
       </div>
 
       <div id="reserva-fields" style="border-top: 1px solid var(--panel-border); padding-top: 14px; margin-top: 6px;">
+        
+        <!-- Búsqueda con Lupa e Integración con Reservas Registradas -->
+        <div class="search-box-container">
+          <label style="font-size: 11px; color: var(--accent); display:block; margin-bottom:4px; font-weight:700;">🔍 Buscar Reserva Registrada (Autocompletar)</label>
+          <input type="text" id="f-search-reserva" placeholder="Escribe el nombre de la reserva para autollenar..." style="width:100%;">
+          <div class="search-results-dropdown" id="search-results-dropdown"></div>
+        </div>
+
         <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom: 8px; font-weight:700;">Estado Actual de la Mesa</label>
         <div class="estado-selector">
           <div class="estado-btn" data-estado="disponible">Disponible</div>
           <div class="estado-btn" data-estado="reservada">Reservada</div>
           <div class="estado-btn" data-estado="ocupada">Ocupada</div>
         </div>
+
         <div style="margin-top: 12px;">
           <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Cliente Reservante</label>
           <input type="text" id="f-cliente" placeholder="Nombre completo" style="width:100%;">
@@ -874,7 +967,7 @@
     </div>
   </div>
 
-  <!-- MODAL 2: Editar Registro de Cliente CRM -->
+  <!-- MODAL 2: Editar CRM -->
   <div class="overlay" id="overlay-cli">
     <div class="modal">
       <h3>Editar Ficha de Cliente CRM</h3>
@@ -897,15 +990,27 @@
     </div>
   </div>
 
-  <!-- MODAL 3: Carga Masiva de Reservas -->
+  <!-- MODAL 3: Carga Masiva (Rediseñada a Lista Interactiva por Filas) -->
   <div class="overlay" id="overlay-batch">
-    <div class="modal">
-      <h3>Carga Masiva por Formato</h3>
-      <p style="font-size: 11px; color: var(--text-low); line-height: 1.4;">
-        Introduce tus reservas separadas por salto de línea usando el formato:<br>
-        <b style="color:var(--accent);">Nombre, Teléfono, Cantidad Personas, Mesa, Mesero</b>
+    <div class="modal" style="width: 680px;">
+      <h3>Carga Masiva de Reservaciones</h3>
+      <p style="font-size: 11px; color: var(--text-low);">
+        Agrega o edita las reservaciones en el formulario interactivo. Se registrarán automáticamente para la fecha activa.
       </p>
-      <textarea id="batch-text" style="height: 140px; font-family: monospace; font-size: 12px;" placeholder="Juan Perez, 55501928, 4, Mesa 1, Carlos&#10;Maria Gomez, 55581920, 2, Mesa 3, Ana"></textarea>
+
+      <div style="display:grid; grid-template-columns: 2fr 1.5fr 1fr 1.2fr 1.5fr auto; gap:6px; font-size:10px; font-weight:800; color:var(--accent); margin-top:10px;">
+        <span>Cliente</span>
+        <span>Teléfono</span>
+        <span>Pax</span>
+        <span>Mesa</span>
+        <span>Mesero</span>
+        <span></span>
+      </div>
+
+      <div class="batch-rows-container" id="batch-rows-container"></div>
+
+      <button class="btn" id="btn-add-batch-row" style="margin-top: 10px; border-color: var(--accent); color: var(--accent);">+ Añadir otra reserva</button>
+
       <div class="modal-actions">
         <button class="btn" id="btn-batch-cancel">Cancelar</button>
         <button class="btn primary" id="btn-batch-save">Procesar Reservas</button>
@@ -925,9 +1030,7 @@
     </div>
   </div>
 
-  <!-- LÓGICA COMPLETA Y SISTEMA DE DÍAS INDEPENDIENTES / PRESETS -->
   <script>
-  // Control Fullscreen
   const btnFs = document.getElementById('btn-fullscreen');
   btnFs.addEventListener('click', () => {
     if (!document.fullscreenElement) {
@@ -939,7 +1042,6 @@
     }
   });
 
-  // Modo Operación Limpio
   const btnCleanMode = document.getElementById('btn-clean-mode');
   const btnExitClean = document.getElementById('btn-exit-clean');
   const mainHeader = document.getElementById('main-header');
@@ -983,6 +1085,7 @@
   const overlayBatch = document.getElementById('overlay-batch');
   const overlayCheckin = document.getElementById('overlay-checkin');
   const overlayPresets = document.getElementById('overlay-presets');
+  const overlaySingleRes = document.getElementById('overlay-single-res');
 
   let selectedIds = new Set();
   let multiSelectMode = false;
@@ -1000,7 +1103,6 @@
   }
   fechaInput.value = todayStr();
 
-  // OBTENER PLANO: Si el día no existe en layoutsData, INICIA TOTALMENTE VACÍO []
   function getLayout() {
     const dateKey = fechaInput.value;
     if (!window.layoutsData[dateKey]) {
@@ -1084,7 +1186,6 @@
       el.style.transform = `translate(-50%,-50%) rotate(${rot}deg)`;
       el.dataset.id = item.id;
 
-      // Compensación de texto para facilitar lectura
       const normRot = ((rot % 360) + 360) % 360;
       let textAngleCompensation = -rot;
       if (normRot === 90 || normRot === 270) {
@@ -1291,7 +1392,6 @@
     setupPaletteDrag('pal-' + t, t);
   });
 
-  // Vaciar día actual
   document.getElementById('btn-clear-day').onclick = () => {
     if (confirm('¿Vaciar todo el plano del día seleccionado?')) {
       const dateKey = fechaInput.value;
@@ -1302,7 +1402,6 @@
     }
   };
 
-  // MULTI-SELECCIÓN
   const multiBtn = document.getElementById('btn-toggle-multi');
   multiBtn.addEventListener('click', () => {
     multiSelectMode = !multiSelectMode;
@@ -1330,7 +1429,117 @@
     renderFurniture();
   });
 
-  // SISTEMA DE PLANTILLAS / PRESETS (MÁXIMO 5)
+  // NUEVA RESERVA DIRECTA/INDIVIDUAL
+  document.getElementById('btn-open-add-reserva').onclick = () => {
+    document.getElementById('sr-fecha').value = fechaInput.value;
+    document.getElementById('sr-nombre').value = '';
+    document.getElementById('sr-telefono').value = '';
+    document.getElementById('sr-personas').value = '2';
+    overlaySingleRes.classList.add('open');
+  };
+
+  document.getElementById('btn-sr-cancel').onclick = () => overlaySingleRes.classList.remove('open');
+  document.getElementById('btn-sr-save').onclick = () => {
+    const nombre = document.getElementById('sr-nombre').value.trim();
+    const tel = document.getElementById('sr-telefono').value.trim();
+    const pax = parseInt(document.getElementById('sr-personas').value) || 2;
+    const fecha = document.getElementById('sr-fecha').value || fechaInput.value;
+
+    if (!nombre) {
+      alert('Introduce el nombre de la reserva');
+      return;
+    }
+
+    if (!window.reservasData[fecha]) window.reservasData[fecha] = {};
+    const resId = 'unassigned_' + Date.now();
+    window.reservasData[fecha][resId] = {
+      estado: 'reservada',
+      cliente: nombre,
+      telefono: tel,
+      personas: pax,
+      mesero: ''
+    };
+
+    let cli = window.clientes.find(c => c.nombre.toLowerCase() === nombre.toLowerCase());
+    if (!cli) {
+      cli = { id: 'cli_' + Date.now(), nombre: nombre, telefono: tel, visitas: 1, ultimaVisita: '', preferencias: '' };
+      window.clientes.push(cli);
+    } else {
+      cli.visitas += 1;
+    }
+
+    saveCli();
+    saveReservas();
+    renderAllCRM();
+    overlaySingleRes.classList.remove('open');
+    alert(`Reserva registrada para ${nombre}. Puedes asignarla a una mesa desde el plano usando la lupa de búsqueda.`);
+  };
+
+  // MODAL DE MESAS - LUPA Y AUTOCOMPLETADO DE RESERVAS
+  const searchResInput = document.getElementById('f-search-reserva');
+  const searchResDropdown = document.getElementById('search-results-dropdown');
+
+  searchResInput.addEventListener('input', updateSearchDropdown);
+  searchResInput.addEventListener('focus', updateSearchDropdown);
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-box-container')) {
+      searchResDropdown.classList.remove('visible');
+    }
+  });
+
+  function updateSearchDropdown() {
+    const query = searchResInput.value.toLowerCase().trim();
+    const dateKey = fechaInput.value;
+    const currentRes = window.reservasData[dateKey] || {};
+
+    searchResDropdown.innerHTML = '';
+    let matches = [];
+
+    Object.keys(currentRes).forEach(resId => {
+      const r = currentRes[resId];
+      if (r && r.cliente && r.cliente.toLowerCase().includes(query)) {
+        matches.push({ resId, ...r });
+      }
+    });
+
+    window.clientes.forEach(c => {
+      if (c.nombre.toLowerCase().includes(query) && !matches.some(m => m.cliente.toLowerCase() === c.nombre.toLowerCase())) {
+        matches.push({ resId: 'crm_' + c.id, cliente: c.nombre, telefono: c.telefono, personas: 2, estado: 'reservada', mesero: '' });
+      }
+    });
+
+    if (matches.length === 0) {
+      searchResDropdown.innerHTML = '<div style="padding:10px; font-size:11px; color:var(--text-low);">No se encontraron reservas coincidentes.</div>';
+    } else {
+      matches.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'search-res-item';
+        div.innerHTML = `
+          <div>
+            <b>${item.cliente}</b> <small style="color:var(--text-low);">(${item.personas || 2} pax)</small>
+            <br><span style="font-size:10px; color:var(--accent);">${item.telefono || 'Sin tel.'}</span>
+          </div>
+          <span style="font-size:10px; background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px;">Seleccionar</span>
+        `;
+        div.onclick = () => {
+          document.getElementById('f-cliente').value = item.cliente;
+          document.getElementById('f-telefono').value = item.telefono || '';
+          document.getElementById('f-personas').value = item.personas || 2;
+          if (item.mesero) document.getElementById('f-mesero').value = item.mesero;
+          selectedEstado = 'reservada';
+          updateEstadoButtons();
+          searchResDropdown.classList.remove('visible');
+          searchResInput.value = '';
+        };
+        searchResDropdown.appendChild(div);
+      });
+    }
+
+    searchResDropdown.classList.add('visible');
+  }
+
+  // PRESETS
   document.getElementById('btn-open-presets').onclick = () => {
     renderPresetsModal();
     overlayPresets.classList.add('open');
@@ -1412,7 +1621,6 @@
     }
   };
 
-  // OPERACIONES DE MUEBLES Y RESERVAS
   function openModal(id) {
     const item = getLayout().find(f => f.id === id);
     if (!item) return;
@@ -1548,22 +1756,48 @@
     closeModal();
   });
 
-  // CARGA MASIVA Y CHECK-IN
-  document.getElementById('btn-add-batch-res').onclick = () => overlayBatch.classList.add('open');
-  document.getElementById('btn-batch-cancel').onclick = () => overlayBatch.classList.remove('open');
-  document.getElementById('btn-batch-save').onclick = () => {
-    const rawText = document.getElementById('batch-text').value.trim();
-    if (!rawText) return;
+  // CARGA MASIVA - INTERFAZ DINÁMICA
+  const batchContainer = document.getElementById('batch-rows-container');
 
+  function createBatchRow(cliente='', telefono='', personas=2, mesa='', mesero='') {
+    const row = document.createElement('div');
+    row.className = 'batch-row';
+    row.innerHTML = `
+      <input type="text" class="b-cliente" placeholder="Nombre cliente" value="${cliente}">
+      <input type="text" class="b-telefono" placeholder="Teléfono" value="${telefono}">
+      <input type="number" class="b-personas" placeholder="Pax" value="${personas}">
+      <input type="text" class="b-mesa" placeholder="Mesa" value="${mesa}">
+      <input type="text" class="b-mesero" placeholder="Mesero" value="${mesero}">
+      <button class="btn-remove-row" title="Eliminar fila">✕</button>
+    `;
+    row.querySelector('.btn-remove-row').onclick = () => row.remove();
+    batchContainer.appendChild(row);
+  }
+
+  document.getElementById('btn-add-batch-res').onclick = () => {
+    batchContainer.innerHTML = '';
+    createBatchRow('Juan Perez', '55501928', 4, 'Mesa 1', 'Carlos');
+    createBatchRow('Maria Gomez', '55581920', 2, 'Mesa 3', 'Ana');
+    overlayBatch.classList.add('open');
+  };
+
+  document.getElementById('btn-add-batch-row').onclick = () => createBatchRow();
+  document.getElementById('btn-batch-cancel').onclick = () => overlayBatch.classList.remove('open');
+
+  document.getElementById('btn-batch-save').onclick = () => {
+    const rows = batchContainer.querySelectorAll('.batch-row');
     const dateKey = fechaInput.value;
     if (!window.reservasData[dateKey]) window.reservasData[dateKey] = {};
 
-    const lines = rawText.split('\n');
-    lines.forEach((line, index) => {
-      const parts = line.split(',').map(s => s.trim());
-      if (parts[0]) {
+    rows.forEach((row, index) => {
+      const cliente = row.querySelector('.b-cliente').value.trim();
+      const telefono = row.querySelector('.b-telefono').value.trim();
+      const personas = parseInt(row.querySelector('.b-personas').value) || 2;
+      const mesaAsignada = row.querySelector('.b-mesa').value.trim();
+      const mesero = row.querySelector('.b-mesero').value.trim();
+
+      if (cliente) {
         let targetId = 'res_batch_' + Date.now() + '_' + index;
-        let mesaAsignada = parts[3] || '';
 
         if (mesaAsignada && window.layoutsData[dateKey]) {
           ['PB','PA'].forEach(p => {
@@ -1576,31 +1810,30 @@
 
         window.reservasData[dateKey][targetId] = {
           estado: 'reservada',
-          cliente: parts[0] || '',
-          telefono: parts[1] || '',
-          personas: parseInt(parts[2]) || 0,
-          mesero: parts[4] || ''
+          cliente: cliente,
+          telefono: telefono,
+          personas: personas,
+          mesero: mesero
         };
 
-        if (parts[0]) {
-          let cli = window.clientes.find(c => c.nombre.toLowerCase() === parts[0].toLowerCase());
-          if (!cli) {
-            cli = { id: 'cli_' + Date.now(), nombre: parts[0], telefono: parts[1] || '', visitas: 0, ultimaVisita: '', preferencias: '' };
-            window.clientes.push(cli);
-          }
+        let cli = window.clientes.find(c => c.nombre.toLowerCase() === cliente.toLowerCase());
+        if (!cli) {
+          cli = { id: 'cli_' + Date.now(), nombre: cliente, telefono: telefono, visitas: 1, ultimaVisita: mesaAsignada, preferencias: '' };
+          window.clientes.push(cli);
+        } else {
           cli.visitas += 1;
-          saveCli();
         }
       }
     });
 
+    saveCli();
     saveReservas();
     renderFurniture();
     renderAllCRM();
-    document.getElementById('batch-text').value = '';
     overlayBatch.classList.remove('open');
   };
 
+  // CHECK-IN
   document.getElementById('btn-quick-checkin').onclick = () => {
     renderCheckinList();
     overlayCheckin.classList.add('open');
@@ -1654,7 +1887,7 @@
 
       row.querySelector('button').onclick = () => {
         overlayCheckin.classList.remove('open');
-        if (item.mId && !item.mId.startsWith('res_batch_')) {
+        if (item.mId && !item.mId.startsWith('res_batch_') && !item.mId.startsWith('unassigned_')) {
           openModal(item.mId);
         } else {
           alert('Selecciona una mesa en el mapa para asignar a ' + item.cliente);
@@ -1717,7 +1950,6 @@
     });
   }
 
-  // TABLA DE RESERVAS Y CRM GLOBAL
   window.renderAllCRM = function() {
     renderReservationsTable();
     renderCRMTable();
@@ -1735,7 +1967,7 @@
       Object.keys(window.reservasData[fecha]).forEach(muebleId => {
         const res = window.reservasData[fecha][muebleId];
         if (res && (res.cliente || res.estado !== 'disponible')) {
-          let nombreMueble = muebleId;
+          let nombreMueble = muebleId.startsWith('unassigned_') || muebleId.startsWith('res_batch_') ? 'Sin Asignar' : muebleId;
           let planta = 'PB';
 
           const dayLayout = window.layoutsData[fecha];
@@ -1797,7 +2029,9 @@
 
     switchTab('plano');
     renderFurniture();
-    openModal(muebleId);
+    if (!muebleId.startsWith('unassigned_') && !muebleId.startsWith('res_batch_')) {
+      openModal(muebleId);
+    }
   };
 
   window.deleteReser = function(fecha, muebleId) {
@@ -1912,7 +2146,6 @@
   document.getElementById('float-floor-pb').onclick = () => changeFloor('PB');
   document.getElementById('float-floor-pa').onclick = () => changeFloor('PA');
 
-  // AL CAMBIAR DE FECHA: Carga o inicializa en VACÍO
   fechaInput.addEventListener('change', () => {
     selectedIds.clear();
     renderFurniture();
@@ -1923,7 +2156,6 @@
   renderAllCRM();
   </script>
 
-  <!-- FIREBASE REALTIME FIRESTORE SYNC -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
