@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Crypto Floor - Sistema Integral de Gestión de Plano y CRM</title>
+  <title>CRYPTO Business Social Club - Gestión de Plano y CRM</title>
   <link rel="manifest" href="manifest.json">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg-dark: #08090c;
@@ -20,6 +20,23 @@
       --neon-blue: #3b82f6;
       --text-main: #f8fafc;
       --text-low: #64748b;
+      --font-display: 'Orbitron', 'Plus Jakarta Sans', sans-serif;
+    }
+
+    @keyframes neonLinePulse {
+      0%, 100% { opacity: 0.55; filter: brightness(1); }
+      50% { opacity: 1; filter: brightness(1.6); }
+    }
+
+    @keyframes floorLightsDrift {
+      0%   { background-position: 12% 18%, 88% 78%, 50% 92%; }
+      50%  { background-position: 46% 56%, 54% 34%, 70% 52%; }
+      100% { background-position: 78% 30%, 22% 62%, 30% 82%; }
+    }
+
+    @keyframes glowTextPulse {
+      0%, 100% { text-shadow: 0 0 6px rgba(243, 186, 47, 0.35); }
+      50% { text-shadow: 0 0 14px rgba(243, 186, 47, 0.7); }
     }
 
     * {
@@ -50,6 +67,25 @@
       padding: 0 20px;
       gap: 12px;
       z-index: 10;
+      position: relative;
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -1px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--neon-amber) 20%, var(--neon-green) 50%, var(--neon-purple) 80%, transparent);
+      background-size: 200% 100%;
+      animation: neonLinePulse 3.5s ease-in-out infinite, neonLineSweep 9s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes neonLineSweep {
+      0% { background-position: 0% 0%; }
+      100% { background-position: 200% 0%; }
     }
 
     header.hidden-elements {
@@ -209,7 +245,12 @@
       background: rgba(243, 186, 47, 0.1);
       border-color: var(--accent);
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3), 0 0 14px rgba(243, 186, 47, 0.35);
+    }
+
+    sidebar > span {
+      font-family: var(--font-display);
+      letter-spacing: 1.2px;
     }
 
     .main-view {
@@ -241,20 +282,42 @@
     }
 
     #canvas::before {
-      content: 'CRYPTO FLOOR';
+      content: '';
       position: absolute;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%) rotate(-20deg);
-      font-size: clamp(4rem, 12vw, 10rem);
-      font-weight: 900;
-      color: rgba(243, 186, 47, 0.035);
-      letter-spacing: 16px;
+      width: 62%;
+      height: 62%;
+      max-width: 820px;
+      max-height: 820px;
+      transform: translate(-50%, -50%);
+      background-image: url('logo.png');
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      opacity: 0.05;
+      filter: blur(1.5px) grayscale(0.2);
       pointer-events: none;
       user-select: none;
-      white-space: nowrap;
       z-index: 0;
-      text-shadow: 0 0 30px rgba(243, 186, 47, 0.05);
+    }
+
+    /* LUCES DE ANTRO EN MOVIMIENTO SOBRE EL PLANO (respeta la cuadrícula de puntos) */
+    #canvas::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      user-select: none;
+      z-index: 0;
+      mix-blend-mode: screen;
+      background-repeat: no-repeat;
+      background-image:
+        radial-gradient(circle 320px, rgba(243, 186, 47, 0.16), transparent 70%),
+        radial-gradient(circle 280px, rgba(6, 214, 160, 0.14), transparent 70%),
+        radial-gradient(circle 260px, rgba(168, 85, 247, 0.12), transparent 70%);
+      background-position: 12% 18%, 88% 78%, 50% 92%;
+      animation: floorLightsDrift 24s ease-in-out infinite alternate;
     }
 
     #canvas-stage {
@@ -608,11 +671,20 @@
 
     th {
       background: rgba(255, 255, 255, 0.03);
-      color: var(--text-low);
+      color: var(--accent);
       font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 0.8px;
+      letter-spacing: 1px;
       font-weight: 700;
+      border-bottom: 1px solid rgba(243, 186, 47, 0.3);
+    }
+
+    tbody tr {
+      transition: background 0.15s ease;
+    }
+
+    tbody tr:hover td {
+      background: rgba(243, 186, 47, 0.06);
     }
 
     td {
@@ -671,8 +743,13 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.9);
-      animation: modalIn 0.25s ease-out;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 0 1px rgba(243, 186, 47, 0.08), 0 0 30px rgba(243, 186, 47, 0.12);
+      animation: modalIn 0.25s ease-out, modalGlow 4s ease-in-out infinite;
+    }
+
+    @keyframes modalGlow {
+      0%, 100% { box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 0 1px rgba(243, 186, 47, 0.08), 0 0 30px rgba(243, 186, 47, 0.12); }
+      50% { box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 0 1px rgba(243, 186, 47, 0.16), 0 0 46px rgba(243, 186, 47, 0.22); }
     }
 
     @keyframes modalIn {
@@ -680,12 +757,20 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
+    h3 {
+      font-family: var(--font-display);
+      letter-spacing: 0.4px;
+    }
+
     .modal h3 {
+      font-family: var(--font-display);
       font-size: 18px;
       font-weight: 800;
       color: var(--accent);
+      letter-spacing: 0.6px;
       border-bottom: 1px solid var(--panel-border);
       padding-bottom: 10px;
+      animation: glowTextPulse 3s ease-in-out infinite;
     }
 
     .modal-actions {
@@ -850,6 +935,9 @@
 <body>
 
   <header id="main-header">
+    <div class="brand-logo" style="display:flex; align-items:center;">
+      <img src="logo.png" alt="CRYPTO Business Social Club" style="height: 38px; width: auto; object-fit: contain; margin-right: 8px; filter: drop-shadow(0 0 8px rgba(243, 186, 47, 0.45));">
+    </div>
     <div class="nav-tabs">
       <button class="tab-btn active" id="tab-plano">📐 Plano Interactivo</button>
       <button class="tab-btn" id="tab-crm">📊 CRM y Reservas</button>
@@ -875,10 +963,10 @@
     <sidebar id="sidebar-panel">
       <span style="font-size: 10px; color: var(--text-low); font-weight: 800; letter-spacing: 0.8px;">ELEMENTOS DE PLANO</span>
       <div class="palette-grid">
-        <div class="pal-item" id="pal-mesa">🔲 Mesa (50x50)</div>
-        <div class="pal-item" id="pal-sillon">🛋️ Sillón VIP</div>
-        <div class="pal-item" id="pal-bocina">🔊 Bocina</div>
-        <div class="pal-item" id="pal-cristal">🪟 Balcón</div>
+        <div class="pal-item" id="pal-mesa">🔲 Mesa</div>
+        <div class="pal-item" id="pal-sillon">🛋️ Sillón</div>
+        <div class="pal-item" id="pal-bocina">🔊 Bocinas</div>
+        <div class="pal-item" id="pal-cristal">🪟 Cristales</div>
         <div class="pal-item" id="pal-dj">🎧 Cabina DJ</div>
         <div class="pal-item" id="pal-barra">🍸 Barra</div>
         <div class="pal-item" id="pal-entrada">🚪 Entrada</div>
@@ -1182,6 +1270,53 @@
 
   btnCleanMode.addEventListener('click', () => toggleCleanMode(true));
   btnExitClean.addEventListener('click', () => toggleCleanMode(false));
+
+  // Nombres visibles por defecto para cada tipo de elemento del plano
+  const NOMBRES_DEFAULT = {
+    mesa: 'MESA',
+    sillon: 'SILLÓN',
+    bocina: 'BOCINA',
+    cristal: 'CRISTALES',
+    dj: 'CABINA DJ',
+    barra: 'BARRA',
+    entrada: 'ENTRADA',
+    salida: 'SALIDA',
+    wc: 'BAÑOS',
+    pasillo: 'PASILLO',
+    caja: 'CAJA',
+    escaleras: 'ESCALERAS'
+  };
+
+  // Migración de nombres antiguos -> nuevos (solo si el elemento aún tiene el nombre por defecto anterior)
+  const NOMBRES_LEGACY_MIGRACION = {
+    'SILLÓN VIP': 'SILLÓN',
+    '🔊 BOCINA': 'BOCINA',
+    'CRISTAL': 'CRISTALES',
+    'BALCÓN': 'CRISTALES',
+    'DJ': 'CABINA DJ',
+    'WC': 'BAÑOS'
+  };
+
+  window.migrarNombresLegacy = function migrarNombresLegacy() {
+    let changed = false;
+    function migrarSet(itemsArr) {
+      (itemsArr || []).forEach(it => {
+        if (it && NOMBRES_LEGACY_MIGRACION[it.nombre]) {
+          it.nombre = NOMBRES_LEGACY_MIGRACION[it.nombre];
+          changed = true;
+        }
+      });
+    }
+    Object.values(window.layoutsData || {}).forEach(day => {
+      migrarSet(day.PB);
+      migrarSet(day.PA);
+    });
+    Object.values(window.presetsData || {}).forEach(preset => {
+      migrarSet(preset.PB);
+      migrarSet(preset.PA);
+    });
+    return changed;
+  }
 
   const STORAGE_KEY_LAYOUT = 'crypto_floor_layouts_by_date_v4';
   const STORAGE_KEY_RESERVAS = 'crypto_floor_daily_reservas_v3';
@@ -1493,7 +1628,7 @@
           const newItem = {
             id: 'item_' + Date.now(),
             tipo: tipo,
-            nombre: tipo === 'bocina' ? '🔊 BOCINA' : tipo === 'sillon' ? 'SILLÓN VIP' : tipo.toUpperCase(),
+            nombre: NOMBRES_DEFAULT[tipo] || tipo.toUpperCase(),
             x: p.x, y: p.y,
             anchoPx: size.a,
             altoPx: size.h,
@@ -1722,7 +1857,10 @@
       PA: JSON.parse(JSON.stringify(currentDayData.PA || []))
     };
 
-    savePresets();
+    localStorage.setItem(STORAGE_KEY_PRESETS, JSON.stringify(window.presetsData));
+    if (typeof window.savePresetToFirebase === 'function') {
+      window.savePresetToFirebase(slot, window.presetsData[slot]);
+    }
     renderPresetsModal();
   };
 
@@ -2281,13 +2419,18 @@
     renderAllCRM();
   });
 
+  if (window.migrarNombresLegacy()) {
+    saveLayouts();
+    savePresets();
+  }
+
   renderFurniture();
   renderAllCRM();
   </script>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyD-SSoIuhjOJDfzudLh1SkD1mNAFNSFQHE",
@@ -2314,6 +2457,8 @@
         window.clientes = data.clientes || [];
         window.presetsData = data.presets || {};
 
+        if (typeof window.migrarNombresLegacy === 'function') window.migrarNombresLegacy();
+
         localStorage.setItem(STORAGE_KEY_LAYOUT, JSON.stringify(window.layoutsData));
         localStorage.setItem(STORAGE_KEY_RESERVAS, JSON.stringify(window.reservasData));
         localStorage.setItem(STORAGE_KEY_CLI, JSON.stringify(window.clientes));
@@ -2321,6 +2466,10 @@
 
         if (typeof window.renderFurniture === 'function') window.renderFurniture();
         if (typeof window.renderAllCRM === 'function') window.renderAllCRM();
+        if (typeof window.renderPresetsModal === 'function' &&
+            document.getElementById('overlay-presets')?.classList.contains('open')) {
+          window.renderPresetsModal();
+        }
 
         isRemoteChange = false;
       } else {
@@ -2342,6 +2491,30 @@
         }, { merge: true });
       } catch (e) {
         console.error("Error en sincronización Firebase: ", e);
+      }
+    };
+
+    window.savePresetToFirebase = async function(slot, presetData) {
+      try {
+        await setDoc(doc(db, "crypto_data", "main_config_v4"), {
+          presets: { [slot]: presetData }
+        }, { merge: true });
+      } catch (e) {
+        console.error("Error al guardar plantilla en Firebase: ", e);
+      }
+    };
+
+    window.getPresetFromFirebase = async function(slot) {
+      try {
+        const docSnap = await getDoc(doc(db, "crypto_data", "main_config_v4"));
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          return (data.presets && data.presets[slot]) || null;
+        }
+        return null;
+      } catch (e) {
+        console.error("Error al obtener plantilla de Firebase: ", e);
+        return null;
       }
     };
   </script>
