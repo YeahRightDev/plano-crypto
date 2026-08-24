@@ -326,6 +326,38 @@
       background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
       background-size: 24px 24px;
       overflow: hidden;
+      perspective: 1400px;
+      perspective-origin: 50% 20%;
+    }
+
+    /* VISTA 3D — inclina el plano completo para dar sensación de profundidad real del antro */
+    #canvas-stage.stage-3d {
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #canvas.mode-3d {
+      background-image:
+        radial-gradient(ellipse 80% 55% at 50% 15%, rgba(168, 85, 247, 0.10), transparent 65%),
+        radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+      background-size: auto, 24px 24px;
+    }
+
+    #canvas.mode-3d .furniture {
+      box-shadow: 0 22px 26px -10px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.03);
+      transition: box-shadow 0.4s ease;
+    }
+
+    #canvas.mode-3d .resize-handle {
+      display: none !important;
+      pointer-events: none;
+    }
+
+    #btn-toggle-3d.active-3d {
+      background: rgba(168, 85, 247, 0.22) !important;
+      border-color: var(--neon-purple) !important;
+      color: var(--neon-purple) !important;
+      box-shadow: 0 0 14px rgba(168, 85, 247, 0.4);
     }
 
     #canvas::before {
@@ -375,6 +407,18 @@
   z-index: 1;
   will-change: transform;
   touch-action: none;
+}
+
+/* CUADRÍCULA DE PRECISIÓN — visible solo cuando el snap está activo, para armar mesas simétricas */
+#canvas-stage.grid-visible::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.08) 0px, rgba(255, 255, 255, 0.08) 1px, transparent 1px, transparent 2%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0px, rgba(255, 255, 255, 0.08) 1px, transparent 1px, transparent 2%);
 }
 
 /* PISO ESTILO CLUB: rejilla neón en diamante que da sensación isométrica sin romper el drag 2D */
@@ -851,6 +895,35 @@
       box-shadow: 0 0 20px rgba(6, 214, 160, 0.3);
     }
 
+    .clean-controls-eye {
+      position: absolute;
+      bottom: 18px;
+      left: 18px;
+      pointer-events: auto;
+      z-index: 61;
+    }
+
+    #btn-toggle-floating-controls {
+      border-radius: 50%;
+      opacity: 0.55;
+    }
+
+    #btn-toggle-floating-controls:hover, #btn-toggle-floating-controls.active-hidden {
+      opacity: 1;
+    }
+
+    .clean-btn-exit, .clean-floor-toggle, .zoom-controls {
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    #app-container.hide-floating-controls .clean-btn-exit,
+    #app-container.hide-floating-controls .clean-floor-toggle,
+    #app-container.hide-floating-controls .zoom-controls {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-6px);
+    }
+
     #view-crm {
       display: none;
       flex: 1;
@@ -1216,6 +1289,13 @@
         <div class="pal-item" id="pal-caja">Caja</div>
         <div class="pal-item" id="pal-escaleras">Escaleras</div>
       </div>
+
+      <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--panel-border);">
+        <span style="font-family: var(--font-display); font-size: 10px; color: var(--accent); opacity: 0.85; font-weight: 700; letter-spacing: 1.6px;">SIMETRÍA Y ORDEN</span>
+        <button class="btn" id="btn-snap-grid" style="width:100%; margin-top:10px; justify-content:flex-start;">🧲 Snap a Cuadrícula: OFF</button>
+        <p style="font-size:10px; color:var(--text-low); margin-top:6px; line-height:1.4;">Al activarlo, cada mesa que muevas se ajusta sola a una cuadrícula fija para quedar perfectamente alineada.</p>
+      </div>
+
       <button class="btn" id="btn-clear-day" style="margin-top:auto; background:rgba(239, 71, 111, 0.15); border-color:var(--neon-red); color:var(--neon-red);">🗑️ Vaciar Plano de Hoy</button>
     </sidebar>
 
@@ -1230,6 +1310,7 @@
             <button class="btn-zoom" id="btn-zoom-in" title="Acercar">➕</button>
             <button class="btn-zoom btn-zoom-reset" id="btn-zoom-reset" title="Restablecer">100%</button>
             <button class="btn-zoom" id="btn-zoom-out" title="Alejar">➖</button>
+            <button class="btn-zoom" id="btn-toggle-3d" title="Vista 3D del antro">🧊</button>
           </div>
         </div>
       </div>
@@ -1275,6 +1356,9 @@
 
       <div id="multi-tools">
         <span id="multi-count" style="font-size: 12px; font-weight: 700; color: var(--accent);">0 elementos seleccionados</span>
+        <button class="btn" id="btn-align-h" title="Alinear al mismo centro horizontal">▤ Alinear Fila</button>
+        <button class="btn" id="btn-align-v" title="Alinear al mismo centro vertical">▥ Alinear Columna</button>
+        <button class="btn" id="btn-distribute" title="Distribuir espacio uniforme entre los elementos">↔ Distribuir Parejo</button>
         <button class="btn" id="btn-unir-mesas" style="background: rgba(243, 186, 47, 0.15); border-color: var(--accent); color: var(--accent);">🔗 Unir Mesas</button>
         <button class="btn" id="btn-desunir-mesas" style="background: rgba(100, 116, 139, 0.15); border-color: var(--text-low); color: var(--text-main);">🔓 Desunir Mesas</button>
         <button class="btn" id="btn-del-multi" style="background: var(--neon-red); color: #ffffff;">Eliminar Seleccionados</button>
@@ -1289,6 +1373,9 @@
             <button id="float-floor-pb" class="active">PB</button>
             <button id="float-floor-pa">PA</button>
           </div>
+        </div>
+        <div class="clean-controls-eye">
+          <button class="btn-zoom" id="btn-toggle-floating-controls" title="Ocultar/Mostrar controles flotantes">👁</button>
         </div>
       </div>
     </div>
@@ -1602,21 +1689,66 @@
   let isLocked = false;
   let currentFloor = 'PB';
 
+  // SNAP A CUADRÍCULA — para simetría perfecta en eventos especiales
+  let snapToGridActive = false;
+  const GRID_STEP_PCT = 2; // paso de cuadrícula en % del canvas (ajustable)
+  const btnSnapGrid = document.getElementById('btn-snap-grid');
+  btnSnapGrid.addEventListener('click', () => {
+    snapToGridActive = !snapToGridActive;
+    btnSnapGrid.textContent = `🧲 Snap a Cuadrícula: ${snapToGridActive ? 'ON' : 'OFF'}`;
+    btnSnapGrid.style.background = snapToGridActive ? 'rgba(6, 214, 160, 0.18)' : '';
+    btnSnapGrid.style.borderColor = snapToGridActive ? 'var(--neon-green)' : '';
+    btnSnapGrid.style.color = snapToGridActive ? 'var(--neon-green)' : '';
+    canvasStage.classList.toggle('grid-visible', snapToGridActive);
+  });
+
+  // OCULTAR/MOSTRAR CONTROLES FLOTANTES — para no estorbar durante el trabajo
+  const btnToggleFloatingControls = document.getElementById('btn-toggle-floating-controls');
+  const appContainerEl = document.getElementById('app-container');
+  btnToggleFloatingControls.addEventListener('click', () => {
+    const nowHidden = appContainerEl.classList.toggle('hide-floating-controls');
+    btnToggleFloatingControls.classList.toggle('active-hidden', nowHidden);
+    btnToggleFloatingControls.textContent = nowHidden ? '👁‍🗨' : '👁';
+    btnToggleFloatingControls.title = nowHidden ? 'Mostrar controles flotantes' : 'Ocultar controles flotantes';
+  });
+
   // LÓGICA DE ZOOM + PAN (canvas ampliado con cámara libre)
   let currentZoom = 1.0;
   let panX = 0;
   let panY = 0;
   const zoomResetBtn = document.getElementById('btn-zoom-reset');
 
+  // VISTA 3D — inclina el plano para visualizar el antro en perspectiva, no solo en plano 2D
+  let view3DActive = false;
+  const btnToggle3D = document.getElementById('btn-toggle-3d');
+  const canvasEl = document.getElementById('canvas');
+  const VIEW3D_TILT = 'rotateX(48deg) rotateZ(0deg)';
+
   function applyStageTransform() {
-    canvasStage.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
+    const tilt = view3DActive ? ` ${VIEW3D_TILT}` : '';
+    canvasStage.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})${tilt}`;
     zoomResetBtn.textContent = `${Math.round(currentZoom * 100)}%`;
   }
 
   function setZoom(val) {
-    currentZoom = Math.min(Math.max(0.4, val), 3);
+    currentZoom = Math.min(Math.max(0.22, val), 3);
     applyStageTransform();
   }
+
+  btnToggle3D.addEventListener('click', () => {
+    view3DActive = !view3DActive;
+    canvasStage.classList.toggle('stage-3d', view3DActive);
+    canvasEl.classList.toggle('mode-3d', view3DActive);
+    btnToggle3D.classList.toggle('active-3d', view3DActive);
+    btnToggle3D.title = view3DActive ? 'Volver a Vista 2D (editar)' : 'Vista 3D del antro';
+    // Mientras se visualiza en 3D, dejamos el plano en modo "solo vista" para no desalinear el drag
+    if (view3DActive) {
+      selectedIds.clear();
+      multiSelectMode = false;
+      updateMultiBar();
+    }
+    applyStageTransform();
+  });
 
   document.getElementById('btn-zoom-in').onclick = () => setZoom(currentZoom + 0.15);
   document.getElementById('btn-zoom-out').onclick = () => setZoom(currentZoom - 0.15);
@@ -1805,8 +1937,8 @@
     const r = canvasStage.getBoundingClientRect();
     let x = ((clientX - r.left) / r.width) * 100;
     let y = ((clientY - r.top) / r.height) * 100;
-    x = Math.max(2, Math.min(98, x));
-    y = Math.max(2, Math.min(98, y));
+    x = Math.max(-45, Math.min(145, x));
+    y = Math.max(-45, Math.min(145, y));
     return { x, y };
   }
 
@@ -1963,15 +2095,15 @@
     });
 
     el.addEventListener('pointermove', (e) => {
-      if (item.locked) return;
+      if (item.locked || view3DActive) return;
       if (e.pointerId !== pointerId || !el.hasPointerCapture(pointerId)) return;
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
       if (moved) {
         const p = pctPos(e.clientX, e.clientY);
-        item.x = p.x;
-        item.y = p.y;
+        item.x = snapToGridActive ? Math.round(p.x / GRID_STEP_PCT) * GRID_STEP_PCT : p.x;
+        item.y = snapToGridActive ? Math.round(p.y / GRID_STEP_PCT) * GRID_STEP_PCT : p.y;
         el.style.left = item.x + '%';
         el.style.top = item.y + '%';
       }
@@ -2098,6 +2230,46 @@
     const dateKey = fechaInput.value;
     window.layoutsData[dateKey][currentFloor] = getLayout().filter(item => !selectedIds.has(item.id));
     selectedIds.clear();
+    saveLayouts();
+    renderFurniture();
+  });
+
+  // ALINEAR EN FILA (mismo centro vertical) — para simetría perfecta en eventos especiales
+  document.getElementById('btn-align-h').addEventListener('click', () => {
+    const seleccion = getLayout().filter(it => selectedIds.has(it.id));
+    if (seleccion.length < 2) { alert('Selecciona al menos 2 elementos para alinearlos.'); return; }
+    const avgY = seleccion.reduce((sum, it) => sum + it.y, 0) / seleccion.length;
+    seleccion.forEach(it => { it.y = avgY; });
+    saveLayouts();
+    renderFurniture();
+  });
+
+  // ALINEAR EN COLUMNA (mismo centro horizontal)
+  document.getElementById('btn-align-v').addEventListener('click', () => {
+    const seleccion = getLayout().filter(it => selectedIds.has(it.id));
+    if (seleccion.length < 2) { alert('Selecciona al menos 2 elementos para alinearlos.'); return; }
+    const avgX = seleccion.reduce((sum, it) => sum + it.x, 0) / seleccion.length;
+    seleccion.forEach(it => { it.x = avgX; });
+    saveLayouts();
+    renderFurniture();
+  });
+
+  // DISTRIBUIR ESPACIO PAREJO entre el primero y el último de la selección (detecta si es fila u columna)
+  document.getElementById('btn-distribute').addEventListener('click', () => {
+    const seleccion = getLayout().filter(it => selectedIds.has(it.id));
+    if (seleccion.length < 3) { alert('Selecciona al menos 3 elementos para distribuir el espacio de forma pareja.'); return; }
+
+    const spreadX = Math.max(...seleccion.map(it => it.x)) - Math.min(...seleccion.map(it => it.x));
+    const spreadY = Math.max(...seleccion.map(it => it.y)) - Math.min(...seleccion.map(it => it.y));
+    const eje = spreadX >= spreadY ? 'x' : 'y';
+
+    const ordenados = [...seleccion].sort((a, b) => a[eje] - b[eje]);
+    const min = ordenados[0][eje];
+    const max = ordenados[ordenados.length - 1][eje];
+    const paso = (max - min) / (ordenados.length - 1);
+
+    ordenados.forEach((it, i) => { it[eje] = min + paso * i; });
+
     saveLayouts();
     renderFurniture();
   });
