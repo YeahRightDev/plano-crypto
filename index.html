@@ -53,6 +53,11 @@
       padding: 0;
       font-family: 'Plus Jakarta Sans', sans-serif;
       user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      scroll-behavior: smooth;
     }
 
     body {
@@ -157,6 +162,11 @@
       background: rgba(255, 255, 255, 0.06);
       border-color: rgba(243, 186, 47, 0.3);
       transform: translateY(-1px);
+    }
+
+    .tab-btn:active, .btn:active {
+      transform: translateY(0) scale(0.96);
+      transition: transform 0.08s ease;
     }
 
     .tab-btn.active, .btn.primary {
@@ -538,6 +548,7 @@
       transition: border-color 0.2s, box-shadow 0.15s ease, transform 0.15s ease;
       will-change: transform;
       backface-visibility: hidden;
+      contain: layout style;
     }
 
     .furniture.mesa {
@@ -1196,6 +1207,45 @@
       color: var(--neon-red);
     }
 
+    /* CHIPS DE MESERO — selección rápida con un toque */
+    .mesero-quick-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .mesero-chip {
+      padding: 6px 10px;
+      font-size: 10.5px;
+      background: rgba(168, 85, 247, 0.08);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      color: var(--text-main);
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .mesero-chip:hover {
+      background: rgba(168, 85, 247, 0.18);
+      border-color: var(--neon-purple);
+      transform: translateY(-1px);
+    }
+
+    .mesero-chip:active {
+      transform: translateY(0) scale(0.94);
+      transition: transform 0.08s ease;
+    }
+
+    .mesero-chip.sel-mesero {
+      background: rgba(168, 85, 247, 0.28);
+      border-color: var(--neon-purple);
+      color: var(--neon-purple);
+      box-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
+    }
+
     .color-btn {
       flex: 1;
       padding: 10px;
@@ -1588,7 +1638,9 @@
         </div>
         <div style="margin-top: 10px;">
           <label style="font-size: 11px; color: var(--text-low); display:block; margin-bottom:4px; font-weight:700;">Mesero Asignado</label>
-          <input type="text" id="f-mesero" placeholder="Nombre del mesero" style="width:100%;">
+          <input type="text" id="f-mesero" placeholder="Nombre del mesero" list="meseros-datalist" style="width:100%;">
+          <div class="mesero-quick-selector" id="mesero-quick-selector"></div>
+          <datalist id="meseros-datalist"></datalist>
         </div>
       </div>
 
@@ -1728,6 +1780,37 @@
     'DJ': 'CABINA DJ',
     'WC': 'BAÑOS'
   };
+
+  // Lista de meseros del club para selección rápida con un toque (chips)
+  const MESEROS_LIST = ['Angel', 'Alex', 'Alexa', 'Brenda', 'Josue', 'Eder', 'Ozvaldo', 'Jose', 'Juan P', 'Pillo', 'Luis A', 'Ulises'];
+
+  // Pinta los chips de meseros dentro de un contenedor y los sincroniza con su input de texto asociado
+  function renderMeseroChips(containerEl, inputEl) {
+    if (!containerEl || !inputEl) return;
+    containerEl.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    MESEROS_LIST.forEach(nombre => {
+      const chip = document.createElement('div');
+      chip.className = 'mesero-chip';
+      chip.textContent = nombre;
+      if (inputEl.value.trim().toLowerCase() === nombre.toLowerCase()) chip.classList.add('sel-mesero');
+      chip.addEventListener('click', () => {
+        const yaSeleccionado = inputEl.value.trim().toLowerCase() === nombre.toLowerCase();
+        inputEl.value = yaSeleccionado ? '' : nombre;
+        containerEl.querySelectorAll('.mesero-chip').forEach(c => c.classList.remove('sel-mesero'));
+        if (!yaSeleccionado) chip.classList.add('sel-mesero');
+        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      frag.appendChild(chip);
+    });
+    containerEl.appendChild(frag);
+  }
+
+  (function fillMeserosDatalist() {
+    const dl = document.getElementById('meseros-datalist');
+    if (!dl) return;
+    dl.innerHTML = MESEROS_LIST.map(n => `<option value="${n}"></option>`).join('');
+  })();
 
   window.migrarNombresLegacy = function migrarNombresLegacy() {
     let changed = false;
@@ -2009,6 +2092,20 @@
       window.layoutsData[dateKey][currentFloor] = [];
     }
     return window.layoutsData[dateKey][currentFloor];
+  }
+
+  // Numeración automática de mesas al colocarlas en el plano.
+  // Planta Baja (PB): por secciones de diez -> M10-M16, M20-M26, M30-M36...
+  // Planta Alta (PA): numeración simple y correlativa -> M1, M2, M3... hasta M20.
+  function nextMesaNombre(floor) {
+    const mesaCount = getLayout().filter(it => it.tipo === 'mesa').length;
+    if (floor === 'PA') {
+      return 'M' + (mesaCount + 1);
+    }
+    const seccion = Math.floor(mesaCount / 7);
+    const posEnSeccion = mesaCount % 7;
+    const base = 10 * (seccion + 1);
+    return 'M' + (base + posEnSeccion);
   }
 
   // Resuelve la clave de reserva real: si la mesa pertenece a un grupo combinado,
@@ -2298,7 +2395,7 @@
           const newItem = {
             id: 'item_' + Date.now(),
             tipo: tipo,
-            nombre: NOMBRES_DEFAULT[key] || tipo.toUpperCase(),
+            nombre: tipo === 'mesa' ? nextMesaNombre(currentFloor) : (NOMBRES_DEFAULT[key] || tipo.toUpperCase()),
             x: p.x, y: p.y,
             anchoPx: size.a,
             altoPx: size.h,
@@ -2717,6 +2814,7 @@
       document.getElementById('f-telefono').value = res.telefono || '';
       document.getElementById('f-personas').value = res.personas || '';
       document.getElementById('f-mesero').value = res.mesero || '';
+      renderMeseroChips(document.getElementById('mesero-quick-selector'), document.getElementById('f-mesero'));
       selectedEstado = res.estado || 'disponible';
       updateEstadoButtons();
     } else {
@@ -2777,6 +2875,13 @@
 
   document.querySelectorAll('.color-btn').forEach(b => {
     b.addEventListener('click', () => { selectedColorVariante = b.dataset.color; updateColorButtons(); });
+  });
+
+  document.getElementById('f-mesero').addEventListener('input', () => {
+    const val = document.getElementById('f-mesero').value.trim().toLowerCase();
+    document.querySelectorAll('#mesero-quick-selector .mesero-chip').forEach(c => {
+      c.classList.toggle('sel-mesero', c.textContent.trim().toLowerCase() === val);
+    });
   });
 
   document.getElementById('btn-cancel').addEventListener('click', closeModal);
@@ -2846,7 +2951,7 @@
       <input type="text" class="b-telefono" placeholder="Teléfono" value="${telefono}">
       <input type="number" class="b-personas" placeholder="Pax" value="${personas}">
       <input type="text" class="b-mesa" placeholder="Mesa" value="${mesa}">
-      <input type="text" class="b-mesero" placeholder="Mesero" value="${mesero}">
+      <input type="text" class="b-mesero" placeholder="Mesero" value="${mesero}" list="meseros-datalist">
       <button class="btn-remove-row" title="Eliminar fila">✕</button>
     `;
     row.querySelector('.btn-remove-row').onclick = () => row.remove();
