@@ -23,6 +23,12 @@
       --text-main: #f8fafc;
       --text-low: #64748b;
       --font-display: 'Orbitron', 'Plus Jakarta Sans', sans-serif;
+
+      /* Glow premium para estados de mesas (glassmorphism) */
+      --glow-green: rgba(6, 214, 160, 0.5);
+      --glow-amber: rgba(255, 183, 3, 0.55);
+      --glow-red: rgba(239, 71, 111, 0.6);
+      --glow-purple: rgba(168, 85, 247, 0.45);
     }
 
     @keyframes neonLinePulse {
@@ -365,7 +371,7 @@
   width: 100%;
   height: 100%;
   position: relative;
-  transform-origin: center center;
+  transform-origin: 0 0;
   z-index: 1;
   will-change: transform;
   touch-action: none;
@@ -462,7 +468,7 @@
     .furniture.mesa {
       background: #1a2028;
       border: 2px solid var(--neon-green);
-      border-radius: 16px;
+      border-radius: 14px;
       box-shadow: 0 0 6px rgba(6, 214, 160, 0.35);
     }
 
@@ -488,10 +494,10 @@
     }
 
     .furniture.sillon {
-      background: #241a33;
-      border: 2px solid var(--neon-purple);
-      border-radius: 14px;
-      box-shadow: 0 0 6px rgba(168, 85, 247, 0.35);
+      background: linear-gradient(135deg, rgba(45, 32, 66, 0.95) 0%, rgba(22, 16, 35, 0.95) 100%);
+      border: 1.5px solid var(--neon-purple);
+      border-radius: 20px;
+      box-shadow: 0 0 10px var(--glow-purple), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
 
     .furniture.dj {
@@ -546,19 +552,31 @@
 
     .furniture.est-disponible {
       border-color: var(--neon-green);
-      box-shadow: 0 0 12px rgba(6, 214, 160, 0.25);
+      box-shadow: 0 0 14px var(--glow-green), inset 0 0 8px rgba(6, 214, 160, 0.15);
     }
 
     .furniture.est-reservada {
       border-color: var(--neon-amber);
-      background: rgba(61, 46, 5, 0.9);
-      box-shadow: 0 0 12px rgba(255, 183, 3, 0.3);
+      background: rgba(61, 46, 5, 0.92);
+      box-shadow: 0 0 16px var(--glow-amber), inset 0 0 9px rgba(255, 183, 3, 0.2);
+      animation: pulseAmberGlow 2.4s ease-in-out infinite;
     }
 
     .furniture.est-ocupada {
       border-color: var(--neon-red);
-      background: rgba(61, 14, 24, 0.9);
-      box-shadow: 0 0 12px rgba(239, 71, 111, 0.3);
+      background: rgba(61, 14, 24, 0.92);
+      box-shadow: 0 0 18px var(--glow-red), inset 0 0 10px rgba(239, 71, 111, 0.25);
+      animation: pulseRedGlow 1.8s ease-in-out infinite;
+    }
+
+    @keyframes pulseAmberGlow {
+      0%, 100% { box-shadow: 0 0 10px var(--glow-amber), inset 0 0 6px rgba(255, 183, 3, 0.15); }
+      50% { box-shadow: 0 0 20px var(--glow-amber), inset 0 0 10px rgba(255, 183, 3, 0.3); }
+    }
+
+    @keyframes pulseRedGlow {
+      0%, 100% { box-shadow: 0 0 12px var(--glow-red), inset 0 0 7px rgba(239, 71, 111, 0.2); }
+      50% { box-shadow: 0 0 24px var(--glow-red), inset 0 0 12px rgba(239, 71, 111, 0.4); }
     }
 
     .furniture .pax {
@@ -823,8 +841,10 @@
     }
 
     .modal {
-      background: rgba(22, 25, 34, 0.95);
-      border: 1px solid var(--panel-border);
+      background: rgba(22, 25, 34, 0.82);
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       border-top: 1px solid rgba(243, 186, 47, 0.5);
       border-radius: 20px;
       width: 480px;
@@ -835,13 +855,13 @@
       display: flex;
       flex-direction: column;
       gap: 14px;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 0 1px rgba(243, 186, 47, 0.08), 0 0 30px rgba(243, 186, 47, 0.12);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 30px rgba(243, 186, 47, 0.12);
       animation: modalIn 0.25s ease-out, modalGlow 4s ease-in-out infinite;
     }
 
     @keyframes modalGlow {
-      0%, 100% { box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 0 1px rgba(243, 186, 47, 0.08), 0 0 30px rgba(243, 186, 47, 0.12); }
-      50% { box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 0 1px rgba(243, 186, 47, 0.16), 0 0 46px rgba(243, 186, 47, 0.22); }
+      0%, 100% { box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 30px rgba(243, 186, 47, 0.12); }
+      50% { box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 0 46px rgba(243, 186, 47, 0.22); }
     }
 
     @keyframes modalIn {
@@ -1446,19 +1466,100 @@
   let isLocked = false;
   let currentFloor = 'PB';
 
-  // LÓGICA DE ZOOM
+  // LÓGICA DE ZOOM + PAN (canvas ampliado con cámara libre)
   let currentZoom = 1.0;
+  let panX = 0;
+  let panY = 0;
   const zoomResetBtn = document.getElementById('btn-zoom-reset');
 
-  function setZoom(val) {
-    currentZoom = Math.min(Math.max(0.5, val), 2.5);
-    canvasStage.style.transform = `scale(${currentZoom})`;
+  function applyStageTransform() {
+    canvasStage.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
     zoomResetBtn.textContent = `${Math.round(currentZoom * 100)}%`;
+  }
+
+  function setZoom(val) {
+    currentZoom = Math.min(Math.max(0.4, val), 3);
+    applyStageTransform();
   }
 
   document.getElementById('btn-zoom-in').onclick = () => setZoom(currentZoom + 0.15);
   document.getElementById('btn-zoom-out').onclick = () => setZoom(currentZoom - 0.15);
-  zoomResetBtn.onclick = () => setZoom(1.0);
+  zoomResetBtn.onclick = () => { panX = 0; panY = 0; setZoom(1.0); };
+
+  // Zoom con rueda del ratón (mantiene el centro visual, sin romper pctPos)
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    setZoom(currentZoom + (e.deltaY < 0 ? 0.1 : -0.1));
+  }, { passive: false });
+
+  // Pan (arrastre de cámara) con dos dedos, clic derecho o clic central en el fondo del plano.
+  // El clic/toque simple sobre el fondo se conserva intacto para deseleccionar (no inicia pan).
+  (function setupCanvasPan() {
+    const activePointers = new Map();
+    let isPanning = false;
+    let panStartX = 0, panStartY = 0;
+    let panOriginX = 0, panOriginY = 0;
+    let pinchStartDist = 0;
+    let pinchStartZoom = 1;
+
+    function dist(p1, p2) { return Math.hypot(p1.x - p2.x, p1.y - p2.y); }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      if (e.target !== canvas && e.target !== canvasStage) return;
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+      if (activePointers.size === 2) {
+        // Inicio de pinch-zoom + pan de dos dedos
+        const pts = [...activePointers.values()];
+        pinchStartDist = dist(pts[0], pts[1]);
+        pinchStartZoom = currentZoom;
+        isPanning = true;
+        panStartX = (pts[0].x + pts[1].x) / 2;
+        panStartY = (pts[0].y + pts[1].y) / 2;
+        panOriginX = panX;
+        panOriginY = panY;
+      } else if (activePointers.size === 1 && (e.button === 2 || e.button === 1 || e.shiftKey)) {
+        // Pan con clic derecho / clic central / Shift+clic (equipos de escritorio)
+        isPanning = true;
+        panStartX = e.clientX;
+        panStartY = e.clientY;
+        panOriginX = panX;
+        panOriginY = panY;
+      }
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (!activePointers.has(e.pointerId)) return;
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (!isPanning) return;
+
+      if (activePointers.size === 2) {
+        const pts = [...activePointers.values()];
+        const newDist = dist(pts[0], pts[1]);
+        if (pinchStartDist > 0) {
+          setZoom(pinchStartZoom * (newDist / pinchStartDist));
+        }
+        const midX = (pts[0].x + pts[1].x) / 2;
+        const midY = (pts[0].y + pts[1].y) / 2;
+        panX = panOriginX + (midX - panStartX);
+        panY = panOriginY + (midY - panStartY);
+        applyStageTransform();
+      } else if (activePointers.size === 1) {
+        panX = panOriginX + (e.clientX - panStartX);
+        panY = panOriginY + (e.clientY - panStartY);
+        applyStageTransform();
+      }
+    });
+
+    function endPointer(e) {
+      activePointers.delete(e.pointerId);
+      if (activePointers.size < 2) pinchStartDist = 0;
+      if (activePointers.size === 0) isPanning = false;
+    }
+    canvas.addEventListener('pointerup', endPointer);
+    canvas.addEventListener('pointercancel', endPointer);
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+  })();
 
   // PANEL DE ZOOM MOVIBLE (arrastrar y soltar en cualquier parte del plano)
   (function initZoomControlsDrag() {
