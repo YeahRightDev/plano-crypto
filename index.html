@@ -37,9 +37,9 @@
     }
 
     @keyframes floorLightsDrift {
-      0%   { background-position: 12% 18%, 88% 78%, 50% 92%; }
-      50%  { background-position: 46% 56%, 54% 34%, 70% 52%; }
-      100% { background-position: 78% 30%, 22% 62%, 30% 82%; }
+      0%   { background-position: 12% 18%, 88% 78%, 50% 92%, 30% 60%; }
+      50%  { background-position: 46% 56%, 54% 34%, 70% 52%, 66% 22%; }
+      100% { background-position: 78% 30%, 22% 62%, 30% 82%, 12% 74%; }
     }
 
     @keyframes glowTextPulse {
@@ -317,6 +317,16 @@
       overflow: hidden;
     }
 
+    /* ILUMINACIÓN TENUE DE ANTRO — viñeta que oscurece bordes y realza el brillo neón del centro */
+    #view-plano::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      background: radial-gradient(ellipse 85% 75% at 50% 42%, transparent 50%, rgba(0, 0, 0, 0.5) 100%);
+    }
+
     /* CANVAS Y MARCA DE AGUA INTEGRADA */
     #canvas {
       flex: 1;
@@ -333,7 +343,12 @@
     /* VISTA 3D — inclina el plano completo para dar sensación de profundidad real del antro */
     #canvas-stage.stage-3d {
       transform-style: preserve-3d;
-      transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+      transform-origin: 50% 45%; /* pivote centrado: la inclinación se ve natural, no como si girara desde una esquina */
+    }
+
+    /* Transición SOLO durante el cambio de vista (entrar/salir de 3D) — nunca durante pan/zoom en vivo, para que no se sienta "atrasado" */
+    #canvas-stage.stage-transitioning {
+      transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     #canvas.mode-3d {
@@ -394,8 +409,9 @@
       background-image:
         radial-gradient(circle 320px, rgba(243, 186, 47, 0.16), transparent 70%),
         radial-gradient(circle 280px, rgba(6, 214, 160, 0.14), transparent 70%),
-        radial-gradient(circle 260px, rgba(168, 85, 247, 0.12), transparent 70%);
-      background-position: 12% 18%, 88% 78%, 50% 92%;
+        radial-gradient(circle 260px, rgba(168, 85, 247, 0.14), transparent 70%),
+        radial-gradient(circle 240px, rgba(0, 242, 254, 0.1), transparent 70%);
+      background-position: 12% 18%, 88% 78%, 50% 92%, 30% 60%;
       animation: floorLightsDrift 24s ease-in-out infinite alternate;
     }
 
@@ -520,6 +536,8 @@
       box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.4), 5px 8px 0 rgba(0, 0, 0, 0.28), 7px 12px 12px rgba(0, 0, 0, 0.5);
       box-sizing: border-box;
       transition: border-color 0.2s, box-shadow 0.15s ease, transform 0.15s ease;
+      will-change: transform;
+      backface-visibility: hidden;
     }
 
     .furniture.mesa {
@@ -538,11 +556,6 @@
       color: #0c1117;
     }
     .furniture.mesa.est-disponible .sub-txt { opacity: 0.75; }
-
-    @keyframes mesaBreathe {
-      0%, 100% { box-shadow: 0 0 14px rgba(6, 214, 160, 0.22), inset 0 0 10px rgba(6, 214, 160, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.08); }
-      50%      { box-shadow: 0 0 22px rgba(6, 214, 160, 0.4), inset 0 0 14px rgba(6, 214, 160, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.12); }
-    }
 
     .furniture.mesa::before, .furniture.mesa::after {
       content: '';
@@ -582,26 +595,52 @@
       pointer-events: none;
     }
 
+    /* SILLÓN — lounge VIP con capitoné y neón bajo el asiento */
     .furniture.sillon {
-      background: linear-gradient(135deg, #4b5568 0%, #2c3341 55%, #1a1f28 100%);
-      border: 1.5px solid #94a3b8;
-      border-radius: 20px;
+      background:
+        radial-gradient(circle at 22% 24%, rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 1.6px, transparent 1.6px) 0 0 / 16px 16px,
+        radial-gradient(circle at 22% 24%, rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 1.6px, transparent 1.6px) 8px 8px / 16px 16px,
+        linear-gradient(150deg, #414d66 0%, #262d3d 55%, #14171f 100%);
+      border: 1.5px solid var(--neon-purple);
+      border-radius: 28px 28px 12px 12px / 34px 34px 10px 10px;
       box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.1),
-        3px 4px 0 rgba(15, 18, 24, 0.9),
-        5px 8px 0 rgba(10, 12, 16, 0.85),
-        7px 12px 14px rgba(0, 0, 0, 0.55);
+        0 0 14px var(--glow-purple),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        inset 0 -12px 16px rgba(0, 0, 0, 0.4),
+        3px 4px 0 rgba(12, 8, 20, 0.9),
+        5px 8px 0 rgba(8, 5, 14, 0.85),
+        7px 12px 16px rgba(0, 0, 0, 0.6);
+      position: absolute;
+      overflow: visible;
+    }
+
+    .furniture.sillon::after {
+      content: '';
+      position: absolute;
+      left: 12%; right: 12%; bottom: -6px; height: 5px;
+      background: var(--neon-purple);
+      filter: blur(5px);
+      opacity: 0.75;
+      border-radius: 4px;
+      pointer-events: none;
     }
 
     .furniture.sillon.color-rojo {
-      background: linear-gradient(135deg, #7a2233 0%, #4a121e 55%, #2b0a12 100%);
       border: 1.5px solid var(--neon-red);
+      background:
+        radial-gradient(circle at 22% 24%, rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 1.6px, transparent 1.6px) 0 0 / 16px 16px,
+        radial-gradient(circle at 22% 24%, rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 1.6px, transparent 1.6px) 8px 8px / 16px 16px,
+        linear-gradient(150deg, #7a2c3f 0%, #47141f 55%, #240a0f 100%);
       box-shadow:
+        0 0 14px var(--glow-red),
         inset 0 1px 0 rgba(255, 255, 255, 0.12),
-        0 0 10px var(--glow-red),
-        3px 4px 0 rgba(38, 6, 12, 0.9),
-        5px 8px 0 rgba(24, 4, 8, 0.85),
-        7px 12px 14px rgba(0, 0, 0, 0.55);
+        inset 0 -12px 16px rgba(0, 0, 0, 0.4),
+        3px 4px 0 rgba(30, 5, 10, 0.9),
+        5px 8px 0 rgba(20, 3, 7, 0.85),
+        7px 12px 16px rgba(0, 0, 0, 0.6);
+    }
+    .furniture.sillon.color-rojo::after {
+      background: var(--neon-red);
     }
 
     .furniture.dj {
@@ -657,17 +696,47 @@
         7px 12px 14px rgba(0, 0, 0, 0.6);
     }
 
+    /* BOCINA — rejilla de altavoz + ondas de sonido pulsando al ritmo */
     .furniture.bocina {
-      background: radial-gradient(circle at 40% 35%, #1c2536 0%, #111827 60%, #0a0e18 100%);
+      background: radial-gradient(circle at 45% 40%, #1c2536 0%, #0d1119 60%, #05070c 100%);
       border: 2px solid #00f2fe;
-      border-radius: 8px;
+      border-radius: 10px;
       box-shadow:
-        0 0 12px rgba(0, 242, 254, 0.3),
-        inset 0 0 0 6px rgba(0, 242, 254, 0.06),
-        inset 0 0 0 12px rgba(0, 0, 0, 0.35),
+        0 0 14px rgba(0, 242, 254, 0.45),
+        inset 0 0 0 5px rgba(0, 242, 254, 0.07),
+        inset 0 0 18px rgba(0, 242, 254, 0.16),
         3px 4px 0 rgba(3, 30, 34, 0.9),
         5px 8px 0 rgba(2, 20, 23, 0.85),
         6px 10px 12px rgba(0, 0, 0, 0.6);
+      overflow: visible;
+    }
+
+    .furniture.bocina::before {
+      content: '';
+      position: absolute;
+      inset: 16%;
+      border-radius: 50%;
+      background-image: radial-gradient(circle, rgba(0, 242, 254, 0.4) 1px, transparent 1.5px);
+      background-size: 7px 7px;
+      opacity: 0.85;
+      pointer-events: none;
+    }
+
+    .furniture.bocina::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 12px;
+      border: 2px solid rgba(0, 242, 254, 0.6);
+      opacity: 0;
+      pointer-events: none;
+      animation: bocinaPulseRing 1.7s ease-out infinite;
+    }
+
+    @keyframes bocinaPulseRing {
+      0%   { opacity: 0.7; transform: scale(1); }
+      75%  { opacity: 0; transform: scale(1.35); }
+      100% { opacity: 0; transform: scale(1.4); }
     }
 
     .furniture.selected {
@@ -1004,14 +1073,22 @@
       height: 100vh;
       background: rgba(0, 0, 0, 0.82);
       backdrop-filter: blur(10px);
-      display: none;
+      display: flex;
       align-items: center;
       justify-content: center;
       z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.16s ease, visibility 0s linear 0.16s;
+      will-change: opacity;
     }
 
     .overlay.open {
-      display: flex;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transition: opacity 0.16s ease;
     }
 
     .modal {
@@ -1030,17 +1107,33 @@
       flex-direction: column;
       gap: 14px;
       box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 30px rgba(243, 186, 47, 0.12);
-      animation: modalIn 0.25s ease-out, modalGlow 4s ease-in-out infinite;
+      animation: modalIn 0.2s ease-out;
+      position: relative;
+      will-change: transform, opacity;
+    }
+
+    /* Brillo del modal animado por OPACIDAD (barato para el navegador) en vez de recalcular el blur
+       del box-shadow en cada frame — se ve igual de vivo pero sin trabar el resto de la app */
+    .modal::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 22px;
+      box-shadow: 0 0 42px rgba(243, 186, 47, 0.35);
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: -1;
+      animation: modalGlow 4s ease-in-out infinite;
     }
 
     @keyframes modalGlow {
-      0%, 100% { box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 30px rgba(243, 186, 47, 0.12); }
-      50% { box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 0 46px rgba(243, 186, 47, 0.22); }
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 0.75; }
     }
 
     @keyframes modalIn {
-      from { opacity: 0; transform: translateY(12px); }
-      to { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; transform: translateY(10px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     h3 {
@@ -1737,6 +1830,15 @@
 
   btnToggle3D.addEventListener('click', () => {
     view3DActive = !view3DActive;
+
+    // Transición suave SOLO durante el cambio de vista; se retira después para que
+    // el pan y el zoom en vivo dentro de la vista 3D respondan al instante (sin retraso).
+    canvasStage.classList.add('stage-transitioning');
+    clearTimeout(window._stage3DTransitionTimer);
+    window._stage3DTransitionTimer = setTimeout(() => {
+      canvasStage.classList.remove('stage-transitioning');
+    }, 600);
+
     canvasStage.classList.toggle('stage-3d', view3DActive);
     canvasEl.classList.toggle('mode-3d', view3DActive);
     btnToggle3D.classList.toggle('active-3d', view3DActive);
@@ -1746,6 +1848,10 @@
       selectedIds.clear();
       multiSelectMode = false;
       updateMultiBar();
+      // Centra la cámara y aleja un poco el zoom para apreciar el antro completo en perspectiva
+      panX = 0;
+      panY = 0;
+      currentZoom = Math.min(currentZoom, 0.8);
     }
     applyStageTransform();
   });
@@ -1796,6 +1902,17 @@
       }
     });
 
+    let panRafPending = false;
+
+    function schedulePanFrame() {
+      if (panRafPending) return;
+      panRafPending = true;
+      requestAnimationFrame(() => {
+        panRafPending = false;
+        applyStageTransform();
+      });
+    }
+
     canvas.addEventListener('pointermove', (e) => {
       if (!activePointers.has(e.pointerId)) return;
       activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -1805,17 +1922,17 @@
         const pts = [...activePointers.values()];
         const newDist = dist(pts[0], pts[1]);
         if (pinchStartDist > 0) {
-          setZoom(pinchStartZoom * (newDist / pinchStartDist));
+          currentZoom = Math.min(Math.max(0.22, pinchStartZoom * (newDist / pinchStartDist)), 3);
         }
         const midX = (pts[0].x + pts[1].x) / 2;
         const midY = (pts[0].y + pts[1].y) / 2;
         panX = panOriginX + (midX - panStartX);
         panY = panOriginY + (midY - panStartY);
-        applyStageTransform();
+        schedulePanFrame();
       } else if (activePointers.size === 1) {
         panX = panOriginX + (e.clientX - panStartX);
         panY = panOriginY + (e.clientY - panStartY);
-        applyStageTransform();
+        schedulePanFrame();
       }
     });
 
@@ -2078,6 +2195,8 @@
 
   function attachDrag(el, item) {
     let startX, startY, moved, pointerId;
+    let rafPending = false;
+    let pendingClientX = 0, pendingClientY = 0;
 
     el.addEventListener('pointerdown', (e) => {
       if (e.target.classList.contains('resize-handle')) return;
@@ -2094,6 +2213,15 @@
       }
     });
 
+    function applyDragFrame() {
+      rafPending = false;
+      const p = pctPos(pendingClientX, pendingClientY);
+      item.x = snapToGridActive ? Math.round(p.x / GRID_STEP_PCT) * GRID_STEP_PCT : p.x;
+      item.y = snapToGridActive ? Math.round(p.y / GRID_STEP_PCT) * GRID_STEP_PCT : p.y;
+      el.style.left = item.x + '%';
+      el.style.top = item.y + '%';
+    }
+
     el.addEventListener('pointermove', (e) => {
       if (item.locked || view3DActive) return;
       if (e.pointerId !== pointerId || !el.hasPointerCapture(pointerId)) return;
@@ -2101,11 +2229,13 @@
       const dy = e.clientY - startY;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
       if (moved) {
-        const p = pctPos(e.clientX, e.clientY);
-        item.x = snapToGridActive ? Math.round(p.x / GRID_STEP_PCT) * GRID_STEP_PCT : p.x;
-        item.y = snapToGridActive ? Math.round(p.y / GRID_STEP_PCT) * GRID_STEP_PCT : p.y;
-        el.style.left = item.x + '%';
-        el.style.top = item.y + '%';
+        // Throttleado con requestAnimationFrame para máxima fluidez al arrastrar mesas
+        pendingClientX = e.clientX;
+        pendingClientY = e.clientY;
+        if (!rafPending) {
+          rafPending = true;
+          requestAnimationFrame(applyDragFrame);
+        }
       }
     });
 
