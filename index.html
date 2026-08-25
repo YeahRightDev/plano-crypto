@@ -348,7 +348,9 @@
       overflow: hidden;
       perspective: 1900px;
       perspective-origin: 50% 12%;
+      cursor: grab;
     }
+    #canvas.panning-active { cursor: grabbing; }
 
     /* VISTA 3D — inclina el plano completo para dar sensación de profundidad real del antro */
     #canvas-stage.stage-3d {
@@ -495,26 +497,37 @@
     }
     #view3d-zoom button:active { transform: scale(0.92); }
 
-    #canvas::before {
-      content: '';
+    /* Joystick táctil para "caminar" por el antro — pensado para tableta */
+    #view3d-joystick {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 62%;
-      height: 62%;
-      max-width: 820px;
-      max-height: 820px;
-      transform: translate(-50%, -50%);
-      background-image: url('logo.png');
-      background-repeat: no-repeat;
-      background-position: center;
-      background-size: contain;
-      opacity: 0.05;
-      filter: blur(1.5px) grayscale(0.2);
-      pointer-events: none;
-      user-select: none;
-      z-index: 0;
+      bottom: 20px;
+      left: 20px;
+      z-index: 3;
+      width: 96px; height: 96px;
+      border-radius: 50%;
+      background: rgba(10, 12, 17, 0.55);
+      border: 1px solid rgba(6, 214, 160, 0.35);
+      backdrop-filter: blur(8px);
+      touch-action: none;
     }
+    #view3d-joystick-knob {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 40px; height: 40px;
+      margin: -20px 0 0 -20px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #06d6a0, #059669);
+      box-shadow: 0 0 14px rgba(6, 214, 160, 0.7);
+      transition: transform 0.05s linear;
+      pointer-events: none;
+    }
+    @media (min-width: 900px) {
+      #view3d-joystick { display: none; } /* en PC se usa teclado WASD / flechas */
+    }
+
+    /* Marca de agua central eliminada a propósito: era el bloque claro/blanco
+       que quedaba flotando justo en el centro del plano y tapaba el piso.
+       La identidad de marca ya vive en el header, así que el plano queda limpio. */
 
     /* LUCES DE ANTRO EN MOVIMIENTO SOBRE EL PLANO (respeta la cuadrícula de puntos) */
     #canvas::after {
@@ -1495,118 +1508,6 @@
       font-size: 10px;
       color: var(--text-low);
     }
-    /* === PISO 3D CON REFLEJO NEÓN === */
-    #canvas.mode-3d {
-      background: radial-gradient(ellipse 90% 70% at 50% 10%, rgba(20,10,30,0.4), #030405 70%);
-    }
-
-    #canvas.mode-3d #canvas-stage::before {
-      background-image:
-        repeating-linear-gradient(0deg, rgba(6,214,160,0.18) 0 1px, transparent 1px 50px),
-        repeating-linear-gradient(90deg, rgba(168,85,247,0.15) 0 1px, transparent 1px 50px),
-        radial-gradient(ellipse 60% 40% at 50% 50%, rgba(255,255,255,0.06), transparent 70%);
-      filter: brightness(1.1) blur(0.2px);
-    }
-
-    #canvas.mode-3d::after {
-      content: '';
-      position: absolute; inset: 0; z-index: 5; pointer-events: none;
-      background: radial-gradient(ellipse 80% 80% at 50% 40%, transparent 40%, rgba(0,0,0,0.65) 100%);
-    }
-
-    /* === EXTRUSIÓN 3D DE MUEBLES === */
-    #canvas.mode-3d .furniture {
-      transform-style: preserve-3d;
-      background: linear-gradient(180deg, #eef3f8 0%, #b9c6d4 100%) !important;
-      border: none !important;
-    }
-
-    #canvas.mode-3d .furniture::before {
-      content: '';
-      position: absolute;
-      left: 0; right: 0; bottom: -14px; height: 14px;
-      background: linear-gradient(180deg, #1b2330 0%, #0a0e14 100%);
-      transform: rotateX(-90deg);
-      transform-origin: bottom;
-      border-radius: 0 0 8px 8px;
-    }
-
-    #canvas.mode-3d .furniture.mesa::after {
-      content: '';
-      position: absolute; inset: -2px;
-      border-radius: inherit;
-      box-shadow: 0 0 18px rgba(6,214,160,0.35), 0 30px 24px -10px rgba(0,0,0,0.7);
-      pointer-events: none;
-    }
-
-    #canvas.mode-3d .furniture.sillon {
-      background: linear-gradient(180deg, #2a2f3a, #14171d) !important;
-    }
-    #canvas.mode-3d .furniture.sillon.color-rojo {
-      background: linear-gradient(180deg, #a8283f, #520f1c) !important;
-    }
-
-    /* === ARQUITECTURA FIJA DEL CLUB (solo decorativa, nunca bloquea clics) === */
-    #club-architecture {
-      position: absolute; inset: 0;
-      z-index: 0; opacity: 0; pointer-events: none !important;
-      transform-style: preserve-3d;
-      transition: opacity 0.5s ease;
-    }
-    #canvas.mode-3d #club-architecture { opacity: 1; }
-
-    .arch-glass-wall {
-      position: absolute; left: -4%; top: -50%; width: 4%; height: 200%;
-      background:
-        repeating-linear-gradient(90deg, rgba(160,210,255,0.35) 0 3px, transparent 3px 90px),
-        linear-gradient(180deg, rgba(140,190,255,0.12), rgba(5,8,14,0.55));
-      border-top: 3px solid rgba(6,214,160,0.6);
-      box-shadow: inset 0 0 50px rgba(6,214,160,0.2), 0 0 25px rgba(6,214,160,0.3);
-      pointer-events: none;
-    }
-
-    .arch-stage {
-      position: absolute; top: -48%; left: 20%; width: 60%; height: 22%;
-      background: linear-gradient(180deg, #0c0e14, #05060a);
-      border-top: 2px solid rgba(0,229,255,0.5);
-      border-radius: 6px 6px 0 0;
-      box-shadow: 0 0 40px rgba(0,229,255,0.25);
-      pointer-events: none;
-    }
-    .arch-led-screen {
-      position: absolute; top: 8%; left: 20%; width: 60%; height: 60%;
-      background:
-        linear-gradient(135deg, rgba(255,0,180,0.35), rgba(0,229,255,0.35)),
-        #060810;
-      border: 2px solid rgba(0,229,255,0.8);
-      box-shadow: 0 0 35px rgba(0,229,255,0.6);
-      border-radius: 4px;
-    }
-    .arch-dj-booth {
-      position: absolute; bottom: 0; left: 38%; width: 24%; height: 30%;
-      background: linear-gradient(180deg, #1a1f2b, #05060a);
-      border-top: 2px solid var(--neon-purple);
-      box-shadow: 0 0 20px rgba(168,85,247,0.5);
-    }
-    .arch-speaker {
-      position: absolute; bottom: 0; width: 12%; height: 55%;
-      background: linear-gradient(180deg, #14171d, #05060a);
-      border: 1px solid rgba(0,229,255,0.3);
-      border-radius: 6px;
-    }
-    .arch-speaker-left { left: 4%; }
-    .arch-speaker-right { right: 4%; }
-
-    .arch-mezzanine {
-      position: absolute; right: -6%; top: -30%; width: 8%; height: 160%;
-      background: linear-gradient(90deg, rgba(10,14,20,0.85), transparent);
-      pointer-events: none;
-    }
-    .arch-mezzanine-rail {
-      position: absolute; left: 0; top: 0; width: 3px; height: 100%;
-      background: linear-gradient(180deg, rgba(6,214,160,0.9), rgba(168,85,247,0.9));
-      box-shadow: 0 0 18px rgba(6,214,160,0.6), 0 0 18px rgba(168,85,247,0.6);
-    }
   </style>
 </head>
 <body>
@@ -1646,6 +1547,7 @@
         <div class="pal-item" id="pal-bocina">Bocinas</div>
         <div class="pal-item" id="pal-cristal">Cristales</div>
         <div class="pal-item" id="pal-dj">Cabina DJ</div>
+        <div class="pal-item" id="pal-pantalla">Pantalla LED</div>
         <div class="pal-item" id="pal-barra">Barra</div>
         <div class="pal-item" id="pal-entrada">Entrada</div>
         <div class="pal-item" id="pal-salida">Salida</div>
@@ -1683,13 +1585,14 @@
         <div id="view3d-container">
           <div id="view3d-loading"><div class="spin3d"></div>Cargando antro en 3D…</div>
           <canvas id="view3d-canvas"></canvas>
-          <div id="view3d-hud"><span class="badge">🖱️ Arrastra para mirar · Rueda / pellizca para zoom</span></div>
+          <div id="view3d-hud"><span class="badge">🖱️ 1 dedo: mirar · 2 dedos: deslizarte · Rueda/pellizco: zoom · Joystick: caminar</span></div>
           <button id="btn-exit-3d">✕ Salir de Vista 3D</button>
           <div id="view3d-zoom">
             <button id="view3d-zoom-in">➕</button>
             <button id="view3d-zoom-out">➖</button>
             <button id="view3d-zoom-reset">⟳</button>
           </div>
+          <div id="view3d-joystick"><div id="view3d-joystick-knob"></div></div>
         </div>
       </div>
 
@@ -1997,6 +1900,7 @@
     bocina: 'BOCINA',
     cristal: 'CRISTALES',
     dj: 'CABINA DJ',
+    pantalla: 'PANTALLA LED',
     barra: 'BARRA',
     entrada: 'ENTRADA',
     salida: 'SALIDA',
@@ -2081,19 +1985,9 @@
   const canvas = document.getElementById('canvas');
   const canvasStage = document.getElementById('canvas-stage');
 
-  // === ARQUITECTURA 3D FIJA DEL CLUB (cristalera, escenario DJ, mezzanine) ===
-  canvasStage.insertAdjacentHTML('afterbegin', `
-    <div id="club-architecture">
-      <div class="arch-glass-wall"></div>
-      <div class="arch-stage">
-        <div class="arch-led-screen"></div>
-        <div class="arch-speaker arch-speaker-left"></div>
-        <div class="arch-speaker arch-speaker-right"></div>
-        <div class="arch-dj-booth"></div>
-      </div>
-      <div class="arch-mezzanine"><div class="arch-mezzanine-rail"></div></div>
-    </div>
-  `);
+  // La arquitectura fija del club (escenario, pantalla, DJ, mezzanine) se
+  // renderiza únicamente en la Vista 3D real con Three.js (ver Club3DEngine
+  // más abajo). El plano 2D queda limpio, sin capas fantasma superpuestas.
 
   // Cancela el scroll nativo del navegador al arrastrar el plano (fluidez táctil en Tab A11)
   canvasStage.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
@@ -2187,15 +2081,20 @@
     setZoom(currentZoom + (e.deltaY < 0 ? 0.1 : -0.1));
   }, { passive: false });
 
-  // Pan (arrastre de cámara) con dos dedos, clic derecho o clic central en el fondo del plano.
-  // El clic/toque simple sobre el fondo se conserva intacto para deseleccionar (no inicia pan).
+  // Pan (deslizar la cámara por el plano) — simplificado: ahora basta con
+  // arrastrar con 1 dedo/clic normal sobre el fondo, sin combinaciones raras
+  // (ya no hace falta clic derecho, central ni Shift). Un "tap" corto sin
+  // apenas movimiento se sigue tratando como clic (deselecciona); en cuanto
+  // el dedo se mueve más de unos pocos px, se vuelve un pan fluido.
   (function setupCanvasPan() {
     const activePointers = new Map();
     let isPanning = false;
+    let dragCommitted = false; // true en cuanto el movimiento supera el umbral de "tap"
     let panStartX = 0, panStartY = 0;
     let panOriginX = 0, panOriginY = 0;
     let pinchStartDist = 0;
     let pinchStartZoom = 1;
+    const DRAG_THRESHOLD = 4; // px — por debajo de esto, se sigue considerando un tap/clic
 
     function dist(p1, p2) { return Math.hypot(p1.x - p2.x, p1.y - p2.y); }
 
@@ -2209,13 +2108,17 @@
         pinchStartDist = dist(pts[0], pts[1]);
         pinchStartZoom = currentZoom;
         isPanning = true;
+        dragCommitted = true;
         panStartX = (pts[0].x + pts[1].x) / 2;
         panStartY = (pts[0].y + pts[1].y) / 2;
         panOriginX = panX;
         panOriginY = panY;
-      } else if (activePointers.size === 1 && (e.button === 2 || e.button === 1 || e.shiftKey)) {
-        // Pan con clic derecho / clic central / Shift+clic (equipos de escritorio)
+        canvas.classList.add('panning-active');
+      } else if (activePointers.size === 1) {
+        // Cualquier clic/toque simple sobre el fondo puede convertirse en pan
+        // en cuanto haya movimiento — ya no requiere clic derecho ni Shift.
         isPanning = true;
+        dragCommitted = false;
         panStartX = e.clientX;
         panStartY = e.clientY;
         panOriginX = panX;
@@ -2251,8 +2154,15 @@
         panY = panOriginY + (midY - panStartY);
         schedulePanFrame();
       } else if (activePointers.size === 1) {
-        panX = panOriginX + (e.clientX - panStartX);
-        panY = panOriginY + (e.clientY - panStartY);
+        const dx = e.clientX - panStartX;
+        const dy = e.clientY - panStartY;
+        if (!dragCommitted) {
+          if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+          dragCommitted = true;
+          canvas.classList.add('panning-active');
+        }
+        panX = panOriginX + dx;
+        panY = panOriginY + dy;
         schedulePanFrame();
       }
     });
@@ -2260,7 +2170,11 @@
     function endPointer(e) {
       activePointers.delete(e.pointerId);
       if (activePointers.size < 2) pinchStartDist = 0;
-      if (activePointers.size === 0) isPanning = false;
+      if (activePointers.size === 0) {
+        isPanning = false;
+        dragCommitted = false;
+        canvas.classList.remove('panning-active');
+      }
     }
     canvas.addEventListener('pointerup', endPointer);
     canvas.addEventListener('pointercancel', endPointer);
@@ -2625,7 +2539,7 @@
           const p = pctPos(ev.clientX, ev.clientY);
           const defaultSizes = {
             mesa: {a: 50, h: 50}, mesa_doble: {a: 100, h: 50}, sillon: {a: 110, h: 42}, bocina: {a: 45, h: 45}, cristal: {a: 120, h: 15},
-            dj: {a: 120, h: 50}, entrada: {a: 80, h: 40}, salida: {a: 80, h: 40},
+            dj: {a: 120, h: 50}, pantalla: {a: 140, h: 20}, entrada: {a: 80, h: 40}, salida: {a: 80, h: 40},
             wc: {a: 80, h: 50}, pasillo: {a: 100, h: 30}, barra: {a: 180, h: 45},
             caja: {a: 70, h: 40}, escaleras: {a: 80, h: 60}
           };
@@ -2657,7 +2571,7 @@
     ghost.style.top = (y - ghost.offsetHeight / 2) + 'px';
   }
 
-  ['mesa','sillon','bocina','cristal','dj','barra','entrada','salida','wc','pasillo','caja','escaleras'].forEach(t => {
+  ['mesa','sillon','bocina','cristal','dj','pantalla','barra','entrada','salida','wc','pasillo','caja','escaleras'].forEach(t => {
     setupPaletteDrag('pal-' + t, t);
   });
   setupPaletteDrag('pal-mesa-doble', 'mesa', 'mesa_doble');
@@ -3598,21 +3512,33 @@
   (function Club3DEngine() {
     let renderer, scene, camera, clock;
     let floorGroup, furnitureGroup;
+    let flickerLights = [];
+    const isMobileGPU = /Android|iPad|iPhone|iPod|Tablet|Mobi/i.test(navigator.userAgent) || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
     let raf = null;
     let built = false;
+    let lastNightState = null;
+    let lastFrameT = 0;
+    let frameCounter = 0;
 
     const container = document.getElementById('view3d-container');
     const canvasEl3d = document.getElementById('view3d-canvas');
     const loadingEl = document.getElementById('view3d-loading');
+    const FLOOR_W = 40, FLOOR_D = 46;
 
-    // --- Cámara orbital simple (arrastrar = orbitar, rueda/pellizco = zoom) ---
-    const cam = { theta: 0.78, phi: 1.15, radius: 46, target: new (window.THREE ? THREE.Vector3 : Object)(0, 9, -2) };
-    let dragging = false, lastX = 0, lastY = 0;
+    // --- Cámara: orbita + "deslizarse" (pan) libremente por el lugar ---
+    // 1 dedo / click izq = orbitar. 2 dedos / click der / Shift+drag = deslizar (pan) el punto de mira.
+    // Rueda / pellizco = acercar-alejar. Además hay un joystick táctil para moverse caminando.
+    const cam = { theta: 0.78, phi: 1.18, radius: 42, target: new THREE.Vector3(0, 8.5, -1) };
+    let dragging = false, panning = false, lastX = 0, lastY = 0;
     let pinchDist = null;
+    const moveState = { fwd: 0, side: 0 };
 
     function clampCam() {
-      cam.phi = Math.min(Math.max(cam.phi, 0.55), 1.5);
-      cam.radius = Math.min(Math.max(cam.radius, 14), 85);
+      cam.phi = Math.min(Math.max(cam.phi, 0.35), 1.52);
+      cam.radius = Math.min(Math.max(cam.radius, 6), 95);
+      cam.target.x = Math.min(Math.max(cam.target.x, -FLOOR_W * 1.1), FLOOR_W * 1.1);
+      cam.target.y = Math.min(Math.max(cam.target.y, 1.2), 18);
+      cam.target.z = Math.min(Math.max(cam.target.z, -FLOOR_D * 0.7), FLOOR_D * 0.7);
     }
 
     function updateCameraFromOrbit() {
@@ -3624,41 +3550,78 @@
       camera.lookAt(cam.target);
     }
 
+    // Vectores planos de la cámara (para caminar/pan sin inclinarse hacia arriba/abajo)
+    function camForward() {
+      return new THREE.Vector3(Math.sin(cam.theta), 0, Math.cos(cam.theta)).multiplyScalar(-1);
+    }
+    function camRight() {
+      const f = camForward();
+      return new THREE.Vector3(f.z, 0, -f.x);
+    }
+
     function onPointerDown(e) {
-      dragging = true;
-      container.classList.add('dragging');
       const p = e.touches ? e.touches[0] : e;
       lastX = p.clientX; lastY = p.clientY;
-      if (e.touches && e.touches.length === 2) pinchDist = touchDist(e.touches);
+      if (e.touches && e.touches.length === 2) {
+        pinchDist = touchDist(e.touches);
+        panning = true; dragging = false;
+      } else {
+        dragging = true; panning = (e.button === 2 || e.shiftKey);
+        container.classList.add('dragging');
+      }
     }
     function onPointerMove(e) {
       if (e.touches && e.touches.length === 2) {
         const d = touchDist(e.touches);
         if (pinchDist) cam.radius *= pinchDist / d;
         pinchDist = d;
+        const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        const my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        const dx = mx - lastX, dy = my - lastY;
+        lastX = mx; lastY = my;
+        const right = camRight(), fwd = camForward();
+        cam.target.addScaledVector(right, -dx * 0.045);
+        cam.target.addScaledVector(fwd, dy * 0.045);
         updateCameraFromOrbit();
         return;
       }
-      if (!dragging) return;
+      if (!dragging && !panning) return;
       const p = e.touches ? e.touches[0] : e;
       const dx = p.clientX - lastX, dy = p.clientY - lastY;
       lastX = p.clientX; lastY = p.clientY;
-      cam.theta -= dx * 0.0055;
-      cam.phi -= dy * 0.0045;
+      if (panning) {
+        const right = camRight(), fwd = camForward();
+        cam.target.addScaledVector(right, -dx * 0.045);
+        cam.target.addScaledVector(fwd, dy * 0.045);
+      } else {
+        cam.theta -= dx * 0.0055;
+        cam.phi -= dy * 0.0045;
+      }
       updateCameraFromOrbit();
     }
-    function onPointerUp() { dragging = false; pinchDist = null; container.classList.remove('dragging'); }
+    function onPointerUp() { dragging = false; panning = false; pinchDist = null; container.classList.remove('dragging'); }
     function touchDist(t) { const dx = t[0].clientX - t[1].clientX, dy = t[0].clientY - t[1].clientY; return Math.hypot(dx, dy); }
     function onWheel(e) {
       e.preventDefault();
       cam.radius += e.deltaY * 0.02;
       updateCameraFromOrbit();
     }
+    function onKeyDown(e) {
+      if (!container.classList.contains('open')) return;
+      if (e.key === 'w' || e.key === 'ArrowUp') moveState.fwd = 1;
+      if (e.key === 's' || e.key === 'ArrowDown') moveState.fwd = -1;
+      if (e.key === 'a' || e.key === 'ArrowLeft') moveState.side = -1;
+      if (e.key === 'd' || e.key === 'ArrowRight') moveState.side = 1;
+    }
+    function onKeyUp(e) {
+      if (['w', 'ArrowUp', 's', 'ArrowDown'].includes(e.key)) moveState.fwd = 0;
+      if (['a', 'ArrowLeft', 'd', 'ArrowRight'].includes(e.key)) moveState.side = 0;
+    }
 
     function neonMaterial(color, intensity) {
       return new THREE.MeshStandardMaterial({
-        color: color, emissive: color, emissiveIntensity: intensity != null ? intensity : 1.4,
-        metalness: 0.2, roughness: 0.35
+        color: color, emissive: color, emissiveIntensity: intensity != null ? intensity : 1.6,
+        metalness: 0.2, roughness: 0.3
       });
     }
 
@@ -3669,13 +3632,38 @@
       });
     }
 
-    function buildSkyTexture() {
+    // Ciclo día/noche real: entre 19:00 y 06:59 (hora del dispositivo) el
+    // cielo tras la cristalera se oscurece, pero la iluminación del antro
+    // (neones, pantalla, DJ) se mantiene siempre viva — nunca se apaga el club.
+    function computeIsNight() {
+      const h = new Date().getHours();
+      return h >= 19 || h < 7;
+    }
+
+    function buildSkyTexture(isNight) {
       const c = document.createElement('canvas'); c.width = 512; c.height = 512;
       const ctx = c.getContext('2d');
       const g = ctx.createLinearGradient(0, 0, 0, 512);
-      g.addColorStop(0, '#0b1a2c'); g.addColorStop(0.45, '#1c3a56'); g.addColorStop(0.75, '#3a5a72'); g.addColorStop(1, '#0e1620');
+      if (isNight) {
+        g.addColorStop(0, '#03050c'); g.addColorStop(0.4, '#060a18'); g.addColorStop(0.72, '#0c1526'); g.addColorStop(1, '#050810');
+      } else {
+        g.addColorStop(0, '#0b1a2c'); g.addColorStop(0.45, '#1c3a56'); g.addColorStop(0.75, '#3a5a72'); g.addColorStop(1, '#0e1620');
+      }
       ctx.fillStyle = g; ctx.fillRect(0, 0, 512, 512);
-      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+
+      if (isNight) {
+        // Estrellas + resplandor cálido de la ciudad en el horizonte
+        for (let i = 0; i < 90; i++) {
+          const sx = Math.random() * 512, sy = Math.random() * 260;
+          ctx.fillStyle = `rgba(255,255,255,${0.25 + Math.random() * 0.5})`;
+          ctx.fillRect(sx, sy, 1.4, 1.4);
+        }
+        const glow = ctx.createLinearGradient(0, 260, 0, 340);
+        glow.addColorStop(0, 'rgba(255,183,3,0)'); glow.addColorStop(1, 'rgba(255,140,60,0.16)');
+        ctx.fillStyle = glow; ctx.fillRect(0, 260, 512, 80);
+      }
+
+      ctx.fillStyle = isNight ? 'rgba(10,14,22,0.55)' : 'rgba(255,255,255,0.06)';
       for (let i = 0; i < 6; i++) {
         ctx.beginPath();
         const y = 300 + i * 22;
@@ -3686,67 +3674,134 @@
       return new THREE.CanvasTexture(c);
     }
 
-    function buildScreenTexture() {
+    function buildScreenTexture(label1, label2) {
       const c = document.createElement('canvas'); c.width = 512; c.height = 288;
       const ctx = c.getContext('2d');
       ctx.fillStyle = '#050b12'; ctx.fillRect(0, 0, 512, 288);
-      const grd = ctx.createRadialGradient(256, 144, 20, 256, 144, 260);
-      grd.addColorStop(0, 'rgba(6,214,160,0.55)'); grd.addColorStop(1, 'rgba(6,214,160,0)');
+      const grd = ctx.createRadialGradient(256, 150, 10, 256, 150, 280);
+      grd.addColorStop(0, 'rgba(29,233,182,0.6)'); grd.addColorStop(0.5, 'rgba(168,85,247,0.18)'); grd.addColorStop(1, 'rgba(6,214,160,0)');
       ctx.fillStyle = grd; ctx.fillRect(0, 0, 512, 288);
-      ctx.strokeStyle = 'rgba(6,214,160,0.9)'; ctx.lineWidth = 6;
-      ctx.strokeRect(40, 30, 200, 228);
-      ctx.strokeRect(272, 30, 200, 228);
-      ctx.fillStyle = 'rgba(6,214,160,0.9)';
+      // Túnel de marcos concéntricos alternando cian / rosa, como en la pantalla de referencia
+      const tunnelColors = ['rgba(29,233,182,0.95)', 'rgba(255,46,196,0.85)'];
+      for (let i = 0; i < 5; i++) {
+        const pad = 26 + i * 30;
+        ctx.strokeStyle = tunnelColors[i % 2];
+        ctx.lineWidth = 3.5;
+        ctx.strokeRect(pad, pad * 0.62, 512 - pad * 2, 288 - pad * 1.15);
+      }
+      ctx.fillStyle = 'rgba(29,233,182,0.95)';
       ctx.font = 'bold 46px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('CRYPTO', 256, 155);
-      ctx.font = 'bold 16px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.8)';
-      ctx.fillText('BUSINESS SOCIAL CLUB', 256, 180);
+      ctx.fillText(label1 || 'CRYPTO', 256, 150);
+      ctx.font = 'bold 15px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillText(label2 || 'BUSINESS SOCIAL CLUB', 256, 174);
       return new THREE.CanvasTexture(c);
     }
 
-    function buildStool(x, z, w, d, tone) {
+    function labelSprite(text, color) {
+      const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = 'rgba(5,7,11,0.72)';
+      ctx.roundRect ? ctx.roundRect(0, 8, 256, 48, 12) : ctx.rect(0, 8, 256, 48);
+      ctx.fill();
+      ctx.strokeStyle = color || '#06d6a0'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(text, 128, 34);
+      const tex = new THREE.CanvasTexture(c);
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+      const spr = new THREE.Sprite(mat);
+      spr.scale.set(2.6, 0.65, 1);
+      spr.renderOrder = 999;
+      return spr;
+    }
+
+    function buildStool(x, z, w, d, tone, label) {
       const g = new THREE.Group();
       const seatH = 2.0;
-      const legMat = new THREE.MeshStandardMaterial({ color: 0x11141c, metalness: 0.7, roughness: 0.35 });
-      const legGeo = new THREE.CylinderGeometry(0.05, 0.05, seatH, 8);
+      const legMat = new THREE.MeshStandardMaterial({ color: 0x11141c, metalness: 0.75, roughness: 0.3 });
+      const legGeo = new THREE.CylinderGeometry(0.05, 0.05, seatH, 6);
       const inset = 0.32;
       [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
         const leg = new THREE.Mesh(legGeo, legMat);
         leg.position.set(sx * (w / 2 - inset), seatH / 2, sz * (d / 2 - inset));
         g.add(leg);
       });
-      const topMat = neonMaterial(tone || 0xf5f8ff, 1.1);
+      // Sin luz dinámica por mesa (sale carísimo en tablet con 30-40 mesas):
+      // el brillo se logra 100% con material emissivo, que es prácticamente gratis en GPU.
+      const topMat = neonMaterial(tone || 0xf5f8ff, 2.2);
       const top = new THREE.Mesh(new THREE.BoxGeometry(w, 0.16, d), topMat);
       top.position.y = seatH + 0.08;
       g.add(top);
-      const pl = new THREE.PointLight(tone || 0xbfe8ff, 0.55, 3.4, 2);
-      pl.position.set(0, seatH + 0.3, 0);
-      g.add(pl);
+      if (label) {
+        const spr = labelSprite(label, '#f3ba2f');
+        spr.scale.set(1.7, 0.42, 1);
+        spr.position.set(0, seatH + 0.75, 0);
+        g.add(spr);
+      }
       g.position.set(x, 0, z);
       return g;
     }
 
+    // Formas específicas por tipo de mobiliario/decoración, para que lo que se
+    // arrastra en el plano 2D se vea reconocible en 3D (no una caja genérica).
     function buildDecor(tipo, w, d) {
       const g = new THREE.Group();
-      const mat = new THREE.MeshStandardMaterial({ color: 0x232838, metalness: 0.4, roughness: 0.55 });
-      const box = new THREE.Mesh(new THREE.BoxGeometry(w, 1.1, d), mat);
-      box.position.y = 0.55;
-      g.add(box);
-      const edge = neonMaterial(tipo === 'barra' ? 0xf3ba2f : 0xa855f7, 0.9);
-      const rim = new THREE.Mesh(new THREE.BoxGeometry(w + 0.06, 0.05, d + 0.06), edge);
-      rim.position.y = 1.12;
-      g.add(rim);
+      const darkMat = new THREE.MeshStandardMaterial({ color: 0x1a1e29, metalness: 0.45, roughness: 0.5 });
+
+      if (tipo === 'bocina') {
+        const body = new THREE.Mesh(new THREE.BoxGeometry(w, 3.2, d), new THREE.MeshStandardMaterial({ color: 0x14161c, metalness: 0.55, roughness: 0.45 }));
+        body.position.y = 1.6; g.add(body);
+        for (let i = 0; i < 3; i++) {
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(Math.min(w, d) * 0.28, 0.05, 8, 20), neonMaterial(0x39ffe0, 1.4));
+          ring.position.set(0, 0.7 + i * 1.05, d / 2 + 0.02);
+          g.add(ring);
+        }
+        g.add(labelSprite('🔊 BOCINA', '#39ffe0')).position.set(0, 3.6, 0);
+      } else if (tipo === 'dj') {
+        const booth = new THREE.Mesh(new THREE.BoxGeometry(w, 2.4, d), new THREE.MeshStandardMaterial({ color: 0x101319, metalness: 0.5, roughness: 0.4 }));
+        booth.position.y = 1.2; g.add(booth);
+        const strip = new THREE.Mesh(new THREE.BoxGeometry(w + 0.1, 0.12, d + 0.1), neonMaterial(0x06d6a0, 1.8));
+        strip.position.y = 2.42; g.add(strip);
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(w * 0.7, 0.15, d * 0.5), new THREE.MeshStandardMaterial({ color: 0x000000, metalness: 0.7, roughness: 0.2 }));
+        deck.position.set(0, 2.5, 0); g.add(deck);
+        g.add(labelSprite('🎧 CABINA DJ', '#06d6a0')).position.set(0, 3.4, 0);
+      } else if (tipo === 'pantalla') {
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(w, d * 2.6, 0.25), new THREE.MeshStandardMaterial({ color: 0x05070b, metalness: 0.5, roughness: 0.4 }));
+        frame.position.y = d * 1.3 + 1.4; g.add(frame);
+        const tex = buildScreenTexture();
+        const screen = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.94, d * 2.4), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+        screen.position.set(0, d * 1.3 + 1.4, 0.14); g.add(screen);
+        const pl = new THREE.PointLight(0x06d6a0, 1.6, 12, 2);
+        pl.position.set(0, d * 1.3 + 1.4, 1.5); g.add(pl);
+        g.add(labelSprite('📺 PANTALLA', '#06d6a0')).position.set(0, d * 2.7 + 1.4, 0);
+      } else if (tipo === 'barra') {
+        const counter = new THREE.Mesh(new THREE.BoxGeometry(w, 1.3, d), new THREE.MeshStandardMaterial({ color: 0x232838, metalness: 0.4, roughness: 0.5 }));
+        counter.position.y = 0.65; g.add(counter);
+        const rim = new THREE.Mesh(new THREE.BoxGeometry(w + 0.06, 0.06, d + 0.06), neonMaterial(0xf3ba2f, 1.5));
+        rim.position.y = 1.33; g.add(rim);
+        g.add(labelSprite('🍸 BARRA', '#f3ba2f')).position.set(0, 2.1, 0);
+      } else if (tipo === 'cristal') {
+        const glass = new THREE.Mesh(new THREE.BoxGeometry(w, 2.2, Math.max(d, 0.15)), glassMaterial(0x9fd3ff));
+        glass.position.y = 1.1; g.add(glass);
+      } else {
+        // entrada / salida / wc / pasillo / caja / escaleras -> placa señalética en el piso
+        const plate = new THREE.Mesh(new THREE.BoxGeometry(w, 0.08, d), darkMat);
+        plate.position.y = 0.04; g.add(plate);
+        const edgeColor = { entrada: 0x06d6a0, salida: 0xef476f, wc: 0x3b82f6, pasillo: 0x64748b, caja: 0xf3ba2f, escaleras: 0xa855f7 }[tipo] || 0xffffff;
+        const rim = new THREE.Mesh(new THREE.BoxGeometry(w + 0.04, 0.02, d + 0.04), neonMaterial(edgeColor, 1.2));
+        rim.position.y = 0.09; g.add(rim);
+        const labels = { entrada: '⬆ ENTRADA', salida: '⬇ SALIDA', wc: '🚻 BAÑOS', pasillo: 'PASILLO', caja: '💳 CAJA', escaleras: '🪜 ESCALERAS' };
+        const spr = labelSprite(labels[tipo] || tipo.toUpperCase(), '#' + edgeColor.toString(16).padStart(6, '0'));
+        spr.position.set(0, 1.6, 0);
+        g.add(spr);
+      }
       return g;
     }
 
     function pctToWorld(xPct, yPct) {
-      // el plano 2D usa 0-100% en X e Y; lo mapeamos al piso 3D (ancho X, profundidad Z)
       const worldX = (xPct / 100 - 0.5) * FLOOR_W;
       const worldZ = (yPct / 100) * FLOOR_D - FLOOR_D * 0.5 + 6;
       return { x: worldX, z: worldZ };
     }
-
-    const FLOOR_W = 40, FLOOR_D = 46;
 
     function buildFurnitureFromLayout() {
       if (furnitureGroup) { scene.remove(furnitureGroup); }
@@ -3760,11 +3815,11 @@
         const dScale = Math.max(0.02, (item.altoPx || 50) / 100) * (FLOOR_D / 12);
         let mesh;
         if (item.tipo === 'mesa' || item.tipo === 'mesa_doble') {
-          mesh = buildStool(pos.x, pos.z, Math.min(wScale, 3.2), Math.min(dScale, 3.2), 0xf5f8ff);
+          mesh = buildStool(pos.x, pos.z, Math.min(wScale, 3.2), Math.min(dScale, 3.2), 0xf5f8ff, item.nombre);
         } else if (item.tipo === 'sillon') {
-          mesh = buildStool(pos.x, pos.z, Math.min(wScale, 2.6), Math.min(dScale, 2.6), 0xffe0e0);
+          mesh = buildStool(pos.x, pos.z, Math.min(wScale, 2.6), Math.min(dScale, 2.6), 0xffe0e0, item.nombre);
         } else if (item.tipo) {
-          mesh = buildDecor(item.tipo, Math.min(wScale, 4), Math.min(dScale, 4));
+          mesh = buildDecor(item.tipo, Math.min(wScale, 6), Math.min(dScale, 6));
           mesh.position.set(pos.x, 0, pos.z);
         }
         if (mesh) {
@@ -3776,52 +3831,90 @@
     }
 
     function buildScene() {
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x030406);
-      scene.fog = new THREE.FogExp2(0x03040a, 0.024);
+      const nightNow = computeIsNight();
 
-      camera = new THREE.PerspectiveCamera(52, 1, 0.1, 400);
+      // Si ya existía una escena (p. ej. se reconstruye por cambio de día/noche),
+      // se libera el renderer anterior primero para no acumular contextos WebGL.
+      if (renderer) {
+        renderer.dispose();
+        renderer.forceContextLoss && renderer.forceContextLoss();
+      }
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(nightNow ? 0x030509 : 0x06070c);
+      // Niebla más ligera que antes: se mantenía demasiado oscuro en varias
+      // zonas del antro. Con menos densidad, el brillo neón llega más lejos.
+      scene.fog = new THREE.FogExp2(nightNow ? 0x03040a : 0x05060d, isMobileGPU ? 0.018 : 0.013);
+
+      camera = new THREE.PerspectiveCamera(55, 1, 0.1, isMobileGPU ? 160 : 400);
       updateCameraFromOrbit();
 
-      renderer = new THREE.WebGLRenderer({ canvas: canvasEl3d, antialias: true, powerPreference: 'high-performance' });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+      renderer = new THREE.WebGLRenderer({ canvas: canvasEl3d, antialias: !isMobileGPU, powerPreference: 'high-performance', stencil: false, depth: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobileGPU ? 1 : 2));
       renderer.outputColorSpace = THREE.SRGBColorSpace || THREE.sRGBEncoding;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.15;
+      renderer.toneMappingExposure = 1.7;
 
-      // Luces
-      scene.add(new THREE.AmbientLight(0x223047, 0.9));
-      const hemi = new THREE.HemisphereLight(0x445577, 0x05060a, 0.5);
+      flickerLights = [];
+
+      // --- Iluminación mucho más rica pero barata: pocas luces reales + materiales
+      // emisivos para todo el resto del brillo neón (así se ve espectacular y sigue fluido).
+      // Subida general de intensidad: antes se veía muy oscuro en varias zonas del piso. ---
+      scene.add(new THREE.AmbientLight(0x4a5f8a, nightNow ? 1.7 : 2.1));
+      const hemi = new THREE.HemisphereLight(0x88a6d9, 0x11141f, nightNow ? 1.0 : 1.25);
       scene.add(hemi);
-      const screenLight = new THREE.PointLight(0x06d6a0, 3.5, 40, 2);
+
+      // Luz de relleno cenital suave para que el piso y los pasillos entre
+      // mesas nunca se vean completamente negros, incluso lejos del escenario.
+      const fillLight = new THREE.PointLight(0x8fb4ff, 1.4, 70, 1.6);
+      fillLight.position.set(0, 20, 4);
+      scene.add(fillLight);
+      const fillLight2 = new THREE.PointLight(0xffffff, 0.8, 60, 1.8);
+      fillLight2.position.set(0, 14, 16);
+      scene.add(fillLight2);
+
+      const screenLight = new THREE.PointLight(0x1de9b6, 6.2, 50, 2);
       screenLight.position.set(0, 9, -20);
       scene.add(screenLight);
-      const pinkLight = new THREE.PointLight(0xff2ec4, 2.2, 30, 2);
-      pinkLight.position.set(16, 10, 4);
-      scene.add(pinkLight);
-      const greenLight = new THREE.PointLight(0x39ff8a, 2.0, 30, 2);
-      greenLight.position.set(20, 10, -6);
-      scene.add(greenLight);
+      flickerLights.push(screenLight);
+
+      // Acentos de neón (número reducido a propósito: cada PointLight adicional
+      // cuesta caro en GPUs de tablet; el resto del "glow" lo dan los materiales
+      // emissive de tubos/rejilla/mesas, que son casi gratis).
+      const accentColors = [0xff2ec4, 0x39ff8a, 0x2ecbff, 0xffb703];
+      const accentCount = isMobileGPU ? 4 : 6;
+      for (let i = 0; i < accentCount; i++) {
+        const ang = (i / accentCount) * Math.PI * 2;
+        const c = accentColors[i % accentColors.length];
+        const pl = new THREE.PointLight(c, 2.3, 30, 2);
+        pl.position.set(Math.sin(ang) * FLOOR_W * 0.5, 15, Math.cos(ang) * FLOOR_D * 0.4 - 2);
+        pl.userData.baseIntensity = 2.3;
+        scene.add(pl);
+        flickerLights.push(pl);
+      }
 
       floorGroup = new THREE.Group();
 
-      // --- Piso reflejante oscuro con rejilla neón tipo "diamante" ---
-      const floorMat = new THREE.MeshStandardMaterial({ color: 0x0a0d13, metalness: 0.55, roughness: 0.18 });
+      // --- Piso reflejante oscuro con rejilla neón ---
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0x0a0d13, metalness: 0.6, roughness: 0.15 });
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_W, FLOOR_D), floorMat);
       floor.rotation.x = -Math.PI / 2;
-      floor.position.set(0, 0, -FLOOR_D / 2 + 6 + FLOOR_D / 2 - FLOOR_D / 2);
       floor.position.z = 4;
       floorGroup.add(floor);
 
       const grid1 = new THREE.GridHelper(FLOOR_W, 20, 0x06d6a0, 0x0d3b30);
       grid1.position.y = 0.02; grid1.position.z = 4;
-      grid1.material.opacity = 0.35; grid1.material.transparent = true;
+      grid1.material.opacity = 0.4; grid1.material.transparent = true;
       floorGroup.add(grid1);
+      const grid2 = new THREE.GridHelper(FLOOR_D, 22, 0xffb703, 0x3a2c0d);
+      grid2.rotation.y = Math.PI / 2;
+      grid2.position.set(0, 0.021, 4);
+      grid2.material.opacity = 0.16; grid2.material.transparent = true;
+      floorGroup.add(grid2);
 
-      // --- Cristalera lateral izquierda con vista al exterior ---
-      const skyTex = buildSkyTexture();
-      const skyMat = new THREE.MeshBasicMaterial({ map: skyTex, fog: false });
-      const sky = new THREE.Mesh(new THREE.PlaneGeometry(60, 22), skyMat);
+      // --- Cristalera lateral izquierda con vista al exterior (planta baja) ---
+      const skyTex = buildSkyTexture(nightNow);
+      const sky = new THREE.Mesh(new THREE.PlaneGeometry(60, 22), new THREE.MeshBasicMaterial({ map: skyTex, fog: false }));
       sky.position.set(-FLOOR_W / 2 - 4, 11, -2);
       sky.rotation.y = Math.PI / 2;
       floorGroup.add(sky);
@@ -3837,31 +3930,45 @@
         bar.position.set(-FLOOR_W / 2 - 0.06, 10, -2 + i * (FLOOR_D / 20));
         floorGroup.add(bar);
       }
+      // Postes verticales de soporte de la cristalera (como en la referencia: marcos
+      // metálicos gruesos cada tramo, no solo las varillas finas de los mullions)
+      for (let i = -1; i <= 1; i++) {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.22, 20.4, 0.32), mullionMat);
+        post.position.set(-FLOOR_W / 2 - 0.08, 10, -2 + i * (FLOOR_D / 2.1));
+        floorGroup.add(post);
+      }
 
-      // --- Escenario de fondo: pantalla LED + bocinas + cabina DJ ---
+      // --- Escenario de fondo: pantalla LED + bocinas + cabina DJ (arquitectura fija de referencia) ---
       const stageWall = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W * 0.55, 14, 0.6),
         new THREE.MeshStandardMaterial({ color: 0x090b10, metalness: 0.4, roughness: 0.6 }));
       stageWall.position.set(0, 7, -FLOOR_D / 2 + 5);
       floorGroup.add(stageWall);
 
       const screenTex = buildScreenTexture();
-      const screen = new THREE.Mesh(new THREE.PlaneGeometry(11, 6.2),
-        new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false }));
+      const screen = new THREE.Mesh(new THREE.PlaneGeometry(11, 6.2), new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false }));
       screen.position.set(0, 9, -FLOOR_D / 2 + 4.68);
       floorGroup.add(screen);
-      const screenGlow = new THREE.PointLight(0x06d6a0, 2.2, 16, 2);
+      const screenGlow = new THREE.PointLight(0x1de9b6, 3.6, 20, 2);
       screenGlow.position.set(0, 9, -FLOOR_D / 2 + 8);
       floorGroup.add(screenGlow);
+      flickerLights.push(screenGlow);
 
       const speakerMat = new THREE.MeshStandardMaterial({ color: 0x14161c, metalness: 0.5, roughness: 0.5 });
-      [-7.2, 7.2].forEach(sx => {
+      [-7.2, 7.2].forEach((sx, si) => {
         const spk = new THREE.Mesh(new THREE.BoxGeometry(1.6, 9, 1.4), speakerMat);
         spk.position.set(sx, 6.5, -FLOOR_D / 2 + 4.8);
         floorGroup.add(spk);
         for (let i = 0; i < 3; i++) {
-          const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.06, 8, 20), neonMaterial(0x39ffe0, 0.9));
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.06, 8, 16), neonMaterial(0x39ffe0, 1.8));
           ring.position.set(sx, 4.4 + i * 2.2, -FLOOR_D / 2 + 5.55);
           floorGroup.add(ring);
+        }
+        // Solo una bocina emite luz real en tablet (menos costo, mismo efecto visual)
+        if (!isMobileGPU || si === 0) {
+          const spkLight = new THREE.PointLight(0x39ffe0, 1.4, 13, 2);
+          spkLight.position.set(sx, 8, -FLOOR_D / 2 + 6);
+          floorGroup.add(spkLight);
+          flickerLights.push(spkLight);
         }
       });
 
@@ -3869,11 +3976,27 @@
         new THREE.MeshStandardMaterial({ color: 0x101319, metalness: 0.5, roughness: 0.4 }));
       djBooth.position.set(0, 1.2, -FLOOR_D / 2 + 8.5);
       floorGroup.add(djBooth);
-      const djStrip = new THREE.Mesh(new THREE.BoxGeometry(9.1, 0.12, 2.3), neonMaterial(0x06d6a0, 1.6));
+      const djStrip = new THREE.Mesh(new THREE.BoxGeometry(9.1, 0.12, 2.3), neonMaterial(0x06d6a0, 2.4));
       djStrip.position.set(0, 2.42, -FLOOR_D / 2 + 8.5);
       floorGroup.add(djStrip);
+      // Consola del DJ con sus propias pantallitas encendidas (la "segunda pantalla"
+      // de la referencia, además de la gran LED del escenario)
+      const djDeckTex = buildScreenTexture('LIVE', 'DJ SET');
+      [-1.7, 1.7].forEach((dx) => {
+        const djScreen = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.85),
+          new THREE.MeshBasicMaterial({ map: djDeckTex, toneMapped: false }));
+        djScreen.rotation.x = -Math.PI / 2.6;
+        djScreen.position.set(dx, 2.5, -FLOOR_D / 2 + 7.9);
+        floorGroup.add(djScreen);
+      });
+      if (!isMobileGPU) {
+        const djLight = new THREE.PointLight(0x06d6a0, 2.0, 12, 2);
+        djLight.position.set(0, 2.8, -FLOOR_D / 2 + 8.5);
+        floorGroup.add(djLight);
+        flickerLights.push(djLight);
+      }
 
-      // --- Mezzanine con barandal de cristal (lado derecho, planta alta) ---
+      // --- Mezzanine con barandal de cristal (planta alta) ---
       const mezzY = 12;
       const mezz = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W * 0.65, 0.5, 12),
         new THREE.MeshStandardMaterial({ color: 0x0c0e13, metalness: 0.5, roughness: 0.5 }));
@@ -3887,29 +4010,83 @@
         new THREE.MeshStandardMaterial({ color: 0x1c2230, metalness: 0.7, roughness: 0.3 }));
       railTop.position.set(FLOOR_W * 0.12, mezzY + 2.7, -FLOOR_D / 2 + 4);
       floorGroup.add(railTop);
+      // Piso superior débilmente iluminado, visible tras el barandal (como en la referencia)
+      const mezzFloor = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_W * 0.65, 12), new THREE.MeshStandardMaterial({ color: 0x0e1118, metalness: 0.4, roughness: 0.5 }));
+      mezzFloor.rotation.x = -Math.PI / 2;
+      mezzFloor.position.set(FLOOR_W * 0.12, mezzY + 0.26, -FLOOR_D / 2 + 10);
+      floorGroup.add(mezzFloor);
 
-      // --- Tubos de neón verticales (columnas, lado derecho) igual que la referencia ---
-      const neonColors = [0xff2ec4, 0x39ff8a, 0x2ecbff];
-      const colX = [FLOOR_W / 2 - 1.2, FLOOR_W / 2 + 3.4, FLOOR_W / 2 + 7.8];
-      colX.forEach((cx, i) => {
-        const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 24, 12), neonMaterial(neonColors[i % 3], 2.2));
-        tube.position.set(cx, 12, -FLOOR_D / 2 + 12 - i * 6);
-        floorGroup.add(tube);
-        const tl = new THREE.PointLight(neonColors[i % 3], 1.4, 14, 2);
-        tl.position.set(cx, 12, -FLOOR_D / 2 + 12 - i * 6);
-        floorGroup.add(tl);
+      // --- Cristalera del segundo piso (planta alta, lado derecho) — ventanales de
+      // suelo a techo iguales a los de la referencia, no solo el barandal de cristal ---
+      const mezzGlassH = 9.5;
+      const mezzGlass = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_D + 6, mezzGlassH), glassMaterial(0x9fd3ff));
+      mezzGlass.position.set(FLOOR_W / 2 + 0.05, mezzY + mezzGlassH / 2 + 0.4, -1);
+      mezzGlass.rotation.y = -Math.PI / 2;
+      floorGroup.add(mezzGlass);
+
+      const mezzSkyTex = buildSkyTexture(nightNow);
+      const mezzSky = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_D + 8, mezzGlassH + 2), new THREE.MeshBasicMaterial({ map: mezzSkyTex, fog: false }));
+      mezzSky.position.set(FLOOR_W / 2 + 3.4, mezzY + mezzGlassH / 2 + 0.4, -1);
+      mezzSky.rotation.y = -Math.PI / 2;
+      floorGroup.add(mezzSky);
+
+      for (let i = -3; i <= 3; i++) {
+        const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.07, mezzGlassH, 0.1), mullionMat);
+        mullion.position.set(FLOOR_W / 2 + 0.08, mezzY + mezzGlassH / 2 + 0.4, -1 + i * ((FLOOR_D + 4) / 7));
+        floorGroup.add(mullion);
+      }
+      [-1, 0.4, 1.8].forEach((frac) => {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.24, mezzGlassH + 0.6, 0.34), mullionMat);
+        post.position.set(FLOOR_W / 2 + 0.1, mezzY + mezzGlassH / 2 + 0.4, -1 + frac * (FLOOR_D / 3));
+        floorGroup.add(post);
       });
 
-      // --- Franja de neón ámbar en el techo (marca del club) ---
-      const ceilStrip = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W + 4, 0.08, 0.08), neonMaterial(0xffb703, 1.8));
-      ceilStrip.position.set(0, 18, -FLOOR_D / 2 + 5);
-      floorGroup.add(ceilStrip);
+      // --- Postes/columnas con tubo de neón envolvente — pilares reales (no solo
+      // varillas finas), como los postes rosa y verde de la foto de referencia ---
+      const neonColors = [0xff2ec4, 0x39ff8a, 0x2ecbff, 0xffb703];
+      const colX = [FLOOR_W / 2 - 1.2, FLOOR_W / 2 + 3.4, FLOOR_W / 2 + 7.8, -FLOOR_W / 2 - 1.6];
+      const postCoreMat = new THREE.MeshStandardMaterial({ color: 0x0c0e13, metalness: 0.55, roughness: 0.4 });
+      colX.forEach((cx, i) => {
+        const color = neonColors[i % neonColors.length];
+        const cz = -FLOOR_D / 2 + 12 - i * 6;
+        // Núcleo estructural del poste (grueso, visible, como en la foto)
+        const core = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.3, 24, 12), postCoreMat);
+        core.position.set(cx, 12, cz);
+        floorGroup.add(core);
+        // Tubo de neón envolviendo el poste
+        const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 24, 10, 1, true), neonMaterial(color, 3.2));
+        tube.material.side = THREE.DoubleSide;
+        tube.position.set(cx, 12, cz);
+        floorGroup.add(tube);
+        // En tablet, solo 2 de las 4 columnas emiten luz real; las demás igual brillan por su material emissivo
+        if (!isMobileGPU || i < 2) {
+          const tl = new THREE.PointLight(color, 2.4, 19, 2);
+          tl.position.set(cx, 12, cz);
+          tl.userData.baseIntensity = 2.4;
+          floorGroup.add(tl);
+          flickerLights.push(tl);
+        }
+      });
+
+      // --- Franjas de neón ámbar/púrpura en el techo (marca del club) ---
+      [-FLOOR_D / 2 + 5, FLOOR_D / 2 - 4].forEach(z => {
+        const ceilStrip = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W + 4, 0.08, 0.08), neonMaterial(0xffb703, 2.6));
+        ceilStrip.position.set(0, 18, z);
+        floorGroup.add(ceilStrip);
+      });
+      [-FLOOR_W / 2 - 2, FLOOR_W / 2 + 2].forEach(x => {
+        const sideStrip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, FLOOR_D + 4), neonMaterial(0xa855f7, 2.4));
+        sideStrip.position.set(x, 18, 4);
+        floorGroup.add(sideStrip);
+      });
 
       scene.add(floorGroup);
       buildFurnitureFromLayout();
 
       clock = new THREE.Clock();
+      lastFrameT = 0;
       built = true;
+      lastNightState = nightNow;
     }
 
     function resize3d() {
@@ -3923,16 +4100,29 @@
     function animate3d() {
       raf = requestAnimationFrame(animate3d);
       const t = clock ? clock.getElapsedTime() : 0;
-      // parpadeo sutil de neón para que se sienta vivo, sin costo de re-layout DOM
-      scene.traverse(obj => {
-        if (obj.isPointLight && obj.userData.flicker !== false) {
-          obj.intensity = obj.userData.baseIntensity || obj.intensity;
+      const dt = Math.min(t - lastFrameT, 0.05);
+      lastFrameT = t;
+
+      // Movimiento de "caminar" por el lugar con joystick/teclado, suave y a buen fps
+      if (moveState.fwd || moveState.side) {
+        const speed = 14 * dt;
+        cam.target.addScaledVector(camForward(), moveState.fwd * speed);
+        cam.target.addScaledVector(camRight(), moveState.side * speed);
+        updateCameraFromOrbit();
+      }
+
+      // Parpadeo sutil de las luces neón — recorre solo el puñado de luces reales
+      // (guardadas en flickerLights), nunca la escena completa: mucho más barato en tablet.
+      frameCounter++;
+      if (!isMobileGPU || frameCounter % 2 === 0) {
+        for (let i = 0; i < flickerLights.length; i++) {
+          const L = flickerLights[i];
+          const base = L.userData.baseIntensity || L.intensity;
+          L.userData.baseIntensity = base;
+          L.intensity = base * (0.85 + Math.sin(t * 2.2 + i * 1.7) * 0.15);
         }
-      });
-      furnitureGroup && furnitureGroup.children.forEach((g, i) => {
-        const light = g.children.find(c => c.isPointLight);
-        if (light) light.intensity = 0.45 + Math.sin(t * 1.6 + i) * 0.12;
-      });
+      }
+
       renderer.render(scene, camera);
     }
 
@@ -3940,10 +4130,19 @@
       container.classList.add('open');
       loadingEl.style.display = 'flex';
       requestAnimationFrame(() => {
-        if (!built) buildScene();
-        else buildFurnitureFromLayout();
+        // Si cambió de día a noche (o viceversa) desde la última vez que se
+        // abrió la vista 3D, se reconstruye la escena completa para que el
+        // cielo y la iluminación reflejen la hora actual.
+        if (!built || computeIsNight() !== lastNightState) {
+          built = false;
+          buildScene();
+        } else {
+          buildFurnitureFromLayout();
+        }
         resize3d();
         cancelAnimationFrame(raf);
+        clock && clock.start();
+        lastFrameT = clock ? clock.getElapsedTime() : 0;
         animate3d();
         loadingEl.style.display = 'none';
       });
@@ -3952,10 +4151,12 @@
     window.close3DClub = function () {
       container.classList.remove('open');
       cancelAnimationFrame(raf);
+      moveState.fwd = 0; moveState.side = 0;
     };
 
     window.addEventListener('resize', () => { if (container.classList.contains('open')) resize3d(); });
 
+    canvasEl3d.addEventListener('contextmenu', (e) => e.preventDefault());
     canvasEl3d.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
@@ -3963,10 +4164,50 @@
     canvasEl3d.addEventListener('touchmove', onPointerMove, { passive: true });
     canvasEl3d.addEventListener('touchend', onPointerUp);
     canvasEl3d.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
 
     document.getElementById('view3d-zoom-in').onclick = () => { cam.radius -= 4; updateCameraFromOrbit(); };
     document.getElementById('view3d-zoom-out').onclick = () => { cam.radius += 4; updateCameraFromOrbit(); };
-    document.getElementById('view3d-zoom-reset').onclick = () => { cam.theta = 0.78; cam.phi = 1.15; cam.radius = 46; updateCameraFromOrbit(); };
+    document.getElementById('view3d-zoom-reset').onclick = () => { cam.theta = 0.78; cam.phi = 1.18; cam.radius = 42; cam.target.set(0, 8.5, -1); updateCameraFromOrbit(); };
+
+    // --- Joystick táctil para "deslizarse" caminando por el antro (ideal para tableta) ---
+    (function setupJoystick() {
+      const zone = document.getElementById('view3d-joystick');
+      const knob = document.getElementById('view3d-joystick-knob');
+      if (!zone || !knob) return;
+      let active = false, cx = 0, cy = 0;
+      const RADIUS = 34;
+
+      function setKnob(dx, dy) {
+        knob.style.transform = `translate(${dx}px, ${dy}px)`;
+      }
+      function start(e) {
+        active = true;
+        const r = zone.getBoundingClientRect();
+        cx = r.left + r.width / 2; cy = r.top + r.height / 2;
+        move(e);
+      }
+      function move(e) {
+        if (!active) return;
+        const p = e.touches ? e.touches[0] : e;
+        let dx = p.clientX - cx, dy = p.clientY - cy;
+        const dist = Math.hypot(dx, dy);
+        if (dist > RADIUS) { dx = dx / dist * RADIUS; dy = dy / dist * RADIUS; }
+        setKnob(dx, dy);
+        moveState.fwd = -dy / RADIUS;
+        moveState.side = dx / RADIUS;
+      }
+      function end() {
+        active = false; setKnob(0, 0); moveState.fwd = 0; moveState.side = 0;
+      }
+      zone.addEventListener('pointerdown', start);
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', end);
+      zone.addEventListener('touchstart', start, { passive: true });
+      zone.addEventListener('touchmove', move, { passive: true });
+      zone.addEventListener('touchend', end);
+    })();
   })();
   </script>
 
