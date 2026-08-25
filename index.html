@@ -6,7 +6,7 @@
   <title>CRYPTO Business Social Club - Gestión de Plano y CRM</title>
   <link rel="manifest" href="manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
-  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   
   <style>
     :root {
@@ -384,6 +384,116 @@
       color: var(--neon-purple) !important;
       box-shadow: 0 0 14px rgba(168, 85, 247, 0.4);
     }
+
+    /* === VISTA 3D REAL (WebGL / Three.js) — reemplaza el hack de CSS transform === */
+    #view3d-container {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      background: #000;
+      display: none;
+      cursor: grab;
+      touch-action: none;
+    }
+    #view3d-container.open { display: block; }
+    #view3d-container.dragging { cursor: grabbing; }
+    #view3d-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      outline: none;
+    }
+    #view3d-loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 10px;
+      background: #050608;
+      z-index: 2;
+      font-family: var(--font-display);
+      color: var(--neon-green);
+      letter-spacing: 2px;
+      font-size: 13px;
+    }
+    #view3d-loading .spin3d {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      border: 3px solid rgba(6, 214, 160, 0.18);
+      border-top-color: var(--neon-green);
+      animation: spin3d 0.9s linear infinite;
+    }
+    @keyframes spin3d { to { transform: rotate(360deg); } }
+
+    #view3d-hud {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: none;
+    }
+    #view3d-hud .badge {
+      pointer-events: auto;
+      background: rgba(10, 12, 17, 0.72);
+      border: 1px solid rgba(6, 214, 160, 0.35);
+      color: var(--text-main);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+
+    #btn-exit-3d {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 3;
+      background: linear-gradient(135deg, #ef476f 0%, #b91c3c 100%);
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 12.5px;
+      letter-spacing: 0.4px;
+      cursor: pointer;
+      box-shadow: 0 0 16px rgba(239, 71, 111, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #btn-exit-3d:active { transform: scale(0.95); }
+
+    #view3d-zoom {
+      position: absolute;
+      bottom: 20px;
+      right: 16px;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #view3d-zoom button {
+      width: 42px; height: 42px;
+      border-radius: 12px;
+      background: rgba(10, 12, 17, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--accent);
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+    }
+    #view3d-zoom button:active { transform: scale(0.92); }
 
     #canvas::before {
       content: '';
@@ -1568,6 +1678,19 @@
             <button class="btn-zoom" id="btn-toggle-3d" title="Vista 3D del antro">🧊</button>
           </div>
         </div>
+
+        <!-- VISTA 3D REAL DEL ANTRO (WebGL) -->
+        <div id="view3d-container">
+          <div id="view3d-loading"><div class="spin3d"></div>Cargando antro en 3D…</div>
+          <canvas id="view3d-canvas"></canvas>
+          <div id="view3d-hud"><span class="badge">🖱️ Arrastra para mirar · Rueda / pellizca para zoom</span></div>
+          <button id="btn-exit-3d">✕ Salir de Vista 3D</button>
+          <div id="view3d-zoom">
+            <button id="view3d-zoom-in">➕</button>
+            <button id="view3d-zoom-out">➖</button>
+            <button id="view3d-zoom-reset">⟳</button>
+          </div>
+        </div>
       </div>
 
       <div id="view-crm">
@@ -2038,31 +2161,20 @@
   }
 
   btnToggle3D.addEventListener('click', () => {
-    view3DActive = !view3DActive;
+    view3DActive = true;
+    selectedIds.clear();
+    multiSelectMode = false;
+    updateMultiBar();
+    btnToggle3D.classList.add('active-3d');
+    btnToggle3D.title = 'Vista 3D del antro (abierta)';
+    if (typeof window.open3DClub === 'function') window.open3DClub();
+  });
 
-    // Transición suave SOLO durante el cambio de vista; se retira después para que
-    // el pan y el zoom en vivo dentro de la vista 3D respondan al instante (sin retraso).
-    canvasStage.classList.add('stage-transitioning');
-    clearTimeout(window._stage3DTransitionTimer);
-    window._stage3DTransitionTimer = setTimeout(() => {
-      canvasStage.classList.remove('stage-transitioning');
-    }, 600);
-
-    canvasStage.classList.toggle('stage-3d', view3DActive);
-    canvasEl.classList.toggle('mode-3d', view3DActive);
-    btnToggle3D.classList.toggle('active-3d', view3DActive);
-    btnToggle3D.title = view3DActive ? 'Volver a Vista 2D (editar)' : 'Vista 3D del antro';
-    // Mientras se visualiza en 3D, dejamos el plano en modo "solo vista" para no desalinear el drag
-    if (view3DActive) {
-      selectedIds.clear();
-      multiSelectMode = false;
-      updateMultiBar();
-      // Centra la cámara y aleja un poco el zoom para apreciar el antro completo en perspectiva
-      panX = 0;
-      panY = 0;
-      currentZoom = Math.min(currentZoom, 0.8);
-    }
-    applyStageTransform();
+  document.getElementById('btn-exit-3d').addEventListener('click', () => {
+    view3DActive = false;
+    btnToggle3D.classList.remove('active-3d');
+    btnToggle3D.title = 'Vista 3D del antro';
+    if (typeof window.close3DClub === 'function') window.close3DClub();
   });
 
   document.getElementById('btn-zoom-in').onclick = () => setZoom(currentZoom + 0.15);
@@ -3471,6 +3583,391 @@
 
   renderFurniture();
   renderAllCRM();
+  </script>
+
+  <script>
+  // ============================================================================
+  // VISTA 3D REAL DEL ANTRO — motor WebGL con Three.js
+  // Sustituye por completo el viejo truco de "transform: rotateX/rotateZ" sobre
+  // el DOM (que era lento porque re-pintaba cientos de divs con box-shadow/filter
+  // cada frame). Aquí se dibuja una escena real en GPU: piso reflejante con
+  // rejilla neón, cristalera, pantalla LED, cabina DJ, mezzanine con barandal
+  // de cristal y tubos de neón — igual que la referencia — y cada mesa/sillón
+  // del plano actual se coloca en 3D según su posición real (x%, y%).
+  // ============================================================================
+  (function Club3DEngine() {
+    let renderer, scene, camera, clock;
+    let floorGroup, furnitureGroup;
+    let raf = null;
+    let built = false;
+
+    const container = document.getElementById('view3d-container');
+    const canvasEl3d = document.getElementById('view3d-canvas');
+    const loadingEl = document.getElementById('view3d-loading');
+
+    // --- Cámara orbital simple (arrastrar = orbitar, rueda/pellizco = zoom) ---
+    const cam = { theta: 0.78, phi: 1.15, radius: 46, target: new (window.THREE ? THREE.Vector3 : Object)(0, 9, -2) };
+    let dragging = false, lastX = 0, lastY = 0;
+    let pinchDist = null;
+
+    function clampCam() {
+      cam.phi = Math.min(Math.max(cam.phi, 0.55), 1.5);
+      cam.radius = Math.min(Math.max(cam.radius, 14), 85);
+    }
+
+    function updateCameraFromOrbit() {
+      clampCam();
+      const x = cam.target.x + cam.radius * Math.sin(cam.phi) * Math.sin(cam.theta);
+      const y = cam.target.y + cam.radius * Math.cos(cam.phi);
+      const z = cam.target.z + cam.radius * Math.sin(cam.phi) * Math.cos(cam.theta);
+      camera.position.set(x, y, z);
+      camera.lookAt(cam.target);
+    }
+
+    function onPointerDown(e) {
+      dragging = true;
+      container.classList.add('dragging');
+      const p = e.touches ? e.touches[0] : e;
+      lastX = p.clientX; lastY = p.clientY;
+      if (e.touches && e.touches.length === 2) pinchDist = touchDist(e.touches);
+    }
+    function onPointerMove(e) {
+      if (e.touches && e.touches.length === 2) {
+        const d = touchDist(e.touches);
+        if (pinchDist) cam.radius *= pinchDist / d;
+        pinchDist = d;
+        updateCameraFromOrbit();
+        return;
+      }
+      if (!dragging) return;
+      const p = e.touches ? e.touches[0] : e;
+      const dx = p.clientX - lastX, dy = p.clientY - lastY;
+      lastX = p.clientX; lastY = p.clientY;
+      cam.theta -= dx * 0.0055;
+      cam.phi -= dy * 0.0045;
+      updateCameraFromOrbit();
+    }
+    function onPointerUp() { dragging = false; pinchDist = null; container.classList.remove('dragging'); }
+    function touchDist(t) { const dx = t[0].clientX - t[1].clientX, dy = t[0].clientY - t[1].clientY; return Math.hypot(dx, dy); }
+    function onWheel(e) {
+      e.preventDefault();
+      cam.radius += e.deltaY * 0.02;
+      updateCameraFromOrbit();
+    }
+
+    function neonMaterial(color, intensity) {
+      return new THREE.MeshStandardMaterial({
+        color: color, emissive: color, emissiveIntensity: intensity != null ? intensity : 1.4,
+        metalness: 0.2, roughness: 0.35
+      });
+    }
+
+    function glassMaterial(color) {
+      return new THREE.MeshPhysicalMaterial({
+        color: color || 0x8fb4d9, transparent: true, opacity: 0.16,
+        metalness: 0, roughness: 0.05, transmission: 0.55, reflectivity: 0.6, side: THREE.DoubleSide
+      });
+    }
+
+    function buildSkyTexture() {
+      const c = document.createElement('canvas'); c.width = 512; c.height = 512;
+      const ctx = c.getContext('2d');
+      const g = ctx.createLinearGradient(0, 0, 0, 512);
+      g.addColorStop(0, '#0b1a2c'); g.addColorStop(0.45, '#1c3a56'); g.addColorStop(0.75, '#3a5a72'); g.addColorStop(1, '#0e1620');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, 512, 512);
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      for (let i = 0; i < 6; i++) {
+        ctx.beginPath();
+        const y = 300 + i * 22;
+        ctx.moveTo(0, y);
+        for (let x = 0; x <= 512; x += 32) ctx.lineTo(x, y + Math.sin(x * 0.02 + i) * 14);
+        ctx.lineTo(512, 512); ctx.lineTo(0, 512); ctx.closePath(); ctx.fill();
+      }
+      return new THREE.CanvasTexture(c);
+    }
+
+    function buildScreenTexture() {
+      const c = document.createElement('canvas'); c.width = 512; c.height = 288;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#050b12'; ctx.fillRect(0, 0, 512, 288);
+      const grd = ctx.createRadialGradient(256, 144, 20, 256, 144, 260);
+      grd.addColorStop(0, 'rgba(6,214,160,0.55)'); grd.addColorStop(1, 'rgba(6,214,160,0)');
+      ctx.fillStyle = grd; ctx.fillRect(0, 0, 512, 288);
+      ctx.strokeStyle = 'rgba(6,214,160,0.9)'; ctx.lineWidth = 6;
+      ctx.strokeRect(40, 30, 200, 228);
+      ctx.strokeRect(272, 30, 200, 228);
+      ctx.fillStyle = 'rgba(6,214,160,0.9)';
+      ctx.font = 'bold 46px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('CRYPTO', 256, 155);
+      ctx.font = 'bold 16px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.fillText('BUSINESS SOCIAL CLUB', 256, 180);
+      return new THREE.CanvasTexture(c);
+    }
+
+    function buildStool(x, z, w, d, tone) {
+      const g = new THREE.Group();
+      const seatH = 2.0;
+      const legMat = new THREE.MeshStandardMaterial({ color: 0x11141c, metalness: 0.7, roughness: 0.35 });
+      const legGeo = new THREE.CylinderGeometry(0.05, 0.05, seatH, 8);
+      const inset = 0.32;
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
+        const leg = new THREE.Mesh(legGeo, legMat);
+        leg.position.set(sx * (w / 2 - inset), seatH / 2, sz * (d / 2 - inset));
+        g.add(leg);
+      });
+      const topMat = neonMaterial(tone || 0xf5f8ff, 1.1);
+      const top = new THREE.Mesh(new THREE.BoxGeometry(w, 0.16, d), topMat);
+      top.position.y = seatH + 0.08;
+      g.add(top);
+      const pl = new THREE.PointLight(tone || 0xbfe8ff, 0.55, 3.4, 2);
+      pl.position.set(0, seatH + 0.3, 0);
+      g.add(pl);
+      g.position.set(x, 0, z);
+      return g;
+    }
+
+    function buildDecor(tipo, w, d) {
+      const g = new THREE.Group();
+      const mat = new THREE.MeshStandardMaterial({ color: 0x232838, metalness: 0.4, roughness: 0.55 });
+      const box = new THREE.Mesh(new THREE.BoxGeometry(w, 1.1, d), mat);
+      box.position.y = 0.55;
+      g.add(box);
+      const edge = neonMaterial(tipo === 'barra' ? 0xf3ba2f : 0xa855f7, 0.9);
+      const rim = new THREE.Mesh(new THREE.BoxGeometry(w + 0.06, 0.05, d + 0.06), edge);
+      rim.position.y = 1.12;
+      g.add(rim);
+      return g;
+    }
+
+    function pctToWorld(xPct, yPct) {
+      // el plano 2D usa 0-100% en X e Y; lo mapeamos al piso 3D (ancho X, profundidad Z)
+      const worldX = (xPct / 100 - 0.5) * FLOOR_W;
+      const worldZ = (yPct / 100) * FLOOR_D - FLOOR_D * 0.5 + 6;
+      return { x: worldX, z: worldZ };
+    }
+
+    const FLOOR_W = 40, FLOOR_D = 46;
+
+    function buildFurnitureFromLayout() {
+      if (furnitureGroup) { scene.remove(furnitureGroup); }
+      furnitureGroup = new THREE.Group();
+      let list = [];
+      try { list = (typeof getLayout === 'function') ? getLayout() : []; } catch (e) { list = []; }
+
+      list.forEach(item => {
+        const pos = pctToWorld(item.x, item.y);
+        const wScale = Math.max(0.02, (item.anchoPx || 50) / 100) * (FLOOR_W / 10);
+        const dScale = Math.max(0.02, (item.altoPx || 50) / 100) * (FLOOR_D / 12);
+        let mesh;
+        if (item.tipo === 'mesa' || item.tipo === 'mesa_doble') {
+          mesh = buildStool(pos.x, pos.z, Math.min(wScale, 3.2), Math.min(dScale, 3.2), 0xf5f8ff);
+        } else if (item.tipo === 'sillon') {
+          mesh = buildStool(pos.x, pos.z, Math.min(wScale, 2.6), Math.min(dScale, 2.6), 0xffe0e0);
+        } else if (item.tipo) {
+          mesh = buildDecor(item.tipo, Math.min(wScale, 4), Math.min(dScale, 4));
+          mesh.position.set(pos.x, 0, pos.z);
+        }
+        if (mesh) {
+          mesh.rotation.y = ((item.rotacion || 0) * Math.PI) / 180;
+          furnitureGroup.add(mesh);
+        }
+      });
+      scene.add(furnitureGroup);
+    }
+
+    function buildScene() {
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x030406);
+      scene.fog = new THREE.FogExp2(0x03040a, 0.024);
+
+      camera = new THREE.PerspectiveCamera(52, 1, 0.1, 400);
+      updateCameraFromOrbit();
+
+      renderer = new THREE.WebGLRenderer({ canvas: canvasEl3d, antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+      renderer.outputColorSpace = THREE.SRGBColorSpace || THREE.sRGBEncoding;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.15;
+
+      // Luces
+      scene.add(new THREE.AmbientLight(0x223047, 0.9));
+      const hemi = new THREE.HemisphereLight(0x445577, 0x05060a, 0.5);
+      scene.add(hemi);
+      const screenLight = new THREE.PointLight(0x06d6a0, 3.5, 40, 2);
+      screenLight.position.set(0, 9, -20);
+      scene.add(screenLight);
+      const pinkLight = new THREE.PointLight(0xff2ec4, 2.2, 30, 2);
+      pinkLight.position.set(16, 10, 4);
+      scene.add(pinkLight);
+      const greenLight = new THREE.PointLight(0x39ff8a, 2.0, 30, 2);
+      greenLight.position.set(20, 10, -6);
+      scene.add(greenLight);
+
+      floorGroup = new THREE.Group();
+
+      // --- Piso reflejante oscuro con rejilla neón tipo "diamante" ---
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0x0a0d13, metalness: 0.55, roughness: 0.18 });
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_W, FLOOR_D), floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.set(0, 0, -FLOOR_D / 2 + 6 + FLOOR_D / 2 - FLOOR_D / 2);
+      floor.position.z = 4;
+      floorGroup.add(floor);
+
+      const grid1 = new THREE.GridHelper(FLOOR_W, 20, 0x06d6a0, 0x0d3b30);
+      grid1.position.y = 0.02; grid1.position.z = 4;
+      grid1.material.opacity = 0.35; grid1.material.transparent = true;
+      floorGroup.add(grid1);
+
+      // --- Cristalera lateral izquierda con vista al exterior ---
+      const skyTex = buildSkyTexture();
+      const skyMat = new THREE.MeshBasicMaterial({ map: skyTex, fog: false });
+      const sky = new THREE.Mesh(new THREE.PlaneGeometry(60, 22), skyMat);
+      sky.position.set(-FLOOR_W / 2 - 4, 11, -2);
+      sky.rotation.y = Math.PI / 2;
+      floorGroup.add(sky);
+
+      const glass = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_D + 4, 20), glassMaterial(0x8fc7ff));
+      glass.position.set(-FLOOR_W / 2 - 0.05, 10, -2);
+      glass.rotation.y = Math.PI / 2;
+      floorGroup.add(glass);
+
+      const mullionMat = new THREE.MeshStandardMaterial({ color: 0x14181f, metalness: 0.6, roughness: 0.4 });
+      for (let i = -10; i <= 10; i++) {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(0.08, 20, 0.12), mullionMat);
+        bar.position.set(-FLOOR_W / 2 - 0.06, 10, -2 + i * (FLOOR_D / 20));
+        floorGroup.add(bar);
+      }
+
+      // --- Escenario de fondo: pantalla LED + bocinas + cabina DJ ---
+      const stageWall = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W * 0.55, 14, 0.6),
+        new THREE.MeshStandardMaterial({ color: 0x090b10, metalness: 0.4, roughness: 0.6 }));
+      stageWall.position.set(0, 7, -FLOOR_D / 2 + 5);
+      floorGroup.add(stageWall);
+
+      const screenTex = buildScreenTexture();
+      const screen = new THREE.Mesh(new THREE.PlaneGeometry(11, 6.2),
+        new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false }));
+      screen.position.set(0, 9, -FLOOR_D / 2 + 4.68);
+      floorGroup.add(screen);
+      const screenGlow = new THREE.PointLight(0x06d6a0, 2.2, 16, 2);
+      screenGlow.position.set(0, 9, -FLOOR_D / 2 + 8);
+      floorGroup.add(screenGlow);
+
+      const speakerMat = new THREE.MeshStandardMaterial({ color: 0x14161c, metalness: 0.5, roughness: 0.5 });
+      [-7.2, 7.2].forEach(sx => {
+        const spk = new THREE.Mesh(new THREE.BoxGeometry(1.6, 9, 1.4), speakerMat);
+        spk.position.set(sx, 6.5, -FLOOR_D / 2 + 4.8);
+        floorGroup.add(spk);
+        for (let i = 0; i < 3; i++) {
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.06, 8, 20), neonMaterial(0x39ffe0, 0.9));
+          ring.position.set(sx, 4.4 + i * 2.2, -FLOOR_D / 2 + 5.55);
+          floorGroup.add(ring);
+        }
+      });
+
+      const djBooth = new THREE.Mesh(new THREE.BoxGeometry(9, 2.4, 2.2),
+        new THREE.MeshStandardMaterial({ color: 0x101319, metalness: 0.5, roughness: 0.4 }));
+      djBooth.position.set(0, 1.2, -FLOOR_D / 2 + 8.5);
+      floorGroup.add(djBooth);
+      const djStrip = new THREE.Mesh(new THREE.BoxGeometry(9.1, 0.12, 2.3), neonMaterial(0x06d6a0, 1.6));
+      djStrip.position.set(0, 2.42, -FLOOR_D / 2 + 8.5);
+      floorGroup.add(djStrip);
+
+      // --- Mezzanine con barandal de cristal (lado derecho, planta alta) ---
+      const mezzY = 12;
+      const mezz = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W * 0.65, 0.5, 12),
+        new THREE.MeshStandardMaterial({ color: 0x0c0e13, metalness: 0.5, roughness: 0.5 }));
+      mezz.position.set(FLOOR_W * 0.12, mezzY, -FLOOR_D / 2 + 10);
+      floorGroup.add(mezz);
+
+      const railGlass = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W * 0.65, 2.4, 0.06), glassMaterial(0xbcd8ff));
+      railGlass.position.set(FLOOR_W * 0.12, mezzY + 1.5, -FLOOR_D / 2 + 4);
+      floorGroup.add(railGlass);
+      const railTop = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W * 0.65, 0.1, 0.14),
+        new THREE.MeshStandardMaterial({ color: 0x1c2230, metalness: 0.7, roughness: 0.3 }));
+      railTop.position.set(FLOOR_W * 0.12, mezzY + 2.7, -FLOOR_D / 2 + 4);
+      floorGroup.add(railTop);
+
+      // --- Tubos de neón verticales (columnas, lado derecho) igual que la referencia ---
+      const neonColors = [0xff2ec4, 0x39ff8a, 0x2ecbff];
+      const colX = [FLOOR_W / 2 - 1.2, FLOOR_W / 2 + 3.4, FLOOR_W / 2 + 7.8];
+      colX.forEach((cx, i) => {
+        const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 24, 12), neonMaterial(neonColors[i % 3], 2.2));
+        tube.position.set(cx, 12, -FLOOR_D / 2 + 12 - i * 6);
+        floorGroup.add(tube);
+        const tl = new THREE.PointLight(neonColors[i % 3], 1.4, 14, 2);
+        tl.position.set(cx, 12, -FLOOR_D / 2 + 12 - i * 6);
+        floorGroup.add(tl);
+      });
+
+      // --- Franja de neón ámbar en el techo (marca del club) ---
+      const ceilStrip = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W + 4, 0.08, 0.08), neonMaterial(0xffb703, 1.8));
+      ceilStrip.position.set(0, 18, -FLOOR_D / 2 + 5);
+      floorGroup.add(ceilStrip);
+
+      scene.add(floorGroup);
+      buildFurnitureFromLayout();
+
+      clock = new THREE.Clock();
+      built = true;
+    }
+
+    function resize3d() {
+      if (!renderer) return;
+      const w = container.clientWidth, h = container.clientHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / Math.max(h, 1);
+      camera.updateProjectionMatrix();
+    }
+
+    function animate3d() {
+      raf = requestAnimationFrame(animate3d);
+      const t = clock ? clock.getElapsedTime() : 0;
+      // parpadeo sutil de neón para que se sienta vivo, sin costo de re-layout DOM
+      scene.traverse(obj => {
+        if (obj.isPointLight && obj.userData.flicker !== false) {
+          obj.intensity = obj.userData.baseIntensity || obj.intensity;
+        }
+      });
+      furnitureGroup && furnitureGroup.children.forEach((g, i) => {
+        const light = g.children.find(c => c.isPointLight);
+        if (light) light.intensity = 0.45 + Math.sin(t * 1.6 + i) * 0.12;
+      });
+      renderer.render(scene, camera);
+    }
+
+    window.open3DClub = function () {
+      container.classList.add('open');
+      loadingEl.style.display = 'flex';
+      requestAnimationFrame(() => {
+        if (!built) buildScene();
+        else buildFurnitureFromLayout();
+        resize3d();
+        cancelAnimationFrame(raf);
+        animate3d();
+        loadingEl.style.display = 'none';
+      });
+    };
+
+    window.close3DClub = function () {
+      container.classList.remove('open');
+      cancelAnimationFrame(raf);
+    };
+
+    window.addEventListener('resize', () => { if (container.classList.contains('open')) resize3d(); });
+
+    canvasEl3d.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    canvasEl3d.addEventListener('touchstart', onPointerDown, { passive: true });
+    canvasEl3d.addEventListener('touchmove', onPointerMove, { passive: true });
+    canvasEl3d.addEventListener('touchend', onPointerUp);
+    canvasEl3d.addEventListener('wheel', onWheel, { passive: false });
+
+    document.getElementById('view3d-zoom-in').onclick = () => { cam.radius -= 4; updateCameraFromOrbit(); };
+    document.getElementById('view3d-zoom-out').onclick = () => { cam.radius += 4; updateCameraFromOrbit(); };
+    document.getElementById('view3d-zoom-reset').onclick = () => { cam.theta = 0.78; cam.phi = 1.15; cam.radius = 46; updateCameraFromOrbit(); };
+  })();
   </script>
 
   <script type="module">
