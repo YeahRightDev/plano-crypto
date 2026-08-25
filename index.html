@@ -346,8 +346,8 @@
       background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
       background-size: 24px 24px;
       overflow: hidden;
-      perspective: 1400px;
-      perspective-origin: 50% 20%;
+      perspective: 1900px;
+      perspective-origin: 50% 12%;
     }
 
     /* VISTA 3D — inclina el plano completo para dar sensación de profundidad real del antro */
@@ -1385,6 +1385,118 @@
       font-size: 10px;
       color: var(--text-low);
     }
+    /* === PISO 3D CON REFLEJO NEÓN === */
+    #canvas.mode-3d {
+      background: radial-gradient(ellipse 90% 70% at 50% 10%, rgba(20,10,30,0.4), #030405 70%);
+    }
+
+    #canvas.mode-3d #canvas-stage::before {
+      background-image:
+        repeating-linear-gradient(0deg, rgba(6,214,160,0.18) 0 1px, transparent 1px 50px),
+        repeating-linear-gradient(90deg, rgba(168,85,247,0.15) 0 1px, transparent 1px 50px),
+        radial-gradient(ellipse 60% 40% at 50% 50%, rgba(255,255,255,0.06), transparent 70%);
+      filter: brightness(1.1) blur(0.2px);
+    }
+
+    #canvas.mode-3d::after {
+      content: '';
+      position: absolute; inset: 0; z-index: 5; pointer-events: none;
+      background: radial-gradient(ellipse 80% 80% at 50% 40%, transparent 40%, rgba(0,0,0,0.65) 100%);
+    }
+
+    /* === EXTRUSIÓN 3D DE MUEBLES === */
+    #canvas.mode-3d .furniture {
+      transform-style: preserve-3d;
+      background: linear-gradient(180deg, #eef3f8 0%, #b9c6d4 100%) !important;
+      border: none !important;
+    }
+
+    #canvas.mode-3d .furniture::before {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; bottom: -14px; height: 14px;
+      background: linear-gradient(180deg, #1b2330 0%, #0a0e14 100%);
+      transform: rotateX(-90deg);
+      transform-origin: bottom;
+      border-radius: 0 0 8px 8px;
+    }
+
+    #canvas.mode-3d .furniture.mesa::after {
+      content: '';
+      position: absolute; inset: -2px;
+      border-radius: inherit;
+      box-shadow: 0 0 18px rgba(6,214,160,0.35), 0 30px 24px -10px rgba(0,0,0,0.7);
+      pointer-events: none;
+    }
+
+    #canvas.mode-3d .furniture.sillon {
+      background: linear-gradient(180deg, #2a2f3a, #14171d) !important;
+    }
+    #canvas.mode-3d .furniture.sillon.color-rojo {
+      background: linear-gradient(180deg, #a8283f, #520f1c) !important;
+    }
+
+    /* === ARQUITECTURA FIJA DEL CLUB (solo decorativa, nunca bloquea clics) === */
+    #club-architecture {
+      position: absolute; inset: 0;
+      z-index: 0; opacity: 0; pointer-events: none !important;
+      transform-style: preserve-3d;
+      transition: opacity 0.5s ease;
+    }
+    #canvas.mode-3d #club-architecture { opacity: 1; }
+
+    .arch-glass-wall {
+      position: absolute; left: -4%; top: -50%; width: 4%; height: 200%;
+      background:
+        repeating-linear-gradient(90deg, rgba(160,210,255,0.35) 0 3px, transparent 3px 90px),
+        linear-gradient(180deg, rgba(140,190,255,0.12), rgba(5,8,14,0.55));
+      border-top: 3px solid rgba(6,214,160,0.6);
+      box-shadow: inset 0 0 50px rgba(6,214,160,0.2), 0 0 25px rgba(6,214,160,0.3);
+      pointer-events: none;
+    }
+
+    .arch-stage {
+      position: absolute; top: -48%; left: 20%; width: 60%; height: 22%;
+      background: linear-gradient(180deg, #0c0e14, #05060a);
+      border-top: 2px solid rgba(0,229,255,0.5);
+      border-radius: 6px 6px 0 0;
+      box-shadow: 0 0 40px rgba(0,229,255,0.25);
+      pointer-events: none;
+    }
+    .arch-led-screen {
+      position: absolute; top: 8%; left: 20%; width: 60%; height: 60%;
+      background:
+        linear-gradient(135deg, rgba(255,0,180,0.35), rgba(0,229,255,0.35)),
+        #060810;
+      border: 2px solid rgba(0,229,255,0.8);
+      box-shadow: 0 0 35px rgba(0,229,255,0.6);
+      border-radius: 4px;
+    }
+    .arch-dj-booth {
+      position: absolute; bottom: 0; left: 38%; width: 24%; height: 30%;
+      background: linear-gradient(180deg, #1a1f2b, #05060a);
+      border-top: 2px solid var(--neon-purple);
+      box-shadow: 0 0 20px rgba(168,85,247,0.5);
+    }
+    .arch-speaker {
+      position: absolute; bottom: 0; width: 12%; height: 55%;
+      background: linear-gradient(180deg, #14171d, #05060a);
+      border: 1px solid rgba(0,229,255,0.3);
+      border-radius: 6px;
+    }
+    .arch-speaker-left { left: 4%; }
+    .arch-speaker-right { right: 4%; }
+
+    .arch-mezzanine {
+      position: absolute; right: -6%; top: -30%; width: 8%; height: 160%;
+      background: linear-gradient(90deg, rgba(10,14,20,0.85), transparent);
+      pointer-events: none;
+    }
+    .arch-mezzanine-rail {
+      position: absolute; left: 0; top: 0; width: 3px; height: 100%;
+      background: linear-gradient(180deg, rgba(6,214,160,0.9), rgba(168,85,247,0.9));
+      box-shadow: 0 0 18px rgba(6,214,160,0.6), 0 0 18px rgba(168,85,247,0.6);
+    }
   </style>
 </head>
 <body>
@@ -1846,6 +1958,20 @@
   const canvas = document.getElementById('canvas');
   const canvasStage = document.getElementById('canvas-stage');
 
+  // === ARQUITECTURA 3D FIJA DEL CLUB (cristalera, escenario DJ, mezzanine) ===
+  canvasStage.insertAdjacentHTML('afterbegin', `
+    <div id="club-architecture">
+      <div class="arch-glass-wall"></div>
+      <div class="arch-stage">
+        <div class="arch-led-screen"></div>
+        <div class="arch-speaker arch-speaker-left"></div>
+        <div class="arch-speaker arch-speaker-right"></div>
+        <div class="arch-dj-booth"></div>
+      </div>
+      <div class="arch-mezzanine"><div class="arch-mezzanine-rail"></div></div>
+    </div>
+  `);
+
   // Cancela el scroll nativo del navegador al arrastrar el plano (fluidez táctil en Tab A11)
   canvasStage.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
   const overlay = document.getElementById('overlay');
@@ -1898,7 +2024,7 @@
   let view3DActive = false;
   const btnToggle3D = document.getElementById('btn-toggle-3d');
   const canvasEl = document.getElementById('canvas');
-  const VIEW3D_TILT = 'rotateX(48deg) rotateZ(0deg)';
+  const VIEW3D_TILT = 'rotateX(55deg) rotateZ(-45deg) scale(0.85)';
 
   function applyStageTransform() {
     const tilt = view3DActive ? ` ${VIEW3D_TILT}` : '';
