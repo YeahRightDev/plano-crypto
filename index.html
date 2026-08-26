@@ -387,6 +387,39 @@
       box-shadow: 0 0 14px rgba(168, 85, 247, 0.4);
     }
 
+    #btn-toggle-limit-3d.active-limit {
+      background: rgba(243, 186, 47, 0.22) !important;
+      border-color: var(--neon-amber) !important;
+      color: var(--neon-amber) !important;
+      box-shadow: 0 0 14px rgba(243, 186, 47, 0.4);
+    }
+
+    /* LÍMITE VISUAL 3D — marca en el plano 2D exactamente hasta dónde llega el piso real
+       renderizado en la Vista 3D, para no colocar mobiliario fuera del área visible */
+    #boundary-3d-indicator {
+      position: absolute;
+      left: 0; top: 0; width: 0; height: 0;
+      border: 2px dashed var(--neon-amber);
+      background: repeating-linear-gradient(135deg, rgba(243, 186, 47, 0.05) 0px, rgba(243, 186, 47, 0.05) 8px, transparent 8px, transparent 16px);
+      box-sizing: border-box;
+      pointer-events: none;
+      z-index: 0;
+      display: none;
+      border-radius: 4px;
+    }
+    #boundary-3d-indicator.visible { display: block; }
+    #boundary-3d-indicator::after {
+      content: '📐 Límite del piso 3D';
+      position: absolute;
+      top: -22px;
+      left: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--neon-amber);
+      white-space: nowrap;
+      text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+    }
+
     /* === VISTA 3D REAL (WebGL / Three.js) — reemplaza el hack de CSS transform === */
     #view3d-container {
       position: fixed;
@@ -1369,6 +1402,12 @@
       box-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
     }
 
+    #btn-edit-mode.locked {
+      background: rgba(239, 71, 111, 0.15) !important;
+      border-color: var(--neon-red) !important;
+      color: var(--neon-red) !important;
+    }
+
     .color-btn {
       flex: 1;
       padding: 10px;
@@ -1563,6 +1602,13 @@
         <p style="font-size:10px; color:var(--text-low); margin-top:6px; line-height:1.4;">Al activarlo, cada mesa que muevas se ajusta sola a una cuadrícula fija para quedar perfectamente alineada.</p>
       </div>
 
+      <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--panel-border);">
+        <span style="font-family: var(--font-display); font-size: 10px; color: var(--accent); opacity: 0.85; font-weight: 700; letter-spacing: 1.6px;">MODO EDICIÓN</span>
+        <button class="btn" id="btn-edit-mode" style="width:100%; margin-top:10px; justify-content:flex-start;">🔓 Modo Edición: ACTIVO</button>
+        <p style="font-size:10px; color:var(--text-low); margin-top:6px; line-height:1.4;">Con el Modo Edición apagado, las mesas y elementos quedan fijos: puedes tocarlos para ver/reservar, pero no se mueven por error en la tablet. Al entrar a Modo Operación se bloquea solo.</p>
+      </div>
+
+
       <button class="btn" id="btn-clear-day" style="margin-top:auto; background:rgba(239, 71, 111, 0.15); border-color:var(--neon-red); color:var(--neon-red);">🗑️ Vaciar Plano de Hoy</button>
     </sidebar>
 
@@ -1578,6 +1624,7 @@
             <button class="btn-zoom btn-zoom-reset" id="btn-zoom-reset" title="Restablecer">100%</button>
             <button class="btn-zoom" id="btn-zoom-out" title="Alejar">➖</button>
             <button class="btn-zoom" id="btn-toggle-3d" title="Vista 3D del antro">🧊</button>
+            <button class="btn-zoom" id="btn-toggle-limit-3d" title="Ver límite del área visible en 3D">📐</button>
           </div>
         </div>
 
@@ -2069,6 +2116,42 @@
     btnToggle3D.classList.remove('active-3d');
     btnToggle3D.title = 'Vista 3D del antro';
     if (typeof window.close3DClub === 'function') window.close3DClub();
+  });
+
+  // LÍMITE VISUAL 3D — marca en el plano 2D exactamente hasta dónde llega el piso real
+  // que se ve en la Vista 3D (mismo cálculo que usa el motor WebGL para no desincronizarse).
+  let limit3DActive = false;
+  const btnToggleLimit3D = document.getElementById('btn-toggle-limit-3d');
+  const boundaryIndicator = document.createElement('div');
+  boundaryIndicator.id = 'boundary-3d-indicator';
+  canvasStage.appendChild(boundaryIndicator);
+
+  function updateBoundaryIndicator() {
+    const b = window.CLUB3D_BOUNDS || { FLOOR_W: 40, FLOOR_D: 46, FLOOR_Z_OFFSET: 4, PCT_Z_OFFSET: 6 };
+    // Inversa exacta de pctToWorld()/floor.position.z del motor 3D:
+    // worldZ = (yPct/100)*FLOOR_D - FLOOR_D/2 + PCT_Z_OFFSET  →  despejamos yPct
+    const floorZMin = b.FLOOR_Z_OFFSET - b.FLOOR_D / 2;
+    const floorZMax = b.FLOOR_Z_OFFSET + b.FLOOR_D / 2;
+    const yMinPct = ((floorZMin + b.FLOOR_D / 2 - b.PCT_Z_OFFSET) / b.FLOOR_D) * 100;
+    const yMaxPct = ((floorZMax + b.FLOOR_D / 2 - b.PCT_Z_OFFSET) / b.FLOOR_D) * 100;
+    const top = Math.max(0, yMinPct);
+    const bottom = Math.min(100, yMaxPct);
+    boundaryIndicator.style.left = '0%';
+    boundaryIndicator.style.top = top + '%';
+    boundaryIndicator.style.width = '100%';
+    boundaryIndicator.style.height = (bottom - top) + '%';
+  }
+
+  btnToggleLimit3D.addEventListener('click', () => {
+    limit3DActive = !limit3DActive;
+    btnToggleLimit3D.classList.toggle('active-limit', limit3DActive);
+    btnToggleLimit3D.title = limit3DActive ? 'Ocultar límite del área visible en 3D' : 'Ver límite del área visible en 3D';
+    if (limit3DActive) {
+      updateBoundaryIndicator();
+      boundaryIndicator.classList.add('visible');
+    } else {
+      boundaryIndicator.classList.remove('visible');
+    }
   });
 
   document.getElementById('btn-zoom-in').onclick = () => setZoom(currentZoom + 0.15);
@@ -3524,6 +3607,9 @@
     const canvasEl3d = document.getElementById('view3d-canvas');
     const loadingEl = document.getElementById('view3d-loading');
     const FLOOR_W = 40, FLOOR_D = 46;
+    // Se exponen para que el plano 2D pueda dibujar el límite exacto del piso 3D
+    // (mismo cálculo que pctToWorld/floor.position.z, sin duplicar números mágicos por separado).
+    window.CLUB3D_BOUNDS = { FLOOR_W, FLOOR_D, FLOOR_Z_OFFSET: 4, PCT_Z_OFFSET: 6 };
 
     // --- Cámara: orbita + "deslizarse" (pan) libremente por el lugar ---
     // 1 dedo / click izq = orbitar. 2 dedos / click der / Shift+drag = deslizar (pan) el punto de mira.
@@ -3555,8 +3641,12 @@
       return new THREE.Vector3(Math.sin(cam.theta), 0, Math.cos(cam.theta)).multiplyScalar(-1);
     }
     function camRight() {
+      // OJO: el vector "derecha" estaba matemáticamente invertido (era -derecha real),
+      // por eso el pan/deslizamiento y el joystick de caminar se sentían "al revés"
+      // según hacia dónde estuvieras mirando. Con signo correcto, "derecha" es siempre
+      // tu derecha real en pantalla, sin importar el ángulo de la cámara.
       const f = camForward();
-      return new THREE.Vector3(f.z, 0, -f.x);
+      return new THREE.Vector3(-f.z, 0, f.x);
     }
 
     function onPointerDown(e) {
@@ -3698,14 +3788,14 @@
     }
 
     function labelSprite(text, color) {
-      const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+      const c = document.createElement('canvas'); c.width = 320; c.height = 72;
       const ctx = c.getContext('2d');
-      ctx.fillStyle = 'rgba(5,7,11,0.72)';
-      ctx.roundRect ? ctx.roundRect(0, 8, 256, 48, 12) : ctx.rect(0, 8, 256, 48);
+      ctx.fillStyle = 'rgba(5,7,11,0.78)';
+      ctx.roundRect ? ctx.roundRect(0, 8, 320, 56, 14) : ctx.rect(0, 8, 320, 56);
       ctx.fill();
-      ctx.strokeStyle = color || '#06d6a0'; ctx.lineWidth = 2; ctx.stroke();
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(text, 128, 34);
+      ctx.strokeStyle = color || '#06d6a0'; ctx.lineWidth = 3; ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 26px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(text, 160, 38);
       const tex = new THREE.CanvasTexture(c);
       const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
       const spr = new THREE.Sprite(mat);
@@ -3714,7 +3804,7 @@
       return spr;
     }
 
-    function buildStool(x, z, w, d, tone, label) {
+    function buildStool(x, z, w, d, tone, label, labelColor, labelScale) {
       const g = new THREE.Group();
       const seatH = 2.0;
       const legMat = new THREE.MeshStandardMaterial({ color: 0x11141c, metalness: 0.75, roughness: 0.3 });
@@ -3732,8 +3822,9 @@
       top.position.y = seatH + 0.08;
       g.add(top);
       if (label) {
-        const spr = labelSprite(label, '#f3ba2f');
-        spr.scale.set(1.7, 0.42, 1);
+        const spr = labelSprite(label, labelColor || '#f3ba2f');
+        const sc = labelScale || [1.7, 0.42, 1];
+        spr.scale.set(sc[0], sc[1], 1);
         spr.position.set(0, seatH + 0.75, 0);
         g.add(spr);
       }
@@ -3809,13 +3900,26 @@
       let list = [];
       try { list = (typeof getLayout === 'function') ? getLayout() : []; } catch (e) { list = []; }
 
+      // Mismos colores de estado que el plano 2D (disponible/reservada/ocupada),
+      // para que la mesa cambie de color al entrar a la Vista 3D según su estado real.
+      const ESTADO_COLOR = { disponible: 0x06d6a0, reservada: 0xffb703, ocupada: 0xef476f };
+      const ESTADO_HEX = { disponible: '#06d6a0', reservada: '#ffb703', ocupada: '#ef476f' };
+
       list.forEach(item => {
         const pos = pctToWorld(item.x, item.y);
         const wScale = Math.max(0.02, (item.anchoPx || 50) / 100) * (FLOOR_W / 10);
         const dScale = Math.max(0.02, (item.altoPx || 50) / 100) * (FLOOR_D / 12);
         let mesh;
         if (item.tipo === 'mesa' || item.tipo === 'mesa_doble') {
-          mesh = buildStool(pos.x, pos.z, Math.min(wScale, 3.2), Math.min(dScale, 3.2), 0xf5f8ff, item.nombre);
+          let res = { estado: 'disponible', cliente: '' };
+          try { if (typeof getReserva === 'function') res = getReserva(item.id); } catch (e) {}
+          const estado = res.estado || 'disponible';
+          const tone = ESTADO_COLOR[estado] || ESTADO_COLOR.disponible;
+          const labelColor = ESTADO_HEX[estado] || ESTADO_HEX.disponible;
+          // Si está reservada/ocupada y tiene cliente asignado, se ve el nombre del cliente
+          // (igual que en el plano 2D); si no, se ve el nombre/número de la mesa.
+          const labelText = (estado !== 'disponible' && res.cliente) ? res.cliente : item.nombre;
+          mesh = buildStool(pos.x, pos.z, Math.min(wScale, 3.2), Math.min(dScale, 3.2), tone, labelText, labelColor, [2.2, 0.55, 1]);
         } else if (item.tipo === 'sillon') {
           mesh = buildStool(pos.x, pos.z, Math.min(wScale, 2.6), Math.min(dScale, 2.6), 0xffe0e0, item.nombre);
         } else if (item.tipo) {
@@ -3938,64 +4042,6 @@
         floorGroup.add(post);
       }
 
-      // --- Escenario de fondo: pantalla LED + bocinas + cabina DJ (arquitectura fija de referencia) ---
-      const stageWall = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W * 0.55, 14, 0.6),
-        new THREE.MeshStandardMaterial({ color: 0x090b10, metalness: 0.4, roughness: 0.6 }));
-      stageWall.position.set(0, 7, -FLOOR_D / 2 + 5);
-      floorGroup.add(stageWall);
-
-      const screenTex = buildScreenTexture();
-      const screen = new THREE.Mesh(new THREE.PlaneGeometry(11, 6.2), new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false }));
-      screen.position.set(0, 9, -FLOOR_D / 2 + 4.68);
-      floorGroup.add(screen);
-      const screenGlow = new THREE.PointLight(0x1de9b6, 3.6, 20, 2);
-      screenGlow.position.set(0, 9, -FLOOR_D / 2 + 8);
-      floorGroup.add(screenGlow);
-      flickerLights.push(screenGlow);
-
-      const speakerMat = new THREE.MeshStandardMaterial({ color: 0x14161c, metalness: 0.5, roughness: 0.5 });
-      [-7.2, 7.2].forEach((sx, si) => {
-        const spk = new THREE.Mesh(new THREE.BoxGeometry(1.6, 9, 1.4), speakerMat);
-        spk.position.set(sx, 6.5, -FLOOR_D / 2 + 4.8);
-        floorGroup.add(spk);
-        for (let i = 0; i < 3; i++) {
-          const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.06, 8, 16), neonMaterial(0x39ffe0, 1.8));
-          ring.position.set(sx, 4.4 + i * 2.2, -FLOOR_D / 2 + 5.55);
-          floorGroup.add(ring);
-        }
-        // Solo una bocina emite luz real en tablet (menos costo, mismo efecto visual)
-        if (!isMobileGPU || si === 0) {
-          const spkLight = new THREE.PointLight(0x39ffe0, 1.4, 13, 2);
-          spkLight.position.set(sx, 8, -FLOOR_D / 2 + 6);
-          floorGroup.add(spkLight);
-          flickerLights.push(spkLight);
-        }
-      });
-
-      const djBooth = new THREE.Mesh(new THREE.BoxGeometry(9, 2.4, 2.2),
-        new THREE.MeshStandardMaterial({ color: 0x101319, metalness: 0.5, roughness: 0.4 }));
-      djBooth.position.set(0, 1.2, -FLOOR_D / 2 + 8.5);
-      floorGroup.add(djBooth);
-      const djStrip = new THREE.Mesh(new THREE.BoxGeometry(9.1, 0.12, 2.3), neonMaterial(0x06d6a0, 2.4));
-      djStrip.position.set(0, 2.42, -FLOOR_D / 2 + 8.5);
-      floorGroup.add(djStrip);
-      // Consola del DJ con sus propias pantallitas encendidas (la "segunda pantalla"
-      // de la referencia, además de la gran LED del escenario)
-      const djDeckTex = buildScreenTexture('LIVE', 'DJ SET');
-      [-1.7, 1.7].forEach((dx) => {
-        const djScreen = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.85),
-          new THREE.MeshBasicMaterial({ map: djDeckTex, toneMapped: false }));
-        djScreen.rotation.x = -Math.PI / 2.6;
-        djScreen.position.set(dx, 2.5, -FLOOR_D / 2 + 7.9);
-        floorGroup.add(djScreen);
-      });
-      if (!isMobileGPU) {
-        const djLight = new THREE.PointLight(0x06d6a0, 2.0, 12, 2);
-        djLight.position.set(0, 2.8, -FLOOR_D / 2 + 8.5);
-        floorGroup.add(djLight);
-        flickerLights.push(djLight);
-      }
-
       // --- Mezzanine con barandal de cristal (planta alta) ---
       const mezzY = 12;
       const mezz = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W * 0.65, 0.5, 12),
@@ -4015,6 +4061,19 @@
       mezzFloor.rotation.x = -Math.PI / 2;
       mezzFloor.position.set(FLOOR_W * 0.12, mezzY + 0.26, -FLOOR_D / 2 + 10);
       floorGroup.add(mezzFloor);
+
+      // Rejilla neón sobre el piso del pasillo/planta alta (igual que la rejilla del piso
+      // principal) + luz propia, para que el pasillo se lea claramente como en la referencia,
+      // no solo como una sombra oscura detrás del barandal.
+      const mezzGrid = new THREE.GridHelper(1, 12, 0x2ecbff, 0x14283a);
+      mezzGrid.scale.set(FLOOR_W * 0.65, 1, 12);
+      mezzGrid.position.set(FLOOR_W * 0.12, mezzY + 0.27, -FLOOR_D / 2 + 10);
+      mezzGrid.material.opacity = 0.4;
+      mezzGrid.material.transparent = true;
+      floorGroup.add(mezzGrid);
+      const mezzLight = new THREE.PointLight(0x9fd3ff, 1.9, 22, 2);
+      mezzLight.position.set(FLOOR_W * 0.12, mezzY + 3.2, -FLOOR_D / 2 + 10);
+      floorGroup.add(mezzLight);
 
       // --- Cristalera del segundo piso (planta alta, lado derecho) — ventanales de
       // suelo a techo iguales a los de la referencia, no solo el barandal de cristal ---
@@ -4154,7 +4213,32 @@
       moveState.fwd = 0; moveState.side = 0;
     };
 
-    window.addEventListener('resize', () => { if (container.classList.contains('open')) resize3d(); });
+    // Resize con debounce (rAF) — evita reconstruir el tamaño del canvas en cada pixel
+    // mientras el usuario arrastra/redimensiona la ventana, mucho más fluido en tablet.
+    let resizeRafPending = false;
+    window.addEventListener('resize', () => {
+      if (!container.classList.contains('open') || resizeRafPending) return;
+      resizeRafPending = true;
+      requestAnimationFrame(() => {
+        resizeRafPending = false;
+        resize3d();
+      });
+    });
+
+    // Pausa el render loop cuando la pestaña queda oculta (cambio de app, minimizar,
+    // otra ventana) y lo retoma limpio al volver — ahorra batería/GPU y evita el salto
+    // brusco de animación que se siente al regresar tras varios segundos en segundo plano.
+    document.addEventListener('visibilitychange', () => {
+      if (!container.classList.contains('open')) return;
+      if (document.hidden) {
+        cancelAnimationFrame(raf);
+      } else {
+        clock && clock.start();
+        lastFrameT = clock ? clock.getElapsedTime() : 0;
+        cancelAnimationFrame(raf);
+        animate3d();
+      }
+    });
 
     canvasEl3d.addEventListener('contextmenu', (e) => e.preventDefault());
     canvasEl3d.addEventListener('pointerdown', onPointerDown);
