@@ -508,6 +508,51 @@
     }
     #btn-exit-3d:active { transform: scale(0.95); }
 
+    #btn-edit-mode-3d {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      z-index: 3;
+      background: rgba(10, 12, 17, 0.72);
+      border: 1px solid rgba(6, 214, 160, 0.35);
+      color: var(--text-main);
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 11.5px;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+    }
+    #btn-edit-mode-3d.active-edit {
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 12px rgba(243, 186, 47, 0.4);
+    }
+
+    #btn-toggle-3d-controls {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      z-index: 4;
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: rgba(10, 12, 17, 0.72);
+      border: 1px solid rgba(6, 214, 160, 0.35);
+      color: var(--text-main);
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    #view3d-container.hide-3d-controls #view3d-hud,
+    #view3d-container.hide-3d-controls #btn-exit-3d,
+    #view3d-container.hide-3d-controls #view3d-zoom,
+    #view3d-container.hide-3d-controls #view3d-joystick,
+    #view3d-container.hide-3d-controls #btn-edit-mode-3d {
+      display: none !important;
+    }
+
     #view3d-zoom {
       position: absolute;
       bottom: 20px;
@@ -1634,6 +1679,8 @@
           <canvas id="view3d-canvas"></canvas>
           <div id="view3d-hud"><span class="badge">🖱️ 1 dedo: mirar · 2 dedos: deslizarte · Rueda/pellizco: zoom · Joystick: caminar</span></div>
           <button id="btn-exit-3d">✕ Salir de Vista 3D</button>
+          <button id="btn-edit-mode-3d" title="Activar/desactivar poder mover mesas y elementos en 3D">🔒 Edición 3D: OFF</button>
+          <button id="btn-toggle-3d-controls" title="Ocultar/Mostrar controles de la vista 3D">👁</button>
           <div id="view3d-zoom">
             <button id="view3d-zoom-in">➕</button>
             <button id="view3d-zoom-out">➖</button>
@@ -1913,6 +1960,32 @@
   });
 
   const btnCleanMode = document.getElementById('btn-clean-mode');
+
+  // === MODO EDICIÓN (solo relevante en Vista 3D: en 2D siempre se puede mover todo) ===
+  // Por defecto empieza apagado en 3D para no mover mesas sin querer mientras orbitas
+  // la cámara; se activa a propósito con este botón (hay uno igual dentro de la vista 3D).
+  window.editModeActive = false;
+  const btnEditMode = document.getElementById('btn-edit-mode');
+  function syncEditModeUI() {
+    const on = !!window.editModeActive;
+    if (btnEditMode) {
+      btnEditMode.textContent = on ? '🔓 Modo Edición: ACTIVO' : '🔒 Modo Edición: INACTIVO';
+      btnEditMode.classList.toggle('locked', !on);
+    }
+    const btn3d = document.getElementById('btn-edit-mode-3d');
+    if (btn3d) {
+      btn3d.textContent = on ? '🔓 Edición 3D: ON' : '🔒 Edición 3D: OFF';
+      btn3d.classList.toggle('active-edit', on);
+    }
+  }
+  window.syncEditModeUI = syncEditModeUI;
+  if (btnEditMode) {
+    btnEditMode.addEventListener('click', () => {
+      window.editModeActive = !window.editModeActive;
+      syncEditModeUI();
+    });
+  }
+  syncEditModeUI();
   const btnExitClean = document.getElementById('btn-exit-clean');
   const mainHeader = document.getElementById('main-header');
   const sidebarPanel = document.getElementById('sidebar-panel');
@@ -3606,7 +3679,7 @@
     const container = document.getElementById('view3d-container');
     const canvasEl3d = document.getElementById('view3d-canvas');
     const loadingEl = document.getElementById('view3d-loading');
-    const FLOOR_W = 40, FLOOR_D = 46;
+    const FLOOR_W = 48, FLOOR_D = 46;
     // Se exponen para que el plano 2D pueda dibujar el límite exacto del piso 3D
     // (mismo cálculo que pctToWorld/floor.position.z, sin duplicar números mágicos por separado).
     window.CLUB3D_BOUNDS = { FLOOR_W, FLOOR_D, FLOOR_Z_OFFSET: 4, PCT_Z_OFFSET: 6 };
@@ -3618,6 +3691,31 @@
     let dragging = false, panning = false, lastX = 0, lastY = 0;
     let pinchDist = null;
     const moveState = { fwd: 0, side: 0 };
+
+    // --- Modo Edición 3D: arrastrar mesas/elementos con raycasting, solo si está activo ---
+    const raycaster3d = new THREE.Raycaster();
+    const mouseNDC3d = new THREE.Vector2();
+    const floorPlane3d = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    let furnitureDragTarget = null;
+    let furnitureDragItem = null;
+
+    function pickFurnitureAt(clientX, clientY) {
+      if (!furnitureGroup) return null;
+      const rect = canvasEl3d.getBoundingClientRect();
+      mouseNDC3d.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      mouseNDC3d.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster3d.setFromCamera(mouseNDC3d, camera);
+      const hits = raycaster3d.intersectObjects(furnitureGroup.children, true);
+      if (!hits.length) return null;
+      let obj = hits[0].object;
+      while (obj && !obj.userData.itemId && obj.parent) obj = obj.parent;
+      if (!obj || !obj.userData.itemId) return null;
+      let list = [];
+      try { list = (typeof getLayout === 'function') ? getLayout() : []; } catch (e) {}
+      const item = list.find(it => it.id === obj.userData.itemId);
+      if (!item) return null;
+      return { group: obj, item };
+    }
 
     function clampCam() {
       cam.phi = Math.min(Math.max(cam.phi, 0.35), 1.52);
@@ -3655,12 +3753,38 @@
       if (e.touches && e.touches.length === 2) {
         pinchDist = touchDist(e.touches);
         panning = true; dragging = false;
-      } else {
-        dragging = true; panning = (e.button === 2 || e.shiftKey);
-        container.classList.add('dragging');
+        return;
       }
+      if (window.editModeActive) {
+        const hit = pickFurnitureAt(p.clientX, p.clientY);
+        if (hit) {
+          furnitureDragTarget = hit.group;
+          furnitureDragItem = hit.item;
+          container.classList.add('dragging-furniture-3d');
+          return;
+        }
+      }
+      dragging = true; panning = (e.button === 2 || e.shiftKey);
+      container.classList.add('dragging');
     }
     function onPointerMove(e) {
+      if (furnitureDragTarget) {
+        const p = e.touches ? e.touches[0] : e;
+        const rect = canvasEl3d.getBoundingClientRect();
+        mouseNDC3d.x = ((p.clientX - rect.left) / rect.width) * 2 - 1;
+        mouseNDC3d.y = -((p.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster3d.setFromCamera(mouseNDC3d, camera);
+        const point = new THREE.Vector3();
+        if (raycaster3d.ray.intersectPlane(floorPlane3d, point)) {
+          furnitureDragTarget.position.x = point.x;
+          furnitureDragTarget.position.z = point.z;
+          const xPct = (point.x / FLOOR_W + 0.5) * 100;
+          const yPct = ((point.z - 6 + FLOOR_D * 0.5) / FLOOR_D) * 100;
+          furnitureDragItem.x = Math.min(100, Math.max(0, xPct));
+          furnitureDragItem.y = Math.min(100, Math.max(0, yPct));
+        }
+        return;
+      }
       if (e.touches && e.touches.length === 2) {
         const d = touchDist(e.touches);
         if (pinchDist) cam.radius *= pinchDist / d;
@@ -3689,7 +3813,17 @@
       }
       updateCameraFromOrbit();
     }
-    function onPointerUp() { dragging = false; panning = false; pinchDist = null; container.classList.remove('dragging'); }
+    function onPointerUp() {
+      if (furnitureDragTarget) {
+        furnitureDragTarget = null;
+        furnitureDragItem = null;
+        container.classList.remove('dragging-furniture-3d');
+        if (typeof saveLayouts === 'function') saveLayouts();
+        if (typeof window.renderFurniture === 'function') window.renderFurniture();
+        return;
+      }
+      dragging = false; panning = false; pinchDist = null; container.classList.remove('dragging');
+    }
     function touchDist(t) { const dx = t[0].clientX - t[1].clientX, dy = t[0].clientY - t[1].clientY; return Math.hypot(dx, dy); }
     function onWheel(e) {
       e.preventDefault();
@@ -3717,8 +3851,19 @@
 
     function glassMaterial(color) {
       return new THREE.MeshPhysicalMaterial({
-        color: color || 0x8fb4d9, transparent: true, opacity: 0.16,
-        metalness: 0, roughness: 0.05, transmission: 0.55, reflectivity: 0.6, side: THREE.DoubleSide
+        color: color || 0x8fb4d9,
+        transparent: true,
+        opacity: 0.2,
+        metalness: 0,
+        roughness: 0.035,
+        transmission: 0.92,
+        thickness: 0.5,
+        ior: 1.52,
+        reflectivity: 0.8,
+        clearcoat: 1,
+        clearcoatRoughness: 0.06,
+        envMapIntensity: 1.35,
+        side: THREE.DoubleSide
       });
     }
 
@@ -3802,6 +3947,56 @@
       spr.scale.set(2.6, 0.65, 1);
       spr.renderOrder = 999;
       return spr;
+    }
+
+    // Sillón/lounge real: asiento bajo + respaldo + dos brazos, tapizado — ya no
+    // reutiliza la forma de mesa (4 patas + tapa), se ve como un sillón de verdad.
+    function buildSillon(x, z, w, d, tone, label, rojo) {
+      const g = new THREE.Group();
+      const upholstery = new THREE.MeshStandardMaterial({ color: rojo ? 0x8a1f33 : 0x2a2f3a, metalness: 0.15, roughness: 0.75 });
+      const trim = new THREE.MeshStandardMaterial({ color: rojo ? 0xc23a55 : 0x454d5e, metalness: 0.2, roughness: 0.6 });
+
+      const seatH = 0.85;
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(w, seatH, d), upholstery);
+      seat.position.y = seatH / 2;
+      g.add(seat);
+
+      // cojín superior (costura visible) un poco más claro
+      const cushion = new THREE.Mesh(new THREE.BoxGeometry(w * 0.94, 0.16, d * 0.9), trim);
+      cushion.position.y = seatH + 0.08;
+      g.add(cushion);
+
+      // respaldo, pegado al borde trasero
+      const backH = 1.15;
+      const back = new THREE.Mesh(new THREE.BoxGeometry(w, backH, d * 0.22), upholstery);
+      back.position.set(0, seatH + backH / 2, -d / 2 + d * 0.11);
+      g.add(back);
+
+      // brazos a los lados
+      const armH = 0.62;
+      [-1, 1].forEach(side => {
+        const arm = new THREE.Mesh(new THREE.BoxGeometry(w * 0.14, armH, d), upholstery);
+        arm.position.set(side * (w / 2 - w * 0.07), armH / 2 + 0.1, 0);
+        g.add(arm);
+      });
+
+      // patas cortas
+      const legMat = new THREE.MeshStandardMaterial({ color: 0x14161c, metalness: 0.6, roughness: 0.4 });
+      const legGeo = new THREE.CylinderGeometry(0.045, 0.05, 0.18, 6);
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
+        const leg = new THREE.Mesh(legGeo, legMat);
+        leg.position.set(sx * (w / 2 - 0.15), 0.09, sz * (d / 2 - 0.15));
+        g.add(leg);
+      });
+
+      if (label) {
+        const spr = labelSprite(label, rojo ? '#c23a55' : '#a8a8b8');
+        spr.scale.set(1.7, 0.42, 1);
+        spr.position.set(0, seatH + backH + 0.55, 0);
+        g.add(spr);
+      }
+      g.position.set(x, 0, z);
+      return g;
     }
 
     function buildStool(x, z, w, d, tone, label, labelColor, labelScale) {
@@ -3921,13 +4116,14 @@
           const labelText = (estado !== 'disponible' && res.cliente) ? res.cliente : item.nombre;
           mesh = buildStool(pos.x, pos.z, Math.min(wScale, 3.2), Math.min(dScale, 3.2), tone, labelText, labelColor, [2.2, 0.55, 1]);
         } else if (item.tipo === 'sillon') {
-          mesh = buildStool(pos.x, pos.z, Math.min(wScale, 2.6), Math.min(dScale, 2.6), 0xffe0e0, item.nombre);
+          mesh = buildSillon(pos.x, pos.z, Math.min(wScale, 2.6), Math.min(dScale, 2.6), 0xffe0e0, item.nombre, item.colorVariante === 'rojo');
         } else if (item.tipo) {
           mesh = buildDecor(item.tipo, Math.min(wScale, 6), Math.min(dScale, 6));
           mesh.position.set(pos.x, 0, pos.z);
         }
         if (mesh) {
           mesh.rotation.y = ((item.rotacion || 0) * Math.PI) / 180;
+          mesh.userData.itemId = item.id; // para poder ubicarlo de vuelta al arrastrar en Modo Edición 3D
           furnitureGroup.add(mesh);
         }
       });
@@ -3958,6 +4154,18 @@
       renderer.outputColorSpace = THREE.SRGBColorSpace || THREE.sRGBEncoding;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.7;
+
+      // Entorno de reflejo simple para que el cristal físico (transmission/clearcoat)
+      // tenga algo real que reflejar — sin esto se ve plano aunque el material sea bueno.
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      const envScene = new THREE.Scene();
+      envScene.background = new THREE.Color(nightNow ? 0x0a0e18 : 0x1a2438);
+      const envLight1 = new THREE.Mesh(new THREE.SphereGeometry(60, 8, 8), new THREE.MeshBasicMaterial({ color: 0x1de9b6, side: THREE.BackSide }));
+      envLight1.position.set(0, 30, -30);
+      envLight1.scale.set(0.3, 0.3, 0.3);
+      envScene.add(envLight1);
+      scene.environment = pmrem.fromScene(envScene, 0.04).texture;
+      pmrem.dispose();
 
       flickerLights = [];
 
@@ -4042,38 +4250,60 @@
         floorGroup.add(post);
       }
 
-      // --- Mezzanine con barandal de cristal (planta alta) ---
+      // --- Plataforma/mezzanine pegada a la cristalera derecha (ya no flota sola y
+      // lejos de todo) + relleno de piso justo debajo/alrededor, mismo material que
+      // el piso principal, para que el límite del suelo crezca hasta la cristalera ---
       const mezzY = 12;
-      const mezz = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W * 0.65, 0.5, 12),
+      const platformDepthX = 15;
+      const platformLenZ = FLOOR_D + 6; // cubre TODO el largo de la cristalera, no solo un tramo
+      const groundFillW = platformDepthX + 2;
+      // Misma X que el relleno de piso de abajo, para que la plataforma quede EXACTAMENTE
+      // arriba de él (antes quedaban en lados opuestos y por eso se veía cruzada/rota).
+      const platformX = FLOOR_W / 2 + groundFillW / 2 - 1;
+      const platformZ = -1; // mismo centro en Z que la cristalera, para que cubra todo su largo
+
+      const mezz = new THREE.Mesh(new THREE.BoxGeometry(platformDepthX, 0.5, platformLenZ),
         new THREE.MeshStandardMaterial({ color: 0x0c0e13, metalness: 0.5, roughness: 0.5 }));
-      mezz.position.set(FLOOR_W * 0.12, mezzY, -FLOOR_D / 2 + 10);
+      mezz.position.set(platformX, mezzY, platformZ);
       floorGroup.add(mezz);
 
-      const railGlass = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W * 0.65, 2.4, 0.06), glassMaterial(0xbcd8ff));
-      railGlass.position.set(FLOOR_W * 0.12, mezzY + 1.5, -FLOOR_D / 2 + 4);
+      const railGlass = new THREE.Mesh(new THREE.BoxGeometry(platformDepthX, 2.4, 0.06), glassMaterial(0xbcd8ff));
+      railGlass.position.set(platformX, mezzY + 1.5, platformZ - platformLenZ / 2);
       floorGroup.add(railGlass);
-      const railTop = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W * 0.65, 0.1, 0.14),
+      const railTop = new THREE.Mesh(new THREE.BoxGeometry(platformDepthX, 0.1, 0.14),
         new THREE.MeshStandardMaterial({ color: 0x1c2230, metalness: 0.7, roughness: 0.3 }));
-      railTop.position.set(FLOOR_W * 0.12, mezzY + 2.7, -FLOOR_D / 2 + 4);
+      railTop.position.set(platformX, mezzY + 2.7, platformZ - platformLenZ / 2);
       floorGroup.add(railTop);
-      // Piso superior débilmente iluminado, visible tras el barandal (como en la referencia)
-      const mezzFloor = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_W * 0.65, 12), new THREE.MeshStandardMaterial({ color: 0x0e1118, metalness: 0.4, roughness: 0.5 }));
+
+      // Piso propio de la plataforma
+      const mezzFloor = new THREE.Mesh(new THREE.PlaneGeometry(platformDepthX, platformLenZ), new THREE.MeshStandardMaterial({ color: 0x0e1118, metalness: 0.4, roughness: 0.5 }));
       mezzFloor.rotation.x = -Math.PI / 2;
-      mezzFloor.position.set(FLOOR_W * 0.12, mezzY + 0.26, -FLOOR_D / 2 + 10);
+      mezzFloor.position.set(platformX, mezzY + 0.26, platformZ);
       floorGroup.add(mezzFloor);
 
-      // Rejilla neón sobre el piso del pasillo/planta alta (igual que la rejilla del piso
-      // principal) + luz propia, para que el pasillo se lea claramente como en la referencia,
-      // no solo como una sombra oscura detrás del barandal.
-      const mezzGrid = new THREE.GridHelper(1, 12, 0x2ecbff, 0x14283a);
-      mezzGrid.scale.set(FLOOR_W * 0.65, 1, 12);
-      mezzGrid.position.set(FLOOR_W * 0.12, mezzY + 0.27, -FLOOR_D / 2 + 10);
+      const mezzGrid = new THREE.GridHelper(1, 10, 0x2ecbff, 0x14283a);
+      mezzGrid.scale.set(platformDepthX, 1, platformLenZ);
+      mezzGrid.position.set(platformX, mezzY + 0.27, platformZ);
       mezzGrid.material.opacity = 0.4;
       mezzGrid.material.transparent = true;
       floorGroup.add(mezzGrid);
       const mezzLight = new THREE.PointLight(0x9fd3ff, 1.9, 22, 2);
-      mezzLight.position.set(FLOOR_W * 0.12, mezzY + 3.2, -FLOOR_D / 2 + 10);
+      mezzLight.position.set(platformX, mezzY + 3.2, platformZ);
       floorGroup.add(mezzLight);
+
+      // Relleno de piso a nivel de calle justo debajo/alrededor de la plataforma: mismo
+      // material y rejilla que el piso principal, para que ya no quede un vacío bajo
+      // la plataforma y el límite del suelo llegue hasta la cristalera derecha.
+      const groundFill = new THREE.Mesh(new THREE.PlaneGeometry(groundFillW, platformLenZ), floorMat);
+      groundFill.rotation.x = -Math.PI / 2;
+      groundFill.position.set(platformX, 0, platformZ);
+      floorGroup.add(groundFill);
+      const groundFillGrid = new THREE.GridHelper(1, 8, 0x06d6a0, 0x0d3b30);
+      groundFillGrid.scale.set(groundFillW, 1, platformLenZ);
+      groundFillGrid.position.set(platformX, 0.02, platformZ);
+      groundFillGrid.material.opacity = 0.4;
+      groundFillGrid.material.transparent = true;
+      floorGroup.add(groundFillGrid);
 
       // --- Cristalera del segundo piso (planta alta, lado derecho) — ventanales de
       // suelo a techo iguales a los de la referencia, no solo el barandal de cristal ---
@@ -4083,48 +4313,22 @@
       mezzGlass.rotation.y = -Math.PI / 2;
       floorGroup.add(mezzGlass);
 
-      const mezzSkyTex = buildSkyTexture(nightNow);
-      const mezzSky = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_D + 8, mezzGlassH + 2), new THREE.MeshBasicMaterial({ map: mezzSkyTex, fog: false }));
-      mezzSky.position.set(FLOOR_W / 2 + 3.4, mezzY + mezzGlassH / 2 + 0.4, -1);
-      mezzSky.rotation.y = -Math.PI / 2;
-      floorGroup.add(mezzSky);
-
-      for (let i = -3; i <= 3; i++) {
-        const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.07, mezzGlassH, 0.1), mullionMat);
-        mullion.position.set(FLOOR_W / 2 + 0.08, mezzY + mezzGlassH / 2 + 0.4, -1 + i * ((FLOOR_D + 4) / 7));
+      for (let i = -5; i <= 5; i++) {
+        const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.06, mezzGlassH, 0.09), mullionMat);
+        mullion.position.set(FLOOR_W / 2 + 0.08, mezzY + mezzGlassH / 2 + 0.4, -1 + i * ((FLOOR_D + 4) / 11));
         floorGroup.add(mullion);
       }
+      // Travesaños horizontales — sin ellos el vidrio se ve como un panel liso;
+      // con ellos se lee como una fachada real de vidrio templado por secciones.
+      [0.28, 0.62].forEach(frac => {
+        const crossbar = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, FLOOR_D + 4), mullionMat);
+        crossbar.position.set(FLOOR_W / 2 + 0.08, mezzY + 0.4 + mezzGlassH * frac, -1);
+        floorGroup.add(crossbar);
+      });
       [-1, 0.4, 1.8].forEach((frac) => {
         const post = new THREE.Mesh(new THREE.BoxGeometry(0.24, mezzGlassH + 0.6, 0.34), mullionMat);
         post.position.set(FLOOR_W / 2 + 0.1, mezzY + mezzGlassH / 2 + 0.4, -1 + frac * (FLOOR_D / 3));
         floorGroup.add(post);
-      });
-
-      // --- Postes/columnas con tubo de neón envolvente — pilares reales (no solo
-      // varillas finas), como los postes rosa y verde de la foto de referencia ---
-      const neonColors = [0xff2ec4, 0x39ff8a, 0x2ecbff, 0xffb703];
-      const colX = [FLOOR_W / 2 - 1.2, FLOOR_W / 2 + 3.4, FLOOR_W / 2 + 7.8, -FLOOR_W / 2 - 1.6];
-      const postCoreMat = new THREE.MeshStandardMaterial({ color: 0x0c0e13, metalness: 0.55, roughness: 0.4 });
-      colX.forEach((cx, i) => {
-        const color = neonColors[i % neonColors.length];
-        const cz = -FLOOR_D / 2 + 12 - i * 6;
-        // Núcleo estructural del poste (grueso, visible, como en la foto)
-        const core = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.3, 24, 12), postCoreMat);
-        core.position.set(cx, 12, cz);
-        floorGroup.add(core);
-        // Tubo de neón envolviendo el poste
-        const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 24, 10, 1, true), neonMaterial(color, 3.2));
-        tube.material.side = THREE.DoubleSide;
-        tube.position.set(cx, 12, cz);
-        floorGroup.add(tube);
-        // En tablet, solo 2 de las 4 columnas emiten luz real; las demás igual brillan por su material emissivo
-        if (!isMobileGPU || i < 2) {
-          const tl = new THREE.PointLight(color, 2.4, 19, 2);
-          tl.position.set(cx, 12, cz);
-          tl.userData.baseIntensity = 2.4;
-          floorGroup.add(tl);
-          flickerLights.push(tl);
-        }
       });
 
       // --- Franjas de neón ámbar/púrpura en el techo (marca del club) ---
@@ -4183,6 +4387,25 @@
       }
 
       renderer.render(scene, camera);
+    }
+
+    // Botón de Modo Edición dentro de la propia vista 3D (la vista 3D tapa el sidebar,
+    // así que necesita su propio control) — comparte el mismo estado que el del sidebar.
+    const btnEditMode3D = document.getElementById('btn-edit-mode-3d');
+    if (btnEditMode3D) {
+      btnEditMode3D.addEventListener('click', () => {
+        window.editModeActive = !window.editModeActive;
+        if (typeof window.syncEditModeUI === 'function') window.syncEditModeUI();
+      });
+    }
+
+    // Ojo para ocultar/mostrar todos los controles flotantes de la vista 3D
+    // (HUD, botón de salir, zoom, joystick, edición) y dejar la pantalla limpia en tablet.
+    const btnToggle3DControls = document.getElementById('btn-toggle-3d-controls');
+    if (btnToggle3DControls) {
+      btnToggle3DControls.addEventListener('click', () => {
+        container.classList.toggle('hide-3d-controls');
+      });
     }
 
     window.open3DClub = function () {
@@ -4387,3 +4610,4 @@
   </script>
 </body>
 </html>
+                                                               
