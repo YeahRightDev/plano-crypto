@@ -1961,9 +1961,11 @@
 
   const btnCleanMode = document.getElementById('btn-clean-mode');
 
-  // === MODO EDICIÓN (solo relevante en Vista 3D: en 2D siempre se puede mover todo) ===
-  // Por defecto empieza apagado en 3D para no mover mesas sin querer mientras orbitas
-  // la cámara; se activa a propósito con este botón (hay uno igual dentro de la vista 3D).
+  // === MODO EDICIÓN (aplica tanto al plano 2D como a la Vista 3D) ===
+  // Por defecto empieza apagado para no mover mesas/objetos sin querer por un
+  // toque accidental en tablet; se activa a propósito con este botón (hay uno
+  // igual dentro de la vista 3D). Con Modo Edición inactivo, todo queda fijo
+  // tanto en el plano 2D como en la Vista 3D — solo se puede seleccionar/ver.
   window.editModeActive = false;
   const btnEditMode = document.getElementById('btn-edit-mode');
   function syncEditModeUI() {
@@ -2611,7 +2613,7 @@
       startX = e.clientX;
       startY = e.clientY;
       moved = false;
-      if (!item.locked) {
+      if (!item.locked && window.editModeActive) {
         el.classList.add('dragging');
         el.dataset.baseTransform = el.style.transform;
         el.style.transform = el.style.transform + ' scale(1.06)';
@@ -2620,7 +2622,12 @@
 
     function applyDragFrame() {
       rafPending = false;
-      const p = pctPos(pendingClientX, pendingClientY);
+      let p = pctPos(pendingClientX, pendingClientY);
+      // En Planta Alta, el arrastre queda restringido al suelo real de la
+      // plataforma (nunca al hueco central que da vista a Planta Baja).
+      if (currentFloor === 'PA' && typeof window.clampPAPlatformPct === 'function') {
+        p = window.clampPAPlatformPct(p.x, p.y);
+      }
       item.x = snapToGridActive ? Math.round(p.x / GRID_STEP_PCT) * GRID_STEP_PCT : p.x;
       item.y = snapToGridActive ? Math.round(p.y / GRID_STEP_PCT) * GRID_STEP_PCT : p.y;
       el.style.left = item.x + '%';
@@ -2628,7 +2635,10 @@
     }
 
     el.addEventListener('pointermove', (e) => {
-      if (item.locked || view3DActive) return;
+      // Bloqueo de movimiento: solo se puede arrastrar con Modo Edición
+      // activo (igual que en la Vista 3D) — en modo normal/operación los
+      // elementos quedan fijos para evitar desplazamientos por touch accidental.
+      if (item.locked || view3DActive || !window.editModeActive) return;
       if (e.pointerId !== pointerId || !el.hasPointerCapture(pointerId)) return;
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
@@ -2692,7 +2702,10 @@
         ghost.remove();
         const r = canvasStage.getBoundingClientRect();
         if (ev.clientX > r.left && ev.clientX < r.right && ev.clientY > r.top && ev.clientY < r.bottom) {
-          const p = pctPos(ev.clientX, ev.clientY);
+          let p = pctPos(ev.clientX, ev.clientY);
+          if (currentFloor === 'PA' && typeof window.clampPAPlatformPct === 'function') {
+            p = window.clampPAPlatformPct(p.x, p.y);
+          }
           const defaultSizes = {
             mesa: {a: 50, h: 50}, mesa_doble: {a: 100, h: 50}, sillon: {a: 110, h: 42}, bocina: {a: 45, h: 45}, cristal: {a: 120, h: 15},
             dj: {a: 120, h: 50}, pantalla: {a: 140, h: 20}, entrada: {a: 80, h: 40}, salida: {a: 80, h: 40},
@@ -3519,6 +3532,7 @@
     document.querySelectorAll('.floor-toggle button').forEach(b => b.classList.remove('active'));
     document.getElementById(currentFloor === 'PB' ? 'floor-pb' : 'floor-pa').classList.add('active');
     document.getElementById(currentFloor === 'PB' ? 'float-floor-pb' : 'float-floor-pa').classList.add('active');
+    if (typeof window.club3DSetFloor === 'function') window.club3DSetFloor(currentFloor);
 
     switchTab('plano');
     renderFurniture();
@@ -3633,6 +3647,7 @@
     }
     selectedIds.clear();
     renderFurniture();
+    if (typeof window.club3DSetFloor === 'function') window.club3DSetFloor(floor);
   }
 
   document.getElementById('floor-pb').onclick = () => changeFloor('PB');
@@ -3687,7 +3702,7 @@
     // --- Cámara: orbita + "deslizarse" (pan) libremente por el lugar ---
     // 1 dedo / click izq = orbitar. 2 dedos / click der / Shift+drag = deslizar (pan) el punto de mira.
     // Rueda / pellizco = acercar-alejar. Además hay un joystick táctil para moverse caminando.
-    const cam = { theta: 0.78, phi: 1.18, radius: 42, target: new THREE.Vector3(0, 8.5, -1) };
+    const cam = { theta: 0.78, phi: 1.08, radius: 30, target: new THREE.Vector3(0, 6.5, 3) };
     let dragging = false, panning = false, lastX = 0, lastY = 0;
     let pinchDist = null;
     const moveState = { fwd: 0, side: 0 };
@@ -3776,6 +3791,9 @@
         raycaster3d.setFromCamera(mouseNDC3d, camera);
         const point = new THREE.Vector3();
         if (raycaster3d.ray.intersectPlane(floorPlane3d, point)) {
+          if (typeof currentFloor !== 'undefined' && currentFloor === 'PA' && window.CLUB3D_PA_PLATFORM) {
+            clampToPAPlatform(point);
+          }
           furnitureDragTarget.position.x = point.x;
           furnitureDragTarget.position.z = point.z;
           const xPct = (point.x / FLOOR_W + 0.5) * 100;
@@ -3887,12 +3905,8 @@
       ctx.fillStyle = g; ctx.fillRect(0, 0, 512, 512);
 
       if (isNight) {
-        // Estrellas + resplandor cálido de la ciudad en el horizonte
-        for (let i = 0; i < 90; i++) {
-          const sx = Math.random() * 512, sy = Math.random() * 260;
-          ctx.fillStyle = `rgba(255,255,255,${0.25 + Math.random() * 0.5})`;
-          ctx.fillRect(sx, sy, 1.4, 1.4);
-        }
+        // Resplandor cálido de la ciudad en el horizonte (sin estrellas: se veían
+        // como puntos sueltos poco realistas sobre el cristal grande)
         const glow = ctx.createLinearGradient(0, 260, 0, 340);
         glow.addColorStop(0, 'rgba(255,183,3,0)'); glow.addColorStop(1, 'rgba(255,140,60,0.16)');
         ctx.fillStyle = glow; ctx.fillRect(0, 260, 512, 80);
@@ -3951,10 +3965,12 @@
 
     // Sillón/lounge real: asiento bajo + respaldo + dos brazos, tapizado — ya no
     // reutiliza la forma de mesa (4 patas + tapa), se ve como un sillón de verdad.
-    function buildSillon(x, z, w, d, tone, label, rojo) {
+    function buildSillon(x, z, w, d, tone, rojo) {
       const g = new THREE.Group();
-      const upholstery = new THREE.MeshStandardMaterial({ color: rojo ? 0x8a1f33 : 0x2a2f3a, metalness: 0.15, roughness: 0.75 });
-      const trim = new THREE.MeshStandardMaterial({ color: rojo ? 0xc23a55 : 0x454d5e, metalness: 0.2, roughness: 0.6 });
+      // Rojo real y saturado (antes leía como rosa): tapizado carmesí oscuro +
+      // vivo acento rojo puro en vez del magenta pálido que tenía.
+      const upholstery = new THREE.MeshStandardMaterial({ color: rojo ? 0xa10f24 : 0x2a2f3a, metalness: 0.15, roughness: 0.7 });
+      const trim = new THREE.MeshStandardMaterial({ color: rojo ? 0xe6102f : 0x454d5e, metalness: 0.2, roughness: 0.55, emissive: rojo ? 0x4a0410 : 0x000000, emissiveIntensity: rojo ? 0.35 : 0 });
 
       const seatH = 0.85;
       const seat = new THREE.Mesh(new THREE.BoxGeometry(w, seatH, d), upholstery);
@@ -3989,17 +4005,11 @@
         g.add(leg);
       });
 
-      if (label) {
-        const spr = labelSprite(label, rojo ? '#c23a55' : '#a8a8b8');
-        spr.scale.set(1.7, 0.42, 1);
-        spr.position.set(0, seatH + backH + 0.55, 0);
-        g.add(spr);
-      }
       g.position.set(x, 0, z);
       return g;
     }
 
-    function buildStool(x, z, w, d, tone, label, labelColor, labelScale) {
+    function buildStool(x, z, w, d, tone) {
       const g = new THREE.Group();
       const seatH = 2.0;
       const legMat = new THREE.MeshStandardMaterial({ color: 0x11141c, metalness: 0.75, roughness: 0.3 });
@@ -4016,13 +4026,6 @@
       const top = new THREE.Mesh(new THREE.BoxGeometry(w, 0.16, d), topMat);
       top.position.y = seatH + 0.08;
       g.add(top);
-      if (label) {
-        const spr = labelSprite(label, labelColor || '#f3ba2f');
-        const sc = labelScale || [1.7, 0.42, 1];
-        spr.scale.set(sc[0], sc[1], 1);
-        spr.position.set(0, seatH + 0.75, 0);
-        g.add(spr);
-      }
       g.position.set(x, 0, z);
       return g;
     }
@@ -4041,7 +4044,6 @@
           ring.position.set(0, 0.7 + i * 1.05, d / 2 + 0.02);
           g.add(ring);
         }
-        g.add(labelSprite('🔊 BOCINA', '#39ffe0')).position.set(0, 3.6, 0);
       } else if (tipo === 'dj') {
         const booth = new THREE.Mesh(new THREE.BoxGeometry(w, 2.4, d), new THREE.MeshStandardMaterial({ color: 0x101319, metalness: 0.5, roughness: 0.4 }));
         booth.position.y = 1.2; g.add(booth);
@@ -4049,22 +4051,19 @@
         strip.position.y = 2.42; g.add(strip);
         const deck = new THREE.Mesh(new THREE.BoxGeometry(w * 0.7, 0.15, d * 0.5), new THREE.MeshStandardMaterial({ color: 0x000000, metalness: 0.7, roughness: 0.2 }));
         deck.position.set(0, 2.5, 0); g.add(deck);
-        g.add(labelSprite('🎧 CABINA DJ', '#06d6a0')).position.set(0, 3.4, 0);
       } else if (tipo === 'pantalla') {
         const frame = new THREE.Mesh(new THREE.BoxGeometry(w, d * 2.6, 0.25), new THREE.MeshStandardMaterial({ color: 0x05070b, metalness: 0.5, roughness: 0.4 }));
         frame.position.y = d * 1.3 + 1.4; g.add(frame);
         const tex = buildScreenTexture();
-        const screen = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.94, d * 2.4), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false }));
+        const screen = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.94, d * 2.4), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, fog: false }));
         screen.position.set(0, d * 1.3 + 1.4, 0.14); g.add(screen);
         const pl = new THREE.PointLight(0x06d6a0, 1.6, 12, 2);
         pl.position.set(0, d * 1.3 + 1.4, 1.5); g.add(pl);
-        g.add(labelSprite('📺 PANTALLA', '#06d6a0')).position.set(0, d * 2.7 + 1.4, 0);
       } else if (tipo === 'barra') {
         const counter = new THREE.Mesh(new THREE.BoxGeometry(w, 1.3, d), new THREE.MeshStandardMaterial({ color: 0x232838, metalness: 0.4, roughness: 0.5 }));
         counter.position.y = 0.65; g.add(counter);
         const rim = new THREE.Mesh(new THREE.BoxGeometry(w + 0.06, 0.06, d + 0.06), neonMaterial(0xf3ba2f, 1.5));
         rim.position.y = 1.33; g.add(rim);
-        g.add(labelSprite('🍸 BARRA', '#f3ba2f')).position.set(0, 2.1, 0);
       } else if (tipo === 'cristal') {
         const glass = new THREE.Mesh(new THREE.BoxGeometry(w, 2.2, Math.max(d, 0.15)), glassMaterial(0x9fd3ff));
         glass.position.y = 1.1; g.add(glass);
@@ -4075,10 +4074,6 @@
         const edgeColor = { entrada: 0x06d6a0, salida: 0xef476f, wc: 0x3b82f6, pasillo: 0x64748b, caja: 0xf3ba2f, escaleras: 0xa855f7 }[tipo] || 0xffffff;
         const rim = new THREE.Mesh(new THREE.BoxGeometry(w + 0.04, 0.02, d + 0.04), neonMaterial(edgeColor, 1.2));
         rim.position.y = 0.09; g.add(rim);
-        const labels = { entrada: '⬆ ENTRADA', salida: '⬇ SALIDA', wc: '🚻 BAÑOS', pasillo: 'PASILLO', caja: '💳 CAJA', escaleras: '🪜 ESCALERAS' };
-        const spr = labelSprite(labels[tipo] || tipo.toUpperCase(), '#' + edgeColor.toString(16).padStart(6, '0'));
-        spr.position.set(0, 1.6, 0);
-        g.add(spr);
       }
       return g;
     }
@@ -4088,6 +4083,31 @@
       const worldZ = (yPct / 100) * FLOOR_D - FLOOR_D * 0.5 + 6;
       return { x: worldX, z: worldZ };
     }
+    function worldToPct(x, z) {
+      return { x: (x / FLOOR_W + 0.5) * 100, y: ((z - 6 + FLOOR_D * 0.5) / FLOOR_D) * 100 };
+    }
+
+    // Restringe un punto (x,z en mundo) al suelo real de la plataforma de PA
+    // (pasillo único a lo largo del muro lateral derecho): si cae fuera de
+    // ese pasillo, lo empuja al borde más cercano en vez de dejarlo
+    // "flotando" sobre el vacío/hueco central.
+    function clampToPAPlatform(point) {
+      const P = window.CLUB3D_PA_PLATFORM;
+      if (!P) return point;
+      const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+      point.x = clamp(point.x, P.rightWing.xMin, P.rightWing.xMax);
+      point.z = clamp(point.z, P.rightWing.zMin, P.rightWing.zMax);
+      return point;
+    }
+
+    // Versión en % (0-100, mismo sistema de coordenadas del plano 2D) para
+    // que el editor 2D pueda restringir ahí mismo el arrastre en Planta Alta.
+    window.clampPAPlatformPct = function (xPct, yPct) {
+      const w = pctToWorld(xPct, yPct);
+      const point = { x: w.x, z: w.z };
+      clampToPAPlatform(point);
+      return worldToPct(point.x, point.z);
+    };
 
     function buildFurnitureFromLayout() {
       if (furnitureGroup) { scene.remove(furnitureGroup); }
@@ -4095,10 +4115,10 @@
       let list = [];
       try { list = (typeof getLayout === 'function') ? getLayout() : []; } catch (e) { list = []; }
 
-      // Mismos colores de estado que el plano 2D (disponible/reservada/ocupada),
-      // para que la mesa cambie de color al entrar a la Vista 3D según su estado real.
-      const ESTADO_COLOR = { disponible: 0x06d6a0, reservada: 0xffb703, ocupada: 0xef476f };
-      const ESTADO_HEX = { disponible: '#06d6a0', reservada: '#ffb703', ocupada: '#ef476f' };
+      // Colores de estado más claros y saturados que antes (disponible = verde
+      // franco, no verde-azulado; reservada = amarillo, no ámbar-naranja;
+      // ocupada = rojo fuerte, no coral rosado) — mismo criterio en toda la app.
+      const ESTADO_COLOR = { disponible: 0x2be27a, reservada: 0xffd23f, ocupada: 0xff1f3d };
 
       list.forEach(item => {
         const pos = pctToWorld(item.x, item.y);
@@ -4106,19 +4126,19 @@
         const dScale = Math.max(0.02, (item.altoPx || 50) / 100) * (FLOOR_D / 12);
         let mesh;
         if (item.tipo === 'mesa' || item.tipo === 'mesa_doble') {
-          let res = { estado: 'disponible', cliente: '' };
+          let res = { estado: 'disponible' };
           try { if (typeof getReserva === 'function') res = getReserva(item.id); } catch (e) {}
           const estado = res.estado || 'disponible';
           const tone = ESTADO_COLOR[estado] || ESTADO_COLOR.disponible;
-          const labelColor = ESTADO_HEX[estado] || ESTADO_HEX.disponible;
-          // Si está reservada/ocupada y tiene cliente asignado, se ve el nombre del cliente
-          // (igual que en el plano 2D); si no, se ve el nombre/número de la mesa.
-          const labelText = (estado !== 'disponible' && res.cliente) ? res.cliente : item.nombre;
-          mesh = buildStool(pos.x, pos.z, Math.min(wScale, 3.2), Math.min(dScale, 3.2), tone, labelText, labelColor, [2.2, 0.55, 1]);
+          mesh = buildStool(pos.x, pos.z, Math.min(wScale, 3.2), Math.min(dScale, 3.2), tone);
         } else if (item.tipo === 'sillon') {
-          mesh = buildSillon(pos.x, pos.z, Math.min(wScale, 2.6), Math.min(dScale, 2.6), 0xffe0e0, item.nombre, item.colorVariante === 'rojo');
+          mesh = buildSillon(pos.x, pos.z, Math.min(wScale, 2.6), Math.min(dScale, 2.6), 0xffe0e0, item.colorVariante === 'rojo');
         } else if (item.tipo) {
-          mesh = buildDecor(item.tipo, Math.min(wScale, 6), Math.min(dScale, 6));
+          // Las bocinas se limitan a un tamaño realista de gabinete de audio;
+          // el resto de la decoración fija (DJ, pantalla, barra, cristal...)
+          // conserva un tope mayor porque son piezas legítimamente más grandes.
+          const decorCap = item.tipo === 'bocina' ? 2.2 : 6;
+          mesh = buildDecor(item.tipo, Math.min(wScale, decorCap), Math.min(dScale, decorCap));
           mesh.position.set(pos.x, 0, pos.z);
         }
         if (mesh) {
@@ -4129,6 +4149,33 @@
       });
       scene.add(furnitureGroup);
     }
+
+    // ============================================================
+    // CONMUTACIÓN PB / PA — los botones de piso deben alternar tanto la
+    // capa de mesas (cada piso tiene su propio layout, vía getLayout())
+    // como el encuadre de cámara: vista amplia y centrada para Planta Baja,
+    // vista cercana a la plataforma elevada para Planta Alta.
+    // ============================================================
+    window.club3DSetFloor = function (floor) {
+      if (!built) return; // la escena aún no existe; se construirá con el layout correcto al abrir
+      buildFurnitureFromLayout();
+      if (floor === 'PA') {
+        cam.target.set(FLOOR_W / 2 + 8.5, mezzYRef(), 6);
+        cam.radius = 26;
+        cam.theta = 0.95;
+        cam.phi = 1.05;
+      } else {
+        cam.target.set(0, 6.5, 3);
+        cam.radius = 30;
+        cam.theta = 0.78;
+        cam.phi = 1.08;
+      }
+      updateCameraFromOrbit();
+    };
+    // mezzY solo existe dentro de buildScene(); se guarda una copia accesible
+    // para que club3DSetFloor pueda apuntar la cámara a la altura correcta de PA.
+    let mezzYCache = 12;
+    function mezzYRef() { return mezzYCache + 2.5; }
 
     function buildScene() {
       const nightNow = computeIsNight();
@@ -4224,124 +4271,318 @@
       grid2.material.opacity = 0.16; grid2.material.transparent = true;
       floorGroup.add(grid2);
 
-      // --- Cristalera lateral izquierda con vista al exterior (planta baja) ---
+      // ============================================================
+      // ALAS LATERALES SIMÉTRICAS: el piso ahora se extiende exactamente
+      // la misma distancia a cada lado, hasta pegar justo con el cristal
+      // (antes la derecha se salía mucho más que la izquierda y quedaba
+      // descuadrado). Solo el ala derecha tiene el mezzanine elevado.
+      // ============================================================
+      const WING_SPAN = 17;                       // ancho de cada ala, igual en ambos lados
+      // CORRECCIÓN DE HUECOS: antes las alas laterales (WING_Z_LEN=FLOOR_D+6,
+      // centradas en WING_Z=-1) no coincidían en profundidad/centro con el piso
+      // central (FLOOR_D=46, centrado en z=4). Ese desfase dejaba esquinas y
+      // franjas transparentes en la unión piso-muro (las "fugas" reportadas).
+      // Ahora ambas alas usan EXACTAMENTE el mismo rango en Z que el piso
+      // central, por lo que quedan perfectamente selladas, sin huecos.
+      const WING_Z_LEN = FLOOR_D;                  // largo (mismo en ambas alas) = mismo que el piso central
+      const WING_Z = 4;                            // centro en Z = mismo centro que el piso central
+      const RIGHT_GLASS_X = FLOOR_W / 2 + WING_SPAN;
+      const LEFT_GLASS_X = -RIGHT_GLASS_X;
+      const mullionMat = new THREE.MeshStandardMaterial({ color: 0x14181f, metalness: 0.6, roughness: 0.4 });
       const skyTex = buildSkyTexture(nightNow);
-      const sky = new THREE.Mesh(new THREE.PlaneGeometry(60, 22), new THREE.MeshBasicMaterial({ map: skyTex, fog: false }));
-      sky.position.set(-FLOOR_W / 2 - 4, 11, -2);
+
+      // --- Ala izquierda: piso llano hasta el cristal (planta baja, sin mezzanine) ---
+      const leftWingX = -(FLOOR_W / 2 + WING_SPAN / 2);
+      const leftFill = new THREE.Mesh(new THREE.PlaneGeometry(WING_SPAN, WING_Z_LEN), floorMat);
+      leftFill.rotation.x = -Math.PI / 2;
+      leftFill.position.set(leftWingX, 0, WING_Z);
+      floorGroup.add(leftFill);
+      const leftFillGrid = new THREE.GridHelper(1, 8, 0x06d6a0, 0x0d3b30);
+      leftFillGrid.scale.set(WING_SPAN, 1, WING_Z_LEN);
+      leftFillGrid.position.set(leftWingX, 0.02, WING_Z);
+      leftFillGrid.material.opacity = 0.4; leftFillGrid.material.transparent = true;
+      floorGroup.add(leftFillGrid);
+
+      const GLASS_H = 20;
+      const sky = new THREE.Mesh(new THREE.PlaneGeometry(WING_Z_LEN + 8, GLASS_H + 4), new THREE.MeshBasicMaterial({ map: skyTex, fog: false }));
+      sky.position.set(LEFT_GLASS_X - 3.5, GLASS_H / 2 + 1, WING_Z);
       sky.rotation.y = Math.PI / 2;
       floorGroup.add(sky);
 
-      const glass = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_D + 4, 20), glassMaterial(0x8fc7ff));
-      glass.position.set(-FLOOR_W / 2 - 0.05, 10, -2);
+      const glass = new THREE.Mesh(new THREE.PlaneGeometry(WING_Z_LEN, GLASS_H), glassMaterial(0x8fc7ff));
+      glass.position.set(LEFT_GLASS_X, GLASS_H / 2, WING_Z);
       glass.rotation.y = Math.PI / 2;
       floorGroup.add(glass);
 
-      const mullionMat = new THREE.MeshStandardMaterial({ color: 0x14181f, metalness: 0.6, roughness: 0.4 });
-      for (let i = -10; i <= 10; i++) {
-        const bar = new THREE.Mesh(new THREE.BoxGeometry(0.08, 20, 0.12), mullionMat);
-        bar.position.set(-FLOOR_W / 2 - 0.06, 10, -2 + i * (FLOOR_D / 20));
+      // Divisiones realistas: pocas y espaciadas, como una fachada de vidrio
+      // templado de verdad, ya no una reja densa de barrotes.
+      [-0.5, -0.16, 0.16, 0.5].forEach((frac) => {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(0.09, GLASS_H, 0.13), mullionMat);
+        bar.position.set(LEFT_GLASS_X, GLASS_H / 2, WING_Z + frac * WING_Z_LEN);
         floorGroup.add(bar);
-      }
-      // Postes verticales de soporte de la cristalera (como en la referencia: marcos
-      // metálicos gruesos cada tramo, no solo las varillas finas de los mullions)
-      for (let i = -1; i <= 1; i++) {
-        const post = new THREE.Mesh(new THREE.BoxGeometry(0.22, 20.4, 0.32), mullionMat);
-        post.position.set(-FLOOR_W / 2 - 0.08, 10, -2 + i * (FLOOR_D / 2.1));
+      });
+      const leftCrossbar = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.11, WING_Z_LEN), mullionMat);
+      leftCrossbar.position.set(LEFT_GLASS_X, GLASS_H * 0.55, WING_Z);
+      floorGroup.add(leftCrossbar);
+      [-1, 0, 1].forEach((frac) => {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.24, GLASS_H + 0.4, 0.34), mullionMat);
+        post.position.set(LEFT_GLASS_X, GLASS_H / 2, WING_Z + frac * (WING_Z_LEN / 2.1));
         floorGroup.add(post);
-      }
+      });
 
-      // --- Plataforma/mezzanine pegada a la cristalera derecha (ya no flota sola y
-      // lejos de todo) + relleno de piso justo debajo/alrededor, mismo material que
-      // el piso principal, para que el límite del suelo crezca hasta la cristalera ---
+      // ============================================================
+      // PLANTA ALTA — PASILLO ÚNICO Y CONTINUO a todo lo largo del muro
+      // lateral derecho (de punta a punta del edificio, tocando ya el
+      // cristal del fondo por sí solo porque WING_Z_LEN = profundidad total
+      // del salón). NO es un "remate"/spur cerrado ni una caja: la
+      // plataforma vuela por fuera, abierta hacia el hueco central que da
+      // a Planta Baja. Solo lleva barandal de cristal en el borde interior
+      // (el que mira hacia adentro del club); el otro borde es la fachada
+      // real de vidrio exterior del edificio (ya construida más abajo).
+      // ============================================================
       const mezzY = 12;
-      const platformDepthX = 15;
-      const platformLenZ = FLOOR_D + 6; // cubre TODO el largo de la cristalera, no solo un tramo
-      const groundFillW = platformDepthX + 2;
-      // Misma X que el relleno de piso de abajo, para que la plataforma quede EXACTAMENTE
-      // arriba de él (antes quedaban en lados opuestos y por eso se veía cruzada/rota).
-      const platformX = FLOOR_W / 2 + groundFillW / 2 - 1;
-      const platformZ = -1; // mismo centro en Z que la cristalera, para que cubra todo su largo
+      mezzYCache = mezzY;
+      const platformX = FLOOR_W / 2 + WING_SPAN / 2;
+      const platformZ = WING_Z;
+      // AJUSTE FINAL: la plataforma, su barandal, el vidrio exterior y los
+      // muros de apoyo del lado derecho usaban WING_Z_LEN, que queda 1 unidad
+      // corta en cada extremo respecto a los muros reales de la sala
+      // (ROOM_Z_FRONT/ROOM_Z_BACK llevan +1/-1 extra de margen). Esa rendija
+      // de 1 unidad dejaba ver el fondo/niebla de la escena, dando la
+      // impresión de una "pared azul sólida" y de plataforma "mocha".
+      // RIGHT_SIDE_LEN es la longitud unificada que sí llega exactamente
+      // hasta el muro frontal y el muro trasero, sin dejar rendija.
+      const RIGHT_SIDE_LEN = WING_Z_LEN + 2;
 
-      const mezz = new THREE.Mesh(new THREE.BoxGeometry(platformDepthX, 0.5, platformLenZ),
-        new THREE.MeshStandardMaterial({ color: 0x0c0e13, metalness: 0.5, roughness: 0.5 }));
+      const platformMat = new THREE.MeshStandardMaterial({ color: 0x0c0e13, metalness: 0.5, roughness: 0.5 });
+      const mezzFloorMat = new THREE.MeshStandardMaterial({ color: 0x0e1118, metalness: 0.4, roughness: 0.5 });
+      const railFrameMat = new THREE.MeshStandardMaterial({ color: 0x1c2230, metalness: 0.75, roughness: 0.28 });
+      const steelBeamMat = new THREE.MeshStandardMaterial({ color: 0x2a1a12, metalness: 0.7, roughness: 0.35 });
+
+      // --- Plataforma de Planta Alta: corre de corrido todo el lateral
+      // derecho, desde el fondo (cristales traseros) hasta el frente,
+      // tocando ambos muros sin dejar rendija ---
+      const mezz = new THREE.Mesh(new THREE.BoxGeometry(WING_SPAN, 0.5, RIGHT_SIDE_LEN), platformMat);
       mezz.position.set(platformX, mezzY, platformZ);
       floorGroup.add(mezz);
-
-      const railGlass = new THREE.Mesh(new THREE.BoxGeometry(platformDepthX, 2.4, 0.06), glassMaterial(0xbcd8ff));
-      railGlass.position.set(platformX, mezzY + 1.5, platformZ - platformLenZ / 2);
-      floorGroup.add(railGlass);
-      const railTop = new THREE.Mesh(new THREE.BoxGeometry(platformDepthX, 0.1, 0.14),
-        new THREE.MeshStandardMaterial({ color: 0x1c2230, metalness: 0.7, roughness: 0.3 }));
-      railTop.position.set(platformX, mezzY + 2.7, platformZ - platformLenZ / 2);
-      floorGroup.add(railTop);
-
-      // Piso propio de la plataforma
-      const mezzFloor = new THREE.Mesh(new THREE.PlaneGeometry(platformDepthX, platformLenZ), new THREE.MeshStandardMaterial({ color: 0x0e1118, metalness: 0.4, roughness: 0.5 }));
+      const mezzFloor = new THREE.Mesh(new THREE.PlaneGeometry(WING_SPAN, RIGHT_SIDE_LEN), mezzFloorMat);
       mezzFloor.rotation.x = -Math.PI / 2;
       mezzFloor.position.set(platformX, mezzY + 0.26, platformZ);
       floorGroup.add(mezzFloor);
-
       const mezzGrid = new THREE.GridHelper(1, 10, 0x2ecbff, 0x14283a);
-      mezzGrid.scale.set(platformDepthX, 1, platformLenZ);
+      mezzGrid.scale.set(WING_SPAN, 1, RIGHT_SIDE_LEN);
       mezzGrid.position.set(platformX, mezzY + 0.27, platformZ);
       mezzGrid.material.opacity = 0.4;
       mezzGrid.material.transparent = true;
       floorGroup.add(mezzGrid);
-      const mezzLight = new THREE.PointLight(0x9fd3ff, 1.9, 22, 2);
+      const mezzLight = new THREE.PointLight(0x9fd3ff, 1.9, 26, 2);
       mezzLight.position.set(platformX, mezzY + 3.2, platformZ);
       floorGroup.add(mezzLight);
+      // Detalle extra: tira de luz ámbar bajo el borde del mezzanine, como remate
+      const mezzUnderStrip = new THREE.Mesh(new THREE.BoxGeometry(WING_SPAN + 0.1, 0.06, 0.06), neonMaterial(0xf3ba2f, 2.0));
+      mezzUnderStrip.position.set(platformX, mezzY - 0.28, platformZ - RIGHT_SIDE_LEN / 2);
+      floorGroup.add(mezzUnderStrip);
 
-      // Relleno de piso a nivel de calle justo debajo/alrededor de la plataforma: mismo
-      // material y rejilla que el piso principal, para que ya no quede un vacío bajo
-      // la plataforma y el límite del suelo llegue hasta la cristalera derecha.
-      const groundFill = new THREE.Mesh(new THREE.PlaneGeometry(groundFillW, platformLenZ), floorMat);
+      // Se expone el contorno real del suelo de PA para que el arrastre de
+      // mesas/objetos (2D y 3D) quede restringido a la plataforma, nunca al hueco.
+      window.CLUB3D_PA_PLATFORM = {
+        floorW: FLOOR_W, floorD: FLOOR_D,
+        rightWing: { xMin: FLOOR_W / 2, xMax: FLOOR_W / 2 + WING_SPAN, zMin: WING_Z - RIGHT_SIDE_LEN / 2, zMax: WING_Z + RIGHT_SIDE_LEN / 2 }
+      };
+
+      // --- Barandal de cristal templado + marco metálico en el borde
+      // interior (el que mira al hueco central hacia Planta Baja), tal
+      // como se ve en las fotos reales del club: panel de vidrio, remate
+      // metálico superior/inferior y postes espaciados. ---
+      function buildGlassRail(length, cx, cz, rotY) {
+        const g = new THREE.Group();
+        const panel = new THREE.Mesh(new THREE.BoxGeometry(length, 2.2, 0.06), glassMaterial(0xaebfcf));
+        panel.position.y = 1.35; g.add(panel);
+        const topRail = new THREE.Mesh(new THREE.BoxGeometry(length, 0.09, 0.13), railFrameMat);
+        topRail.position.y = 2.5; g.add(topRail);
+        const baseRail = new THREE.Mesh(new THREE.BoxGeometry(length, 0.07, 0.16), railFrameMat);
+        baseRail.position.y = 0.25; g.add(baseRail);
+        const postCount = Math.max(2, Math.round(length / 2.6));
+        for (let i = 0; i <= postCount; i++) {
+          const post = new THREE.Mesh(new THREE.BoxGeometry(0.07, 2.35, 0.09), railFrameMat);
+          post.position.set(-length / 2 + (length / postCount) * i, 1.35, 0);
+          g.add(post);
+        }
+        g.position.set(cx, mezzY + 0.5, cz);
+        g.rotation.y = rotY || 0;
+        return g;
+      }
+      // borde interior de la plataforma, a todo lo largo del muro lateral (mira hacia el hueco/pista)
+      floorGroup.add(buildGlassRail(RIGHT_SIDE_LEN, FLOOR_W / 2 + 0.05, platformZ, Math.PI / 2));
+
+      // Relleno de piso a nivel de calle bajo la plataforma (Planta Baja, bajo el hueco)
+      const groundFill = new THREE.Mesh(new THREE.PlaneGeometry(WING_SPAN, WING_Z_LEN), floorMat);
       groundFill.rotation.x = -Math.PI / 2;
       groundFill.position.set(platformX, 0, platformZ);
       floorGroup.add(groundFill);
       const groundFillGrid = new THREE.GridHelper(1, 8, 0x06d6a0, 0x0d3b30);
-      groundFillGrid.scale.set(groundFillW, 1, platformLenZ);
+      groundFillGrid.scale.set(WING_SPAN, 1, WING_Z_LEN);
       groundFillGrid.position.set(platformX, 0.02, platformZ);
       groundFillGrid.material.opacity = 0.4;
       groundFillGrid.material.transparent = true;
       floorGroup.add(groundFillGrid);
 
-      // --- Cristalera del segundo piso (planta alta, lado derecho) — ventanales de
-      // suelo a techo iguales a los de la referencia, no solo el barandal de cristal ---
+      // --- Muros de cristal EXTERIORES de Planta Alta: vidrio templado
+      // ahumado con vigas de acero oscuras, IGUAL que en las fotos reales
+      // del club — ya sin vista/textura de horizonte hacia el cielo. ---
       const mezzGlassH = 9.5;
-      const mezzGlass = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_D + 6, mezzGlassH), glassMaterial(0x9fd3ff));
-      mezzGlass.position.set(FLOOR_W / 2 + 0.05, mezzY + mezzGlassH / 2 + 0.4, -1);
+      const paGlassColor = 0x1c2938; // vidrio ahumado oscuro, no el celeste brillante de antes
+      const mezzGlass = new THREE.Mesh(new THREE.PlaneGeometry(RIGHT_SIDE_LEN, mezzGlassH), glassMaterial(paGlassColor));
+      mezzGlass.position.set(RIGHT_GLASS_X, mezzY + mezzGlassH / 2 + 0.4, WING_Z);
       mezzGlass.rotation.y = -Math.PI / 2;
       floorGroup.add(mezzGlass);
-
-      for (let i = -5; i <= 5; i++) {
-        const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.06, mezzGlassH, 0.09), mullionMat);
-        mullion.position.set(FLOOR_W / 2 + 0.08, mezzY + mezzGlassH / 2 + 0.4, -1 + i * ((FLOOR_D + 4) / 11));
+      [-0.5, -0.16, 0.16, 0.5].forEach((frac) => {
+        const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.09, mezzGlassH, 0.13), mullionMat);
+        mullion.position.set(RIGHT_GLASS_X, mezzY + mezzGlassH / 2 + 0.4, WING_Z + frac * RIGHT_SIDE_LEN);
         floorGroup.add(mullion);
-      }
-      // Travesaños horizontales — sin ellos el vidrio se ve como un panel liso;
-      // con ellos se lee como una fachada real de vidrio templado por secciones.
-      [0.28, 0.62].forEach(frac => {
-        const crossbar = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, FLOOR_D + 4), mullionMat);
-        crossbar.position.set(FLOOR_W / 2 + 0.08, mezzY + 0.4 + mezzGlassH * frac, -1);
-        floorGroup.add(crossbar);
       });
-      [-1, 0.4, 1.8].forEach((frac) => {
-        const post = new THREE.Mesh(new THREE.BoxGeometry(0.24, mezzGlassH + 0.6, 0.34), mullionMat);
-        post.position.set(FLOOR_W / 2 + 0.1, mezzY + mezzGlassH / 2 + 0.4, -1 + frac * (FLOOR_D / 3));
+      const rightCrossbar = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.11, RIGHT_SIDE_LEN), mullionMat);
+      rightCrossbar.position.set(RIGHT_GLASS_X, mezzY + 0.4 + mezzGlassH * 0.5, WING_Z);
+      floorGroup.add(rightCrossbar);
+      [-1, 0, 1].forEach((frac) => {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.24, mezzGlassH + 0.4, 0.34), mullionMat);
+        post.position.set(RIGHT_GLASS_X, mezzY + mezzGlassH / 2 + 0.4, WING_Z + frac * (RIGHT_SIDE_LEN / 2.1));
         floorGroup.add(post);
       });
+      const rightSteelBeam = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, RIGHT_SIDE_LEN), steelBeamMat);
+      rightSteelBeam.position.set(RIGHT_GLASS_X - 0.02, mezzY + 0.4, WING_Z);
+      floorGroup.add(rightSteelBeam);
+
+      // ============================================================
+      // TECHO + PAREDES: encierran el club en un cuarto real. El techo
+      // se calcula a partir del cristal más alto (el de la izquierda,
+      // 20 de altura) más la mitad de esa altura por encima de su límite.
+      // ============================================================
+      const TALLEST_GLASS_H = GLASS_H; // 20 — el más alto de los dos ventanales
+      const RIGHT_GLASS_TOP = mezzY + 0.4 + mezzGlassH;
+      const TOPMOST_GLASS_EDGE = Math.max(GLASS_H, RIGHT_GLASS_TOP);
+      const CEILING_Y = TOPMOST_GLASS_EDGE + TALLEST_GLASS_H / 2;
+
+      const ROOM_Z_FRONT = Math.max(WING_Z + WING_Z_LEN / 2, 4 + FLOOR_D / 2) + 1;
+      const ROOM_Z_BACK = Math.min(WING_Z - WING_Z_LEN / 2, 4 - FLOOR_D / 2) - 1;
+      const ROOM_WIDTH = (RIGHT_GLASS_X - LEFT_GLASS_X) + 1;
+      const ROOM_DEPTH = (ROOM_Z_FRONT - ROOM_Z_BACK) + 1;
+      const wallMat = new THREE.MeshStandardMaterial({ color: 0x0b0d13, metalness: 0.3, roughness: 0.75 });
+
+      const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_WIDTH, ROOM_DEPTH), wallMat);
+      ceiling.rotation.x = Math.PI / 2;
+      ceiling.position.set(0, CEILING_Y, WING_Z);
+      floorGroup.add(ceiling);
+      // Refuerzos de techo (vigas) — dan sensación de altura real y rompen la
+      // superficie plana del techo, además de ocultar costuras de textura.
+      for (let i = -1; i <= 1; i++) {
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(ROOM_WIDTH, 0.3, 0.4), new THREE.MeshStandardMaterial({ color: 0x090a0e, metalness: 0.4, roughness: 0.6 }));
+        beam.position.set(0, CEILING_Y - 0.2, WING_Z + i * (ROOM_DEPTH / 3));
+        floorGroup.add(beam);
+      }
+
+      // Pared alta sobre el cristal izquierdo (de su límite hasta el techo)
+      const leftUpperWallH = CEILING_Y - GLASS_H;
+      const leftUpperWall = new THREE.Mesh(new THREE.PlaneGeometry(WING_Z_LEN + 2, leftUpperWallH), wallMat);
+      leftUpperWall.position.set(LEFT_GLASS_X, GLASS_H + leftUpperWallH / 2, WING_Z);
+      leftUpperWall.rotation.y = Math.PI / 2;
+      floorGroup.add(leftUpperWall);
+
+      // Pared baja + alta a los lados del cristal del segundo piso (derecha)
+      const rightLowerWallH = mezzY - 0.5;
+      const rightLowerWall = new THREE.Mesh(new THREE.PlaneGeometry(RIGHT_SIDE_LEN, rightLowerWallH), wallMat);
+      rightLowerWall.position.set(RIGHT_GLASS_X, rightLowerWallH / 2, WING_Z);
+      rightLowerWall.rotation.y = -Math.PI / 2;
+      floorGroup.add(rightLowerWall);
+      const rightUpperWallH = CEILING_Y - RIGHT_GLASS_TOP;
+      const rightUpperWall = new THREE.Mesh(new THREE.PlaneGeometry(RIGHT_SIDE_LEN, rightUpperWallH), wallMat);
+      rightUpperWall.position.set(RIGHT_GLASS_X, RIGHT_GLASS_TOP + rightUpperWallH / 2, WING_Z);
+      rightUpperWall.rotation.y = -Math.PI / 2;
+      floorGroup.add(rightUpperWall);
+
+      // Pared frontal: ahora SÓLIDA Y CONTINUA (sin vano). La entrada ya no
+      // va aquí — se trasladó al muro lateral derecho (ver X azul de referencia).
+      const frontWall = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_WIDTH, CEILING_Y), wallMat);
+      frontWall.position.set(0, CEILING_Y / 2, ROOM_Z_FRONT);
+      frontWall.rotation.y = Math.PI;
+      floorGroup.add(frontWall);
+
+      const backWall = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_WIDTH, CEILING_Y), wallMat);
+      backWall.position.set(0, CEILING_Y / 2, ROOM_Z_BACK);
+      floorGroup.add(backWall);
+
+      // ============================================================
+      // PUERTA DE ENTRADA — reubicada (X azul de referencia): del centro del
+      // frente al MURO LATERAL DERECHO, hacia el fondo del edificio (extremo
+      // trasero), justo donde termina la planta baja y arranca la fachada de
+      // cristal. Se abre un vano real en la pared sólida de apoyo del
+      // mezzanine (rightLowerWall), con dintel arriba y marco metálico.
+      // ============================================================
+      const DOOR_W = 4.4, DOOR_H = 8.5;
+      const doorZ = (WING_Z - RIGHT_SIDE_LEN / 2) + DOOR_W / 2 + 2.4; // cerca del extremo trasero del muro derecho
+      const doorZMin = doorZ - DOOR_W / 2, doorZMax = doorZ + DOOR_W / 2;
+      const rightWallZMin = WING_Z - RIGHT_SIDE_LEN / 2, rightWallZMax = WING_Z + RIGHT_SIDE_LEN / 2;
+      const doorSegBackLen = doorZMin - rightWallZMin;
+      const doorSegFrontLen = rightWallZMax - doorZMax;
+      if (doorSegBackLen > 0.1) {
+        const segBack = new THREE.Mesh(new THREE.PlaneGeometry(doorSegBackLen, rightLowerWallH), wallMat);
+        segBack.position.set(RIGHT_GLASS_X, rightLowerWallH / 2, rightWallZMin + doorSegBackLen / 2);
+        segBack.rotation.y = -Math.PI / 2;
+        floorGroup.add(segBack);
+      }
+      if (doorSegFrontLen > 0.1) {
+        const segFront = new THREE.Mesh(new THREE.PlaneGeometry(doorSegFrontLen, rightLowerWallH), wallMat);
+        segFront.position.set(RIGHT_GLASS_X, rightLowerWallH / 2, doorZMax + doorSegFrontLen / 2);
+        segFront.rotation.y = -Math.PI / 2;
+        floorGroup.add(segFront);
+      }
+      const doorLintel = new THREE.Mesh(new THREE.PlaneGeometry(DOOR_W, rightLowerWallH - DOOR_H), wallMat);
+      doorLintel.position.set(RIGHT_GLASS_X, DOOR_H + (rightLowerWallH - DOOR_H) / 2, doorZ);
+      doorLintel.rotation.y = -Math.PI / 2;
+      floorGroup.add(doorLintel);
+      // Marco metálico oscuro alrededor del vano
+      const doorFrameMat = new THREE.MeshStandardMaterial({ color: 0x14161c, metalness: 0.6, roughness: 0.4 });
+      [doorZMin, doorZMax].forEach((z) => {
+        const jamb = new THREE.Mesh(new THREE.BoxGeometry(0.14, DOOR_H, 0.18), doorFrameMat);
+        jamb.position.set(RIGHT_GLASS_X - 0.05, DOOR_H / 2, z);
+        floorGroup.add(jamb);
+      });
+      const doorHeader = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.18, DOOR_W + 0.2), doorFrameMat);
+      doorHeader.position.set(RIGHT_GLASS_X - 0.05, DOOR_H, doorZ);
+      floorGroup.add(doorHeader);
+      // Hoja de puerta de cristal (entreabierta visualmente, tono esmerilado)
+      const doorLeaf = new THREE.Mesh(new THREE.BoxGeometry(0.06, DOOR_H - 0.2, DOOR_W - 0.3), glassMaterial(0x2a3444));
+      doorLeaf.position.set(RIGHT_GLASS_X - 0.08, (DOOR_H - 0.2) / 2, doorZ);
+      floorGroup.add(doorLeaf);
+      const entranceSign = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, DOOR_W + 0.4), neonMaterial(0x1de9b6, 2.4));
+      entranceSign.position.set(RIGHT_GLASS_X - 0.05, DOOR_H + 0.15, doorZ);
+      floorGroup.add(entranceSign);
 
       // --- Franjas de neón ámbar/púrpura en el techo (marca del club) ---
       [-FLOOR_D / 2 + 5, FLOOR_D / 2 - 4].forEach(z => {
         const ceilStrip = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W + 4, 0.08, 0.08), neonMaterial(0xffb703, 2.6));
-        ceilStrip.position.set(0, 18, z);
+        ceilStrip.position.set(0, CEILING_Y - 1.5, z);
         floorGroup.add(ceilStrip);
       });
-      [-FLOOR_W / 2 - 2, FLOOR_W / 2 + 2].forEach(x => {
+      [LEFT_GLASS_X + 1.5, RIGHT_GLASS_X - 1.5].forEach(x => {
         const sideStrip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, FLOOR_D + 4), neonMaterial(0xa855f7, 2.4));
-        sideStrip.position.set(x, 18, 4);
+        sideStrip.position.set(x, CEILING_Y - 1.5, 4);
         floorGroup.add(sideStrip);
       });
+      // Detalle extra: pequeños focos de techo (spots) repartidos, como en un
+      // antro real con cañones de luz apuntando hacia la pista.
+      const spotColors = [0x2ecbff, 0xff2ec4, 0x39ff8a];
+      for (let i = 0; i < (isMobileGPU ? 3 : 5); i++) {
+        const sx = (i - (isMobileGPU ? 1 : 2)) * (FLOOR_W / (isMobileGPU ? 3 : 5));
+        const fixture = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.3, 10), new THREE.MeshStandardMaterial({ color: 0x0c0e13, metalness: 0.6, roughness: 0.4 }));
+        fixture.position.set(sx, CEILING_Y - 0.3, 10);
+        floorGroup.add(fixture);
+        const spot = new THREE.SpotLight(spotColors[i % spotColors.length], isMobileGPU ? 1.6 : 2.4, 26, Math.PI / 7, 0.5, 1.4);
+        spot.position.set(sx, CEILING_Y - 0.4, 10);
+        spot.target.position.set(sx * 0.6, 0, 4);
+        floorGroup.add(spot);
+        floorGroup.add(spot.target);
+      }
 
       scene.add(floorGroup);
       buildFurnitureFromLayout();
@@ -4418,6 +4659,9 @@
         if (!built || computeIsNight() !== lastNightState) {
           built = false;
           buildScene();
+        }
+        if (typeof currentFloor !== 'undefined' && typeof window.club3DSetFloor === 'function') {
+          window.club3DSetFloor(currentFloor);
         } else {
           buildFurnitureFromLayout();
         }
@@ -4476,7 +4720,7 @@
 
     document.getElementById('view3d-zoom-in').onclick = () => { cam.radius -= 4; updateCameraFromOrbit(); };
     document.getElementById('view3d-zoom-out').onclick = () => { cam.radius += 4; updateCameraFromOrbit(); };
-    document.getElementById('view3d-zoom-reset').onclick = () => { cam.theta = 0.78; cam.phi = 1.18; cam.radius = 42; cam.target.set(0, 8.5, -1); updateCameraFromOrbit(); };
+    document.getElementById('view3d-zoom-reset').onclick = () => { cam.theta = 0.78; cam.phi = 1.08; cam.radius = 30; cam.target.set(0, 6.5, 3); updateCameraFromOrbit(); };
 
     // --- Joystick táctil para "deslizarse" caminando por el antro (ideal para tableta) ---
     (function setupJoystick() {
@@ -4610,4 +4854,3 @@
   </script>
 </body>
 </html>
-                                                               
