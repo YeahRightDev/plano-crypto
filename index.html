@@ -730,6 +730,77 @@
       color: var(--accent);
     }
 
+
+    /* === ARQUITECTURA FIJA DEL PLANO 2D (PB / PA) ===
+       Se dibuja en una capa independiente de las mesas. PB nunca recibe la L
+       elevada; PA muestra exclusivamente el perímetro transitable en L. */
+    .fixed-architecture {
+      position: absolute;
+      pointer-events: none;
+      z-index: 1;
+      box-sizing: border-box;
+    }
+    .fixed-architecture .arch-floor {
+      position: absolute;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.035), transparent 42%),
+        repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 12px),
+        #0a0d12;
+      border: 2px solid #2d3440;
+      box-shadow: inset 0 0 28px rgba(0,0,0,.75);
+    }
+    .fixed-architecture .arch-metal {
+      position: absolute;
+      background: linear-gradient(135deg, #151a20, #4c545f 45%, #11161c);
+      border: 1px solid #68717b;
+      box-shadow: inset 0 0 12px rgba(255,255,255,.08), 0 0 12px rgba(0,0,0,.8);
+    }
+    .fixed-architecture .arch-glass {
+      position: absolute;
+      background: linear-gradient(90deg, rgba(145,175,205,.24), rgba(255,255,255,.08), rgba(40,70,100,.2));
+      border: 1px solid rgba(180,210,235,.7);
+      box-shadow: inset 0 0 16px rgba(180,210,235,.12);
+    }
+    .fixed-architecture .arch-label {
+      position: absolute;
+      color: rgba(235,240,246,.72);
+      font-family: var(--font-display);
+      font-size: clamp(8px, 1.05vw, 14px);
+      font-weight: 800;
+      letter-spacing: .6px;
+      text-align: center;
+      text-shadow: 0 1px 4px #000;
+      white-space: nowrap;
+    }
+    .fixed-architecture .arch-omega {
+      color: rgba(240,240,240,.72);
+      font-family: var(--font-display);
+      font-size: clamp(12px, 1.7vw, 23px);
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+    .fixed-architecture .arch-stage {
+      background: linear-gradient(180deg, #0a0d13, #141922 65%, #07090d);
+      border: 2px solid #333b46;
+      box-shadow: 0 7px 16px rgba(0,0,0,.65), inset 0 0 20px rgba(255,255,255,.035);
+    }
+    .fixed-architecture .arch-led {
+      background: linear-gradient(180deg, #05070a, #141923);
+      border: 1px solid #4a5360;
+    }
+    .fixed-architecture .arch-dj {
+      background: linear-gradient(180deg, #252c35, #0a0d12);
+      border-top: 2px solid #606a76;
+    }
+    .fixed-architecture .arch-stage-text {
+      position:absolute; left:50%; transform:translateX(-50%);
+      color:rgba(245,245,245,.7); font-family:var(--font-display);
+      font-size:clamp(7px,.85vw,12px); font-weight:800; white-space:nowrap;
+    }
+    .fixed-architecture .arch-panel-line {
+      position:absolute; background:rgba(255,255,255,.09);
+    }
+    #canvas-stage .furniture { z-index: 5; }
     .furniture {
       position: absolute;
       background: rgba(22, 26, 36, 0.97);
@@ -2107,9 +2178,114 @@
   const canvas = document.getElementById('canvas');
   const canvasStage = document.getElementById('canvas-stage');
 
-  // La arquitectura fija del club (escenario, pantalla, DJ, mezzanine) se
-  // renderiza únicamente en la Vista 3D real con Three.js (ver Club3DEngine
-  // más abajo). El plano 2D queda limpio, sin capas fantasma superpuestas.
+  // ==========================================================================
+  // LIENZO 2D AMPLIADO + ARQUITECTURA POR CAPAS
+  // ==========================================================================
+  // Escala lógica ampliada (>= 1.5x respecto al plano compacto anterior).
+  // Las coordenadas de mobiliario siguen expresándose en porcentaje para que
+  // pan/zoom y guardado local sigan siendo compatibles con layouts existentes.
+  const CANVAS_WIDTH = 1600;
+  const CANVAS_HEIGHT = 1000;
+  const FLOOR_WIDTH = 1450;
+  const FLOOR_HEIGHT = 900;
+
+  // PA ocupa una L: franja derecha + franja inferior. Estos porcentajes son
+  // deliberadamente anchos para que las mesas puedan acomodarse holgadamente.
+  const PA_LAYOUT = {
+    rightX: 78,
+    bottomY: 78
+  };
+
+  // Escenario de PB: rectángulo exacto que ocupa (ya no bloqueamos toda la
+  // franja superior, solo el hueco real del escenario para dejar libres los
+  // costados y que se puedan colocar mesas ahí).
+  const PB_STAGE = { x1: 31, x2: 69, y1: 2, y2: 13 };
+
+  function isInsideBounds(x, y, floor = currentFloor) {
+    if (floor === 'PB') {
+      // PB: toda la pista disponible, excepto el rectángulo exacto del escenario.
+      const inStage = x >= PB_STAGE.x1 && x <= PB_STAGE.x2 && y >= PB_STAGE.y1 && y <= PB_STAGE.y2;
+      return x >= 2 && x <= 98 && y >= 2 && y <= 98 && !inStage;
+    }
+    // PA: unión de los dos brazos de la L.
+    return ((x >= PA_LAYOUT.rightX && x <= 98 && y >= 2 && y <= 98) ||
+            (x >= 2 && x <= 98 && y >= PA_LAYOUT.bottomY && y <= 98));
+  }
+
+  function clampToFloorBounds(x, y, floor = currentFloor) {
+    const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+    x = clamp(x, 2, 98); y = clamp(y, 2, 98);
+    if (floor === 'PB') {
+      const inStage = x >= PB_STAGE.x1 && x <= PB_STAGE.x2 && y >= PB_STAGE.y1 && y <= PB_STAGE.y2;
+      if (!inStage) return { x, y };
+      // Dentro del escenario: empujar al borde libre más cercano (abajo,
+      // izquierda o derecha del escenario).
+      const options = [
+        { x, y: PB_STAGE.y2 },
+        { x: PB_STAGE.x1, y },
+        { x: PB_STAGE.x2, y }
+      ];
+      options.sort((a, b) =>
+        (a.x-x)*(a.x-x)+(a.y-y)*(a.y-y) -
+        ((b.x-x)*(b.x-x)+(b.y-y)*(b.y-y))
+      );
+      return options[0];
+    }
+    if (isInsideBounds(x, y, 'PA')) return { x, y };
+
+    // Punto más cercano a cualquiera de los dos brazos de la L.
+    const candidates = [
+      { x: clamp(x, PA_LAYOUT.rightX, 98), y: clamp(y, 2, 98) },
+      { x: clamp(x, 2, 98), y: clamp(y, PA_LAYOUT.bottomY, 98) }
+    ];
+    candidates.sort((a, b) =>
+      (a.x-x)*(a.x-x)+(a.y-y)*(a.y-y) -
+      ((b.x-x)*(b.x-x)+(b.y-y)*(b.y-y))
+    );
+    return candidates[0];
+  }
+
+  function renderFixedArchitecture() {
+    canvasStage.querySelectorAll('.fixed-architecture').forEach(el => el.remove());
+    const root = document.createElement('div');
+    root.className = `fixed-architecture fixed-${currentFloor.toLowerCase()}`;
+    root.style.inset = '0';
+
+    const add = (cls, left, top, width, height, text) => {
+      const el = document.createElement('div');
+      el.className = cls;
+      el.style.left = left + '%'; el.style.top = top + '%';
+      el.style.width = width + '%'; el.style.height = height + '%';
+      if (text) el.textContent = text;
+      root.appendChild(el); return el;
+    };
+
+    if (currentFloor === 'PB') {
+      // PB — sin ninguna L elevada. Escenario discreto al fondo (sin
+      // etiquetas de LED/Stage/DJ que ocupen visualmente el espacio) +
+      // cristal lateral izquierdo.
+      add('arch-stage', PB_STAGE.x1, PB_STAGE.y1, PB_STAGE.x2 - PB_STAGE.x1, PB_STAGE.y2 - PB_STAGE.y1);
+
+      add('arch-glass', 1.5, 13, 2.2, 84);
+      for (let i=0;i<6;i++) add('arch-metal', 1.2, 13+i*14, 2.8, .45);
+      add('arch-label', 4.3, 50, 7, 4, 'Cristal');
+    } else {
+      // PA — estructura elevada estrictamente en L: brazo derecho + inferior.
+      add('arch-floor', PA_LAYOUT.rightX, 2, 20, 96);
+      add('arch-floor', 2, PA_LAYOUT.bottomY, 96, 20);
+      add('arch-metal', PA_LAYOUT.rightX-1.2, 2, 1.4, 96);
+      add('arch-metal', 2, PA_LAYOUT.bottomY-1.2, 96, 1.4);
+      // Único cristal exterior: se eliminó el de la pared derecha (evita el
+      // cruce/cuadrado en la esquina) y se extendió el de abajo con el mismo
+      // grosor que el cristal de la Planta Baja (2.2%).
+      add('arch-glass', 2, 96.8, 96, 2.2);
+      const o1=add('arch-omega', 82, 18, 13, 6, 'ΩMEGA');
+      const o2=add('arch-omega', 82, 42, 13, 6, 'ΩMEGA');
+      add('arch-label', 5, 82, 12, 4, 'CRISTAL');
+    }
+
+    canvasStage.insertBefore(root, canvasStage.firstChild);
+  }
 
   // Cancela el scroll nativo del navegador al arrastrar el plano (fluidez táctil en Tab A11)
   canvasStage.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
@@ -2461,9 +2637,9 @@
     const r = canvasStage.getBoundingClientRect();
     let x = ((clientX - r.left) / r.width) * 100;
     let y = ((clientY - r.top) / r.height) * 100;
-    x = Math.max(-45, Math.min(145, x));
-    y = Math.max(-45, Math.min(145, y));
-    return { x, y };
+    // El plano ampliado ya no permite coordenadas negativas/externas que
+    // comprimían las mesas en el centro; se aprovecha todo el suelo real.
+    return clampToFloorBounds(x, y, currentFloor);
   }
 
   canvas.addEventListener('pointerdown', (e) => {
@@ -2474,6 +2650,7 @@
   });
 
   window.renderFurniture = function() {
+    renderFixedArchitecture();
     canvasStage.querySelectorAll('.furniture').forEach(el => el.remove());
 
     const currentList = getLayout();
@@ -2623,13 +2800,12 @@
     function applyDragFrame() {
       rafPending = false;
       let p = pctPos(pendingClientX, pendingClientY);
-      // En Planta Alta, el arrastre queda restringido al suelo real de la
-      // plataforma (nunca al hueco central que da vista a Planta Baja).
-      if (currentFloor === 'PA' && typeof window.clampPAPlatformPct === 'function') {
-        p = window.clampPAPlatformPct(p.x, p.y);
-      }
-      item.x = snapToGridActive ? Math.round(p.x / GRID_STEP_PCT) * GRID_STEP_PCT : p.x;
-      item.y = snapToGridActive ? Math.round(p.y / GRID_STEP_PCT) * GRID_STEP_PCT : p.y;
+      p = clampToFloorBounds(p.x, p.y, currentFloor);
+      let nx = snapToGridActive ? Math.round(p.x / GRID_STEP_PCT) * GRID_STEP_PCT : p.x;
+      let ny = snapToGridActive ? Math.round(p.y / GRID_STEP_PCT) * GRID_STEP_PCT : p.y;
+      const bounded = clampToFloorBounds(nx, ny, currentFloor);
+      item.x = bounded.x;
+      item.y = bounded.y;
       el.style.left = item.x + '%';
       el.style.top = item.y + '%';
     }
@@ -2703,9 +2879,7 @@
         const r = canvasStage.getBoundingClientRect();
         if (ev.clientX > r.left && ev.clientX < r.right && ev.clientY > r.top && ev.clientY < r.bottom) {
           let p = pctPos(ev.clientX, ev.clientY);
-          if (currentFloor === 'PA' && typeof window.clampPAPlatformPct === 'function') {
-            p = window.clampPAPlatformPct(p.x, p.y);
-          }
+          p = clampToFloorBounds(p.x, p.y, currentFloor);
           const defaultSizes = {
             mesa: {a: 50, h: 50}, mesa_doble: {a: 100, h: 50}, sillon: {a: 110, h: 42}, bocina: {a: 45, h: 45}, cristal: {a: 120, h: 15},
             dj: {a: 120, h: 50}, pantalla: {a: 140, h: 20}, entrada: {a: 80, h: 40}, salida: {a: 80, h: 40},
@@ -3694,7 +3868,7 @@
     const container = document.getElementById('view3d-container');
     const canvasEl3d = document.getElementById('view3d-canvas');
     const loadingEl = document.getElementById('view3d-loading');
-    const FLOOR_W = 48, FLOOR_D = 46;
+    const FLOOR_W = 72, FLOOR_D = 69; // escala 1.5x respecto al modelo anterior
     // Se exponen para que el plano 2D pueda dibujar el límite exacto del piso 3D
     // (mismo cálculo que pctToWorld/floor.position.z, sin duplicar números mágicos por separado).
     window.CLUB3D_BOUNDS = { FLOOR_W, FLOOR_D, FLOOR_Z_OFFSET: 4, PCT_Z_OFFSET: 6 };
@@ -3771,6 +3945,9 @@
         return;
       }
       if (window.editModeActive) {
+        // El plano de arrastre coincide con el nivel activo: PB = Y 0, PA = balcón.
+        floorPlane3d.constant = (typeof currentFloor !== 'undefined' && currentFloor === 'PA')
+          ? -(mezzYRef() - 2.22) : 0;
         const hit = pickFurnitureAt(p.clientX, p.clientY);
         if (hit) {
           furnitureDragTarget = hit.group;
@@ -4095,13 +4272,19 @@
       const P = window.CLUB3D_PA_PLATFORM;
       if (!P) return point;
       const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
-      point.x = clamp(point.x, P.rightWing.xMin, P.rightWing.xMax);
-      point.z = clamp(point.z, P.rightWing.zMin, P.rightWing.zMax);
+      const wings = [P.rightWing, P.bottomWing].filter(Boolean);
+      const inside = wings.find(w => point.x >= w.xMin && point.x <= w.xMax && point.z >= w.zMin && point.z <= w.zMax);
+      if (inside) return point;
+      // Proyección al rectángulo más cercano: conserva la unión exacta en L.
+      const candidates = wings.map(w => ({
+        x: clamp(point.x, w.xMin, w.xMax),
+        z: clamp(point.z, w.zMin, w.zMax)
+      }));
+      candidates.sort((a,b) => ((a.x-point.x)**2+(a.z-point.z)**2)-((b.x-point.x)**2+(b.z-point.z)**2));
+      point.x = candidates[0].x; point.z = candidates[0].z;
       return point;
     }
 
-    // Versión en % (0-100, mismo sistema de coordenadas del plano 2D) para
-    // que el editor 2D pueda restringir ahí mismo el arrastre en Planta Alta.
     window.clampPAPlatformPct = function (xPct, yPct) {
       const w = pctToWorld(xPct, yPct);
       const point = { x: w.x, z: w.z };
@@ -4112,40 +4295,41 @@
     function buildFurnitureFromLayout() {
       if (furnitureGroup) { scene.remove(furnitureGroup); }
       furnitureGroup = new THREE.Group();
-      let list = [];
-      try { list = (typeof getLayout === 'function') ? getLayout() : []; } catch (e) { list = []; }
 
-      // Colores de estado más claros y saturados que antes (disponible = verde
-      // franco, no verde-azulado; reservada = amarillo, no ámbar-naranja;
-      // ocupada = rojo fuerte, no coral rosado) — mismo criterio en toda la app.
       const ESTADO_COLOR = { disponible: 0x2be27a, reservada: 0xffd23f, ocupada: 0xff1f3d };
+      const dateKey = (typeof fechaInput !== 'undefined' && fechaInput) ? fechaInput.value : null;
+      const day = (dateKey && window.layoutsData && window.layoutsData[dateKey]) || { PB: [], PA: [] };
 
-      list.forEach(item => {
-        const pos = pctToWorld(item.x, item.y);
-        const wScale = Math.max(0.02, (item.anchoPx || 50) / 100) * (FLOOR_W / 10);
-        const dScale = Math.max(0.02, (item.altoPx || 50) / 100) * (FLOOR_D / 12);
-        let mesh;
-        if (item.tipo === 'mesa' || item.tipo === 'mesa_doble') {
-          let res = { estado: 'disponible' };
-          try { if (typeof getReserva === 'function') res = getReserva(item.id); } catch (e) {}
-          const estado = res.estado || 'disponible';
-          const tone = ESTADO_COLOR[estado] || ESTADO_COLOR.disponible;
-          mesh = buildStool(pos.x, pos.z, Math.min(wScale, 3.2), Math.min(dScale, 3.2), tone);
-        } else if (item.tipo === 'sillon') {
-          mesh = buildSillon(pos.x, pos.z, Math.min(wScale, 2.6), Math.min(dScale, 2.6), 0xffe0e0, item.colorVariante === 'rojo');
-        } else if (item.tipo) {
-          // Las bocinas se limitan a un tamaño realista de gabinete de audio;
-          // el resto de la decoración fija (DJ, pantalla, barra, cristal...)
-          // conserva un tope mayor porque son piezas legítimamente más grandes.
-          const decorCap = item.tipo === 'bocina' ? 2.2 : 6;
-          mesh = buildDecor(item.tipo, Math.min(wScale, decorCap), Math.min(dScale, decorCap));
-          mesh.position.set(pos.x, 0, pos.z);
-        }
-        if (mesh) {
-          mesh.rotation.y = ((item.rotacion || 0) * Math.PI) / 180;
-          mesh.userData.itemId = item.id; // para poder ubicarlo de vuelta al arrastrar en Modo Edición 3D
-          furnitureGroup.add(mesh);
-        }
+      ['PB', 'PA'].forEach(floor => {
+        const list = day[floor] || [];
+        const levelY = floor === 'PA' ? (mezzYCache + 0.28) : 0;
+
+        list.forEach(item => {
+          const pos = pctToWorld(item.x, item.y);
+          const wScale = Math.max(0.02, (item.anchoPx || 50) / 100) * (FLOOR_W / 10);
+          const dScale = Math.max(0.02, (item.altoPx || 50) / 100) * (FLOOR_D / 12);
+          let mesh;
+          if (item.tipo === 'mesa' || item.tipo === 'mesa_doble') {
+            let res = { estado: 'disponible' };
+            try {
+              const key = item.grupoId ? ('grp_' + item.grupoId) : item.id;
+              res = (window.reservasData?.[dateKey]?.[key]) || res;
+            } catch (e) {}
+            mesh = buildStool(pos.x, pos.z, Math.min(wScale, 3.2), Math.min(dScale, 3.2), ESTADO_COLOR[res.estado] || ESTADO_COLOR.disponible);
+          } else if (item.tipo === 'sillon') {
+            mesh = buildSillon(pos.x, pos.z, Math.min(wScale, 2.6), Math.min(dScale, 2.6), 0xffe0e0, item.colorVariante === 'rojo');
+          } else if (item.tipo) {
+            const decorCap = item.tipo === 'bocina' ? 2.2 : 6;
+            mesh = buildDecor(item.tipo, Math.min(wScale, decorCap), Math.min(dScale, decorCap));
+          }
+          if (mesh) {
+            mesh.position.y += levelY;
+            mesh.rotation.y = ((item.rotacion || 0) * Math.PI) / 180;
+            mesh.userData.itemId = item.id;
+            mesh.userData.floor = floor;
+            furnitureGroup.add(mesh);
+          }
+        });
       });
       scene.add(furnitureGroup);
     }
@@ -4383,11 +4567,30 @@
       mezzUnderStrip.position.set(platformX, mezzY - 0.28, platformZ - RIGHT_SIDE_LEN / 2);
       floorGroup.add(mezzUnderStrip);
 
-      // Se expone el contorno real del suelo de PA para que el arrastre de
-      // mesas/objetos (2D y 3D) quede restringido a la plataforma, nunca al hueco.
+      // Brazo inferior de la L (zona OMEGA): se une al pasillo derecho.
+      const BOTTOM_SPAN = 13.8; // 20% aprox. de la profundidad ampliada
+      const bottomZMax = WING_Z + RIGHT_SIDE_LEN / 2;
+      const bottomZ = bottomZMax - BOTTOM_SPAN / 2;
+      const bottomXMin = -FLOOR_W / 2;
+      const bottomXMax = FLOOR_W / 2 + WING_SPAN;
+      const bottomW = bottomXMax - bottomXMin;
+      const bottomX = (bottomXMin + bottomXMax) / 2;
+      const mezzBottom = new THREE.Mesh(new THREE.BoxGeometry(bottomW, 0.5, BOTTOM_SPAN), platformMat);
+      mezzBottom.position.set(bottomX, mezzY, bottomZ);
+      floorGroup.add(mezzBottom);
+      const mezzBottomFloor = new THREE.Mesh(new THREE.PlaneGeometry(bottomW, BOTTOM_SPAN), mezzFloorMat);
+      mezzBottomFloor.rotation.x = -Math.PI / 2;
+      mezzBottomFloor.position.set(bottomX, mezzY + 0.26, bottomZ);
+      floorGroup.add(mezzBottomFloor);
+      const bottomLight = new THREE.PointLight(0xffb703, 1.5, 30, 2);
+      bottomLight.position.set(bottomX, mezzY + 3, bottomZ);
+      floorGroup.add(bottomLight);
+
+      // Se expone el contorno completo de PA: unión de dos rectángulos (L).
       window.CLUB3D_PA_PLATFORM = {
         floorW: FLOOR_W, floorD: FLOOR_D,
-        rightWing: { xMin: FLOOR_W / 2, xMax: FLOOR_W / 2 + WING_SPAN, zMin: WING_Z - RIGHT_SIDE_LEN / 2, zMax: WING_Z + RIGHT_SIDE_LEN / 2 }
+        rightWing: { xMin: FLOOR_W / 2, xMax: FLOOR_W / 2 + WING_SPAN, zMin: WING_Z - RIGHT_SIDE_LEN / 2, zMax: bottomZMax },
+        bottomWing: { xMin: bottomXMin, xMax: bottomXMax, zMin: bottomZMax - BOTTOM_SPAN, zMax: bottomZMax }
       };
 
       // --- Barandal de cristal templado + marco metálico en el borde
@@ -4414,6 +4617,8 @@
       }
       // borde interior de la plataforma, a todo lo largo del muro lateral (mira hacia el hueco/pista)
       floorGroup.add(buildGlassRail(RIGHT_SIDE_LEN, FLOOR_W / 2 + 0.05, platformZ, Math.PI / 2));
+      // Barandal interior del brazo inferior de la L.
+      floorGroup.add(buildGlassRail(bottomW, bottomX, bottomZMax - BOTTOM_SPAN + 0.05, 0));
 
       // Relleno de piso a nivel de calle bajo la plataforma (Planta Baja, bajo el hueco)
       const groundFill = new THREE.Mesh(new THREE.PlaneGeometry(WING_SPAN, WING_Z_LEN), floorMat);
