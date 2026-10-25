@@ -1733,6 +1733,17 @@
       color: var(--text-low);
     }
   </style>
+<style>
+    /* Alfombra negra mate (PB y PA) */
+    .fixed-architecture .arch-carpet, .fixed-architecture .arch-floor {
+      background: radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px) 0 0/6px 6px, #141414 !important;
+    }
+    .fixed-architecture .arch-carpet { position: absolute; border: none; }
+    #multi-mesero-bar { display:flex; flex-wrap:wrap; gap:6px; align-items:center; width:100%; margin-top:6px; }
+    #multi-mesero-bar .lbl { font-size:11px; font-weight:800; color:var(--accent); }
+    #marquee-box { position:fixed; border:1.5px dashed var(--accent); background:rgba(243,186,47,.12); z-index:900; pointer-events:none; display:none; }
+    #imp-status { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#0d1117; border:1px solid var(--accent); color:#fff; padding:10px 16px; border-radius:10px; z-index:2000; font-size:12px; display:none; max-width:86vw; }
+  </style>
 </head>
 <body>
 
@@ -1756,6 +1767,10 @@
       <button class="btn" id="btn-quick-checkin">⚡ Check-in Rápido</button>
       <button class="btn" id="btn-add-batch-res">📦 Carga Masiva</button>
       <button class="btn" id="btn-toggle-multi">☑ Multi-Selección</button>
+      <button class="btn" id="btn-plan-img" title="Sube una foto o captura de un plano y se acomodan las mesas solas">📐 Plano por Imagen</button>
+      <button class="btn" id="btn-res-img" title="Sube una captura de la lista de reservas y se registran solas">🧾 Reservas por Imagen</button>
+      <input type="file" id="file-plan-img" accept="image/*" style="display:none">
+      <input type="file" id="file-res-img" accept="image/*" multiple style="display:none">
       <button class="btn" id="btn-clean-mode">🧹 Modo Operación</button>
       <button class="btn" id="btn-fullscreen">🔍 Full Screen</button>
     </div>
@@ -1878,8 +1893,12 @@
         <button class="btn" id="btn-distribute" title="Distribuir espacio uniforme entre los elementos">↔ Distribuir Parejo</button>
         <button class="btn" id="btn-unir-mesas" style="background: rgba(243, 186, 47, 0.15); border-color: var(--accent); color: var(--accent);">🔗 Unir Mesas</button>
         <button class="btn" id="btn-desunir-mesas" style="background: rgba(100, 116, 139, 0.15); border-color: var(--text-low); color: var(--text-main);">🔓 Desunir Mesas</button>
+        <div id="multi-mesero-bar"><span class="lbl">👤 Asignar mesero a toda la selección:</span><span id="multi-mesero-chips" style="display:contents"></span></div>
         <button class="btn" id="btn-del-multi" style="background: var(--neon-red); color: #ffffff;">Eliminar Seleccionados</button>
       </div>
+
+      <div id="marquee-box"></div>
+      <div id="imp-status"></div>
 
       <div id="floating-clean-toggle">
         <div class="clean-btn-exit">
@@ -2318,7 +2337,8 @@
     };
 
     if (currentFloor === 'PB') {
-      // PB: plano totalmente libre — sin escenario gris ni cristal lateral.
+      // PB: plano libre (sin LED SCREEN / STAGE AREA / DJ CONSOL); solo alfombra negra.
+      add('arch-carpet', PB_X_MIN, PB_Y_MIN, PB_X_MAX - PB_X_MIN, PB_Y_MAX - PB_Y_MIN);
     } else {
       // PA — estructura elevada en L, más grande. Sin cristal que se cruce:
       // solo el piso y un único filo metálico por brazo, sin atravesarse.
@@ -2515,6 +2535,9 @@
         panOriginY = panY;
         canvas.classList.add('panning-active');
       } else if (activePointers.size === 1) {
+        // En Multi-Selección, un dedo dibuja el cuadro de selección (no hace pan);
+        // con dos dedos sigue funcionando pan/zoom.
+        if (multiSelectMode) return;
         // Cualquier clic/toque simple sobre el fondo puede convertirse en pan
         // en cuanto haya movimiento — ya no requiere clic derecho ni Shift.
         isPanning = true;
@@ -2629,11 +2652,13 @@
   })();
 
   const fechaInput = document.getElementById('f-fecha');
+  const CORTE_DIA_HORAS = 6; // antes de las 6:00 am todavía cuenta como la noche del día anterior
   function todayStr(){
-    const d = new Date();
+    const d = new Date(Date.now() - CORTE_DIA_HORAS * 3600 * 1000);
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
   fechaInput.value = todayStr();
+  fechaInput.min = todayStr(); // fechas anteriores ocultas/no seleccionables
 
   function getLayout() {
     const dateKey = fechaInput.value;
@@ -2741,6 +2766,7 @@
         el.classList.add(multiSelectMode ? 'multi-selected' : 'selected');
       }
 
+      el.dataset.itemId = item.id;
       el.style.left = item.x + '%';
       el.style.top = item.y + '%';
       if (item.anchoPx) el.style.width = item.anchoPx + 'px';
@@ -3008,6 +3034,273 @@
     multiBtn.classList.toggle('active', multiSelectMode);
     selectedIds.clear();
     renderFurniture();
+  });
+
+
+  // =====================================================================
+  // ASIGNACIÓN MASIVA DE MESEROS + CUADRO DE SELECCIÓN (multi-selección)
+  // =====================================================================
+  (function initBulkWaiter() {
+    const chipsBox = document.getElementById('multi-mesero-chips');
+    function assign(nombre) {
+      const mesas = getLayout().filter(it => selectedIds.has(it.id) && it.tipo === 'mesa');
+      if (mesas.length === 0) { alert('Selecciona al menos una mesa para asignarle mesero.'); return; }
+      const dateKey = fechaInput.value;
+      if (!window.reservasData[dateKey]) window.reservasData[dateKey] = {};
+      const vistas = new Set();
+      mesas.forEach(m => {
+        const k = resKey(m.id);
+        if (vistas.has(k)) return; vistas.add(k);
+        getReserva(m.id).mesero = nombre;
+      });
+      saveReservas();
+      renderFurniture();
+      if (typeof renderAllCRM === 'function') renderAllCRM();
+      showImpStatus('✔ ' + (nombre || 'Sin mesero') + ' asignado a ' + mesas.length + ' mesa(s)', 2200);
+    }
+    function paint() {
+      chipsBox.innerHTML = '';
+      MESEROS_LIST.forEach(n => {
+        const b = document.createElement('button');
+        b.className = 'mesero-chip'; b.textContent = n;
+        b.addEventListener('click', () => assign(n));
+        chipsBox.appendChild(b);
+      });
+      const otro = document.createElement('button');
+      otro.className = 'mesero-chip'; otro.textContent = '✎ Otro…';
+      otro.addEventListener('click', () => { const n = (prompt('Nombre del mesero:') || '').trim(); if (n) assign(n); });
+      const quitar = document.createElement('button');
+      quitar.className = 'mesero-chip'; quitar.textContent = '✖ Quitar';
+      quitar.addEventListener('click', () => assign(''));
+      chipsBox.appendChild(otro); chipsBox.appendChild(quitar);
+    }
+    paint();
+
+    // Cuadro de selección: en modo Multi-Selección, arrastrar sobre el fondo dibuja un rectángulo.
+    const box = document.getElementById('marquee-box');
+    let start = null, active = false;
+    canvas.addEventListener('pointerdown', (e) => {
+      if (!multiSelectMode || (e.target !== canvas && e.target !== canvasStage && !e.target.closest('.fixed-architecture'))) return;
+      if (e.pointerType === 'touch' && e.isPrimary === false) return;
+      start = { x: e.clientX, y: e.clientY }; active = false;
+    }, true);
+    window.addEventListener('pointermove', (e) => {
+      if (!start) return;
+      const dx = e.clientX - start.x, dy = e.clientY - start.y;
+      if (!active && Math.hypot(dx, dy) < 8) return;
+      active = true;
+      Object.assign(box.style, { display: 'block', left: Math.min(start.x, e.clientX) + 'px', top: Math.min(start.y, e.clientY) + 'px', width: Math.abs(dx) + 'px', height: Math.abs(dy) + 'px' });
+    });
+    window.addEventListener('pointerup', (e) => {
+      if (!start) return;
+      const wasActive = active; const r = { l: Math.min(start.x, e.clientX), t: Math.min(start.y, e.clientY), r: Math.max(start.x, e.clientX), b: Math.max(start.y, e.clientY) };
+      start = null; active = false; box.style.display = 'none';
+      if (!wasActive) return;
+      canvasStage.querySelectorAll('.furniture').forEach(el => {
+        const q = el.getBoundingClientRect();
+        if (q.right >= r.l && q.left <= r.r && q.bottom >= r.t && q.top <= r.b && el.dataset.itemId) selectedIds.add(el.dataset.itemId);
+      });
+      renderFurniture();
+    });
+  })();
+
+  // =====================================================================
+  // ESTADO / UTILIDADES DE IMPORTACIÓN POR IMAGEN
+  // =====================================================================
+  let _impTimer = null;
+  function showImpStatus(msg, ms) {
+    const el = document.getElementById('imp-status');
+    el.textContent = msg; el.style.display = 'block';
+    clearTimeout(_impTimer);
+    if (ms) _impTimer = setTimeout(() => { el.style.display = 'none'; }, ms);
+  }
+  function loadImageFile(file) {
+    return new Promise((ok, fail) => {
+      const url = URL.createObjectURL(file); const img = new Image();
+      img.onload = () => { URL.revokeObjectURL(url); ok(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); fail(new Error('No se pudo abrir la imagen')); };
+      img.src = url;
+    });
+  }
+  function refresh3DFromLayout() {
+    if (typeof window.club3DSetFloor === 'function') { try { window.club3DSetFloor(currentFloor); } catch (e) {} }
+  }
+
+  // =====================================================================
+  // ACOMODO AUTOMÁTICO DE MESAS POR IMAGEN (foto/captura de un plano)
+  // Detecta formas (mesas/sillones) por contraste y las coloca en la capa activa.
+  // =====================================================================
+  function detectShapesInImage(img) {
+    const MAXD = 420, sc = Math.min(1, MAXD / Math.max(img.width, img.height));
+    const W = Math.max(8, Math.round(img.width * sc)), H = Math.max(8, Math.round(img.height * sc));
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, W, H);
+    const d = ctx.getImageData(0, 0, W, H).data, N = W * H, g = new Uint8Array(N);
+    for (let i = 0; i < N; i++) g[i] = (d[i*4] * 0.3 + d[i*4+1] * 0.59 + d[i*4+2] * 0.11) | 0;
+    // Umbral de Otsu
+    const hist = new Array(256).fill(0); for (let i = 0; i < N; i++) hist[g[i]]++;
+    let sum = 0; for (let t = 0; t < 256; t++) sum += t * hist[t];
+    let wB = 0, sB = 0, best = 0, thr = 128;
+    for (let t = 0; t < 256; t++) { wB += hist[t]; if (!wB) continue; const wF = N - wB; if (!wF) break;
+      sB += t * hist[t]; const mB = sB / wB, mF = (sum - sB) / wF, v = wB * wF * (mB - mF) * (mB - mF);
+      if (v > best) { best = v; thr = t; } }
+    let dark = 0; for (let i = 0; i < N; i++) if (g[i] <= thr) dark++;
+    const fgDark = dark < N / 2; // la forma minoritaria es el "objeto"
+    const mask = new Uint8Array(N); for (let i = 0; i < N; i++) mask[i] = (fgDark ? g[i] <= thr : g[i] > thr) ? 1 : 0;
+    // Componentes conectados (8 vecinos)
+    const lab = new Int32Array(N), comps = [], stack = [];
+    for (let i = 0; i < N; i++) {
+      if (!mask[i] || lab[i]) continue;
+      const id = comps.length + 1; let area = 0, x0 = W, y0 = H, x1 = 0, y1 = 0;
+      stack.push(i); lab[i] = id;
+      while (stack.length) {
+        const p = stack.pop(), px = p % W, py = (p / W) | 0; area++;
+        if (px < x0) x0 = px; if (px > x1) x1 = px; if (py < y0) y0 = py; if (py > y1) y1 = py;
+        for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+          const nx = px + ox, ny = py + oy; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+          const q = ny * W + nx; if (mask[q] && !lab[q]) { lab[q] = id; stack.push(q); }
+        }
+      }
+      comps.push({ area, x0, y0, x1, y1 });
+    }
+    const minDim = Math.max(6, Math.min(W, H) * 0.025);
+    let shapes = comps.map(k => ({ ...k, bw: k.x1 - k.x0 + 1, bh: k.y1 - k.y0 + 1 }))
+      .filter(k => k.bw >= minDim && k.bh >= minDim && k.area <= N * 0.18
+        && k.area / (k.bw * k.bh) >= 0.12 && Math.max(k.bw / k.bh, k.bh / k.bw) <= 6);
+    shapes.sort((a, b) => b.area - a.area); shapes = shapes.slice(0, 120);
+    return { shapes, W, H };
+  }
+
+  async function importPlanFromImage(file) {
+    showImpStatus('Analizando plano…');
+    let res;
+    try { res = detectShapesInImage(await loadImageFile(file)); }
+    catch (err) { showImpStatus('No se pudo leer la imagen.', 3000); return; }
+    const { shapes, W, H } = res;
+    if (!shapes.length) { showImpStatus('No se detectaron mesas en la imagen. Prueba con una foto más recta y con buen contraste.', 4500); return; }
+    document.getElementById('imp-status').style.display = 'none';
+    if (!confirm('Se detectaron ' + shapes.length + ' elementos. ¿Colocarlos en la planta ' + currentFloor + '?')) return;
+    if (getLayout().length && confirm('¿Reemplazar lo que ya hay en ' + currentFloor + '? (Aceptar = reemplazar, Cancelar = agregar a lo existente)')) {
+      window.layoutsData[fechaInput.value][currentFloor] = [];
+    }
+    const med = (arr) => { const a = [...arr].sort((x, y) => x - y); return a[a.length >> 1] || 1; };
+    const medArea = med(shapes.map(k => k.area));
+    // Región destino según la capa: PB = todo el plano; PA = el rectángulo que cubre la L.
+    const R = currentFloor === 'PB'
+      ? { x0: 6, x1: 94, y0: 6, y1: 94 }
+      : { x0: PA_MIN + 2, x1: PA_MAX - 2, y0: PA_RIGHT_YMIN + 2, y1: PA_MAX - 2 };
+    const sizes = { mesa: [72, 46], mesa_doble: [144, 46], sillon: [110, 42] };
+    const items = [];
+    shapes.sort((a, b) => (a.y0 - b.y0) || (a.x0 - b.x0)).forEach((k, i) => {
+      const ar = k.bw / k.bh; let key = 'mesa';
+      if (ar >= 2.8) key = 'sillon'; else if (k.area > medArea * 1.7 && ar >= 1.5) key = 'mesa_doble';
+      const cx = (k.x0 + k.bw / 2) / W, cy = (k.y0 + k.bh / 2) / H;
+      const tipo = key === 'sillon' ? 'sillon' : 'mesa';
+      const it = { id: 'item_' + Date.now() + '_' + i, tipo, nombre: '', x: R.x0 + cx * (R.x1 - R.x0), y: R.y0 + cy * (R.y1 - R.y0),
+        anchoPx: sizes[key][0], altoPx: sizes[key][1], rotacion: 0, locked: false };
+      if (key === 'mesa_doble') it.variante = 'doble';
+      items.push(it);
+    });
+    // Separar solapes y encajar dentro de los límites de la capa
+    const sw = canvasStage.offsetWidth || 1000, sh = canvasStage.offsetHeight || 625;
+    for (let iter = 0; iter < 30; iter++) {
+      let moved = false;
+      for (let a = 0; a < items.length; a++) for (let b = a + 1; b < items.length; b++) {
+        const A = items[a], B = items[b];
+        const dx = (B.x - A.x) / 100 * sw, dy = (B.y - A.y) / 100 * sh;
+        const ox = (A.anchoPx + B.anchoPx) / 2 + 6 - Math.abs(dx), oy = (A.altoPx + B.altoPx) / 2 + 6 - Math.abs(dy);
+        if (ox > 0 && oy > 0) {
+          moved = true;
+          if (ox < oy) { const s2 = (dx >= 0 ? 1 : -1) * ox / 2 / sw * 100; A.x -= s2; B.x += s2; }
+          else { const s2 = (dy >= 0 ? 1 : -1) * oy / 2 / sh * 100; A.y -= s2; B.y += s2; }
+        }
+      }
+      items.forEach(it => { const p = clampToFloorBounds(it.x, it.y, currentFloor); it.x = p.x; it.y = p.y; });
+      if (!moved) break;
+    }
+    const layout = getLayout();
+    items.forEach(it => {
+      it.nombre = it.tipo === 'mesa' ? nextMesaNombre(currentFloor) : (NOMBRES_DEFAULT.sillon || 'SILLÓN');
+      layout.push(it);
+    });
+    selectedIds.clear(); saveLayouts(); renderFurniture(); refresh3DFromLayout();
+    showImpStatus('✔ ' + items.length + ' elementos colocados en ' + currentFloor + ' (revisa y ajusta si hace falta)', 4000);
+  }
+  document.getElementById('btn-plan-img').addEventListener('click', () => document.getElementById('file-plan-img').click());
+  document.getElementById('file-plan-img').addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0]; e.target.value = ''; if (f) importPlanFromImage(f);
+  });
+
+  // =====================================================================
+  // IMPORTACIÓN AUTOMÁTICA DE RESERVAS POR IMAGEN (OCR con Tesseract.js)
+  // =====================================================================
+  function loadTesseract() {
+    if (window.Tesseract) return Promise.resolve(window.Tesseract);
+    return new Promise((ok, fail) => {
+      const sc = document.createElement('script');
+      sc.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+      sc.onload = () => window.Tesseract ? ok(window.Tesseract) : fail(new Error('OCR no disponible'));
+      sc.onerror = () => fail(new Error('Sin conexión para cargar el lector de texto (OCR)'));
+      document.head.appendChild(sc);
+    });
+  }
+  function parseReservationText(text) {
+    const out = [];
+    text.split(/\r?\n/).map(l => l.replace(/[|_•·]+/g, ' ').replace(/\s+/g, ' ').trim()).forEach(raw => {
+      if (raw.length < 4) return;
+      let line = raw, mesa = '', personas = 0, telefono = '', mesero = '';
+      const mm = line.match(/\b(?:mesa|mes|m)\s*[-#.:]?\s*(\d{1,3})\b/i);
+      if (mm) { mesa = 'M' + mm[1]; line = line.replace(mm[0], ' '); }
+      const ph = line.match(/(\+?\d[\d\s().-]{8,}\d)/);
+      if (ph && ph[1].replace(/\D/g, '').length >= 10) { telefono = ph[1].replace(/[^\d+]/g, ''); line = line.replace(ph[1], ' '); }
+      const px = line.match(/(\d{1,2})\s*(?:pax|personas?|pers|px|p\b)/i) || line.match(/(?:pax|personas?)\s*[:\-]?\s*(\d{1,2})/i);
+      if (px) { personas = parseInt(px[1], 10); line = line.replace(px[0], ' '); }
+      line = line.replace(/\b\d{1,2}\s*[:.]\s*\d{2}\s*(?:am|pm|hrs?)?\b/ig, ' ');
+      MESEROS_LIST.forEach(n => { const re = new RegExp('\\b' + n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i'); if (!mesero && re.test(line)) { mesero = n; line = line.replace(re, ' '); } });
+      if (!personas) { const t = line.match(/\b(\d{1,2})\b\s*$/); if (t && +t[1] > 0 && +t[1] <= 30) { personas = +t[1]; line = line.replace(t[0], ' '); } }
+      const cliente = line.replace(/^\s*\d+\s*[.)-]\s*/, '').replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ' .-]/g, ' ').replace(/\s+/g, ' ').trim();
+      if (cliente.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, '').length < 3) return;
+      out.push({ cliente, personas: personas || 2, telefono, mesero, mesa });
+    });
+    return out;
+  }
+  async function importReservationsFromImages(files) {
+    let text = '';
+    try {
+      showImpStatus('Cargando lector de texto…');
+      const T = await loadTesseract();
+      for (let i = 0; i < files.length; i++) {
+        const r = await T.recognize(files[i], 'spa+eng', { logger: m => { if (m.status === 'recognizing text') showImpStatus('Leyendo imagen ' + (i + 1) + '/' + files.length + ': ' + Math.round(m.progress * 100) + '%'); } });
+        text += '\n' + r.data.text;
+      }
+    } catch (err) { showImpStatus('⚠ ' + (err.message || 'No se pudo leer la imagen'), 5000); return; }
+    const rows = parseReservationText(text);
+    if (!rows.length) { showImpStatus('No se encontraron reservas legibles. Prueba con una captura más nítida.', 4500); return; }
+    document.getElementById('imp-status').style.display = 'none';
+    const resumen = rows.slice(0, 8).map(r => '• ' + r.cliente + (r.mesa ? ' (' + r.mesa + ')' : '') + ' — ' + r.personas + ' pax').join('\n');
+    if (!confirm('Se leyeron ' + rows.length + ' reservas:\n' + resumen + (rows.length > 8 ? '\n…' : '') + '\n\n¿Registrarlas para ' + fechaInput.value + '?')) return;
+    const dateKey = fechaInput.value;
+    if (!window.reservasData[dateKey]) window.reservasData[dateKey] = {};
+    let conMesa = 0;
+    rows.forEach((r, i) => {
+      let targetId = 'res_batch_' + Date.now() + '_' + i;
+      if (r.mesa && window.layoutsData[dateKey]) ['PB', 'PA'].forEach(p => {
+        const m = (window.layoutsData[dateKey][p] || []).find(x => (x.nombre || '').toLowerCase() === r.mesa.toLowerCase());
+        if (m) { targetId = m.id; conMesa++; }
+      });
+      window.reservasData[dateKey][targetId] = { estado: 'reservada', cliente: r.cliente, telefono: r.telefono, personas: r.personas, mesero: r.mesero };
+      let cli = window.clientes.find(c => c.nombre.toLowerCase() === r.cliente.toLowerCase());
+      if (!cli) window.clientes.push({ id: 'cli_' + Date.now() + '_' + i, nombre: r.cliente, telefono: r.telefono, visitas: 1, ultimaVisita: r.mesa, preferencias: '' });
+      else cli.visitas += 1;
+    });
+    saveReservas(); saveCli(); renderFurniture();
+    if (typeof renderAllCRM === 'function') renderAllCRM();
+    showImpStatus('✔ ' + rows.length + ' reservas registradas (' + conMesa + ' con mesa asignada, ' + (rows.length - conMesa) + ' sin asignar)', 5000);
+  }
+  document.getElementById('btn-res-img').addEventListener('click', () => document.getElementById('file-res-img').click());
+  document.getElementById('file-res-img').addEventListener('change', (e) => {
+    const fs = [...(e.target.files || [])]; e.target.value = ''; if (fs.length) importReservationsFromImages(fs);
   });
 
   function updateMultiBar() {
@@ -3716,7 +4009,9 @@
 
     let totalReservas = [];
 
+    const hoyOperativo = todayStr();
     Object.keys(window.reservasData).forEach(fecha => {
+      if (fecha !== hoyOperativo) return; // solo reservas del día en curso
       Object.keys(window.reservasData[fecha]).forEach(muebleId => {
         const res = window.reservasData[fecha][muebleId];
         if (res && (res.cliente || res.estado !== 'disponible')) {
@@ -3941,7 +4236,7 @@
     const container = document.getElementById('view3d-container');
     const canvasEl3d = document.getElementById('view3d-canvas');
     const loadingEl = document.getElementById('view3d-loading');
-    const FLOOR_W = 72, FLOOR_D = 69; // escala 1.5x respecto al modelo anterior
+    const FLOOR_W = 90, FLOOR_D = 69; // escala 1.5x respecto al modelo anterior
     // Se exponen para que el plano 2D pueda dibujar el límite exacto del piso 3D
     // (mismo cálculo que pctToWorld/floor.position.z, sin duplicar números mágicos por separado).
     window.CLUB3D_BOUNDS = { FLOOR_W, FLOOR_D, FLOOR_Z_OFFSET: 4, PCT_Z_OFFSET: 6 };
@@ -4578,7 +4873,7 @@
 
         list.forEach(item => {
           const pos = pctToWorld(item.x, item.y);
-          const wScale = Math.max(0.02, (item.anchoPx || 50) / 100) * (FLOOR_W / 10);
+          const wScale = Math.max(0.02, (item.anchoPx || 50) / 100) * 7.2; // ancho de mueble fijo: al ampliar el recinto NO se agrandan las mesas, solo hay más espacio
           const dScale = Math.max(0.02, (item.altoPx || 50) / 100) * (FLOOR_D / 12);
           let mesh;
           if (item.tipo === 'mesa') {
@@ -4636,6 +4931,24 @@
     // para que club3DSetFloor pueda apuntar la cámara a la altura correcta de PA.
     let mezzYCache = 12;
     function mezzYRef() { return mezzYCache + 2.5; }
+
+    // Alfombra negra mate (grano fino) para PB y PA
+    let _carpetTex = null;
+    function carpetTexture() {
+      if (_carpetTex) return _carpetTex;
+      const N = 128, c = document.createElement('canvas'); c.width = c.height = N;
+      const ctx = c.getContext('2d'), r = _rng(31);
+      ctx.fillStyle = '#161616'; ctx.fillRect(0, 0, N, N);
+      for (let i = 0; i < 2600; i++) {
+        const v = 12 + Math.floor(r() * 16);
+        ctx.fillStyle = 'rgb(' + v + ',' + v + ',' + v + ')';
+        ctx.fillRect(r() * N, r() * N, 1.5, 1.5);
+      }
+      _carpetTex = new THREE.CanvasTexture(c);
+      _carpetTex.wrapS = _carpetTex.wrapT = THREE.RepeatWrapping;
+      _carpetTex.repeat.set(60, 46);
+      return _carpetTex;
+    }
 
     function buildScene() {
       const nightNow = computeIsNight();
@@ -4715,7 +5028,7 @@
       floorGroup = new THREE.Group();
 
       // --- Piso reflejante oscuro con rejilla neón ---
-      const floorMat = new THREE.MeshStandardMaterial({ color: 0x0a0d13, metalness: 0.6, roughness: 0.15 });
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0xffffff, map: carpetTexture(), metalness: 0.0, roughness: 1.0 });
       const floor = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_W, FLOOR_D), floorMat);
       floor.rotation.x = -Math.PI / 2;
       floor.position.z = 4;
@@ -4723,12 +5036,12 @@
 
       const grid1 = new THREE.GridHelper(FLOOR_W, 20, 0x06d6a0, 0x0d3b30);
       grid1.position.y = 0.02; grid1.position.z = 4;
-      grid1.material.opacity = 0.4; grid1.material.transparent = true;
+      grid1.material.opacity = 0.12; grid1.material.transparent = true;
       floorGroup.add(grid1);
       const grid2 = new THREE.GridHelper(FLOOR_D, 22, 0xffb703, 0x3a2c0d);
       grid2.rotation.y = Math.PI / 2;
       grid2.position.set(0, 0.021, 4);
-      grid2.material.opacity = 0.16; grid2.material.transparent = true;
+      grid2.material.opacity = 0.05; grid2.material.transparent = true;
       floorGroup.add(grid2);
 
       // ============================================================
@@ -4760,7 +5073,7 @@
       const leftFillGrid = new THREE.GridHelper(1, 8, 0x06d6a0, 0x0d3b30);
       leftFillGrid.scale.set(WING_SPAN, 1, WING_Z_LEN);
       leftFillGrid.position.set(leftWingX, 0.02, WING_Z);
-      leftFillGrid.material.opacity = 0.4; leftFillGrid.material.transparent = true;
+      leftFillGrid.material.opacity = 0.12; leftFillGrid.material.transparent = true;
       floorGroup.add(leftFillGrid);
 
       const GLASS_H = 20;
@@ -4814,8 +5127,8 @@
       // hasta el muro frontal y el muro trasero, sin dejar rendija.
       const RIGHT_SIDE_LEN = WING_Z_LEN + 2;
 
-      const platformMat = new THREE.MeshStandardMaterial({ color: 0x0c0e13, metalness: 0.5, roughness: 0.5 });
-      const mezzFloorMat = new THREE.MeshStandardMaterial({ color: 0x0e1118, metalness: 0.4, roughness: 0.5 });
+      const platformMat = new THREE.MeshStandardMaterial({ color: 0x121212, metalness: 0.0, roughness: 1.0 });
+      const mezzFloorMat = new THREE.MeshStandardMaterial({ color: 0xffffff, map: carpetTexture(), metalness: 0.0, roughness: 1.0 });
       const railFrameMat = new THREE.MeshStandardMaterial({ color: 0x1c2230, metalness: 0.75, roughness: 0.28 });
       const steelBeamMat = new THREE.MeshStandardMaterial({ color: 0x2a1a12, metalness: 0.7, roughness: 0.35 });
 
@@ -4832,7 +5145,7 @@
       const mezzGrid = new THREE.GridHelper(1, 10, 0x2ecbff, 0x14283a);
       mezzGrid.scale.set(WING_SPAN, 1, RIGHT_SIDE_LEN);
       mezzGrid.position.set(platformX, mezzY + 0.27, platformZ);
-      mezzGrid.material.opacity = 0.4;
+      mezzGrid.material.opacity = 0.12;
       mezzGrid.material.transparent = true;
       floorGroup.add(mezzGrid);
       const mezzLight = new THREE.PointLight(0x9fd3ff, 1.9, 26, 2);
@@ -4847,7 +5160,7 @@
       const BOTTOM_SPAN = 19; // 20% aprox. de la profundidad ampliada
       const bottomZMax = WING_Z + RIGHT_SIDE_LEN / 2;
       const bottomZ = bottomZMax - BOTTOM_SPAN / 2;
-      const bottomXMin = -FLOOR_W / 2;
+      const bottomXMin = LEFT_GLASS_X; // = ancho total del piso de PB (de muro a muro)
       const bottomXMax = FLOOR_W / 2 + WING_SPAN;
       const bottomW = bottomXMax - bottomXMin;
       const bottomX = (bottomXMin + bottomXMax) / 2;
@@ -4891,10 +5204,20 @@
         g.rotation.y = rotY || 0;
         return g;
       }
-      // borde interior de la plataforma, a todo lo largo del muro lateral (mira hacia el hueco/pista)
-      floorGroup.add(buildGlassRail(RIGHT_SIDE_LEN, FLOOR_W / 2 + 0.05, platformZ, Math.PI / 2));
-      // Barandal interior del brazo inferior de la L.
-      floorGroup.add(buildGlassRail(bottomW, bottomX, bottomZMax - BOTTOM_SPAN + 0.05, 0));
+      // Barandales SOLO en el borde interior (hacia el vacío), sin cruces:
+      //  - brazo derecho: desde el fondo hasta la esquina interior de la L
+      //  - brazo inferior: desde el muro izquierdo hasta esa misma esquina
+      // Ambos terminan exactamente en la esquina, con un poste común.
+      const cornerX = FLOOR_W / 2 + 0.05;
+      const cornerZ = bottomZMax - BOTTOM_SPAN + 0.05;
+      const rightRailZMin = WING_Z - RIGHT_SIDE_LEN / 2;
+      const rightRailLen = cornerZ - rightRailZMin;
+      floorGroup.add(buildGlassRail(rightRailLen, cornerX, (rightRailZMin + cornerZ) / 2, Math.PI / 2));
+      const bottomRailLen = cornerX - bottomXMin;
+      floorGroup.add(buildGlassRail(bottomRailLen, (bottomXMin + cornerX) / 2, cornerZ, 0));
+      const cornerPost = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.5, 0.12), railFrameMat);
+      cornerPost.position.set(cornerX, mezzY + 0.5 + 1.25, cornerZ);
+      floorGroup.add(cornerPost);
 
       // Relleno de piso a nivel de calle bajo la plataforma (Planta Baja, bajo el hueco)
       const groundFill = new THREE.Mesh(new THREE.PlaneGeometry(WING_SPAN, WING_Z_LEN), floorMat);
@@ -4904,7 +5227,7 @@
       const groundFillGrid = new THREE.GridHelper(1, 8, 0x06d6a0, 0x0d3b30);
       groundFillGrid.scale.set(WING_SPAN, 1, WING_Z_LEN);
       groundFillGrid.position.set(platformX, 0.02, platformZ);
-      groundFillGrid.material.opacity = 0.4;
+      groundFillGrid.material.opacity = 0.12;
       groundFillGrid.material.transparent = true;
       floorGroup.add(groundFillGrid);
 
@@ -4912,27 +5235,11 @@
       // ahumado con vigas de acero oscuras, IGUAL que en las fotos reales
       // del club — ya sin vista/textura de horizonte hacia el cielo. ---
       const mezzGlassH = 9.5;
-      const paGlassColor = 0x1c2938; // vidrio ahumado oscuro, no el celeste brillante de antes
-      const mezzGlass = new THREE.Mesh(new THREE.PlaneGeometry(RIGHT_SIDE_LEN, mezzGlassH), glassMaterial(paGlassColor));
-      mezzGlass.position.set(RIGHT_GLASS_X, mezzY + mezzGlassH / 2 + 0.4, WING_Z);
-      mezzGlass.rotation.y = -Math.PI / 2;
-      floorGroup.add(mezzGlass);
-      [-0.5, -0.16, 0.16, 0.5].forEach((frac) => {
-        const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.09, mezzGlassH, 0.13), mullionMat);
-        mullion.position.set(RIGHT_GLASS_X, mezzY + mezzGlassH / 2 + 0.4, WING_Z + frac * RIGHT_SIDE_LEN);
-        floorGroup.add(mullion);
-      });
-      const rightCrossbar = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.11, RIGHT_SIDE_LEN), mullionMat);
-      rightCrossbar.position.set(RIGHT_GLASS_X, mezzY + 0.4 + mezzGlassH * 0.5, WING_Z);
-      floorGroup.add(rightCrossbar);
-      [-1, 0, 1].forEach((frac) => {
-        const post = new THREE.Mesh(new THREE.BoxGeometry(0.24, mezzGlassH + 0.4, 0.34), mullionMat);
-        post.position.set(RIGHT_GLASS_X, mezzY + mezzGlassH / 2 + 0.4, WING_Z + frac * (RIGHT_SIDE_LEN / 2.1));
-        floorGroup.add(post);
-      });
-      const rightSteelBeam = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, RIGHT_SIDE_LEN), steelBeamMat);
-      rightSteelBeam.position.set(RIGHT_GLASS_X - 0.02, mezzY + 0.4, WING_Z);
-      floorGroup.add(rightSteelBeam);
+      // Sin cristales/barandales pegados al muro exterior: en su lugar, muro sólido.
+      const rightMidWall = new THREE.Mesh(new THREE.PlaneGeometry(RIGHT_SIDE_LEN, mezzGlassH), new THREE.MeshStandardMaterial({ color: 0x0b0d13, metalness: 0.3, roughness: 0.75 }));
+      rightMidWall.position.set(RIGHT_GLASS_X, mezzY + mezzGlassH / 2 + 0.4, WING_Z);
+      rightMidWall.rotation.y = -Math.PI / 2;
+      floorGroup.add(rightMidWall);
 
       // ============================================================
       // TECHO + PAREDES: encierran el club en un cuarto real. El techo
