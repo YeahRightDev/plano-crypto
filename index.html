@@ -886,22 +886,21 @@
       text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75);
     }
 
+    /* Mesa unida: el COLOR lo manda el estado (verde/ámbar/rojo) igual que una mesa
+       individual. Solo se marca la unión con un contorno punteado dorado. */
     .furniture.mesa.mesa-unida {
-      border: 2px solid var(--accent);
-      background: linear-gradient(160deg, #f7e6b8 0%, #d9b559 55%, #a9812f 100%);
-      box-shadow:
-        0 0 8px rgba(243, 186, 47, 0.5),
-        3px 4px 0 rgba(64, 46, 4, 0.9),
-        5px 8px 0 rgba(46, 32, 2, 0.85),
-        7px 13px 14px rgba(0, 0, 0, 0.6);
-      animation: none;
+      outline: 2px dashed var(--accent);
+      outline-offset: 3px;
     }
-    .furniture.mesa.mesa-unida .title-txt,
-    .furniture.mesa.mesa-unida .sub-txt {
-      color: #241a02;
-    }
-    .furniture.mesa.mesa-unida::before {
-      border-color: #3b2a05;
+    .furniture.mesa.mesa-unida.est-ocupada,
+    .furniture.mesa.mesa-unida.est-reservada { color: #fff; }
+    .furniture.mesa.est-ocupada .title-txt, .furniture.mesa.est-ocupada .sub-txt,
+    .furniture.mesa.est-reservada .title-txt, .furniture.mesa.est-reservada .sub-txt { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.8); }
+    .furniture.mesa.est-ocupada::before { border-color: #3a0a12; }
+    /* Ocupada = rojo uniforme (individual o unida) */
+    .furniture.mesa.est-ocupada {
+      border-color: var(--neon-red);
+      background: linear-gradient(160deg, #b3263f 0%, #8f1c31 60%, #6b1424 100%);
     }
     .furniture.mesa.mesa-unida .divider-3d {
       position: absolute;
@@ -1256,20 +1255,31 @@
 
     #multi-tools {
       position: absolute;
-      bottom: 24px;
+      bottom: 10px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(22, 25, 34, 0.95);
-      border: 1px solid var(--accent);
-      padding: 10px 22px;
-      border-radius: 40px;
+      background: rgba(18, 21, 29, 0.82);
+      border: 1px solid rgba(243, 186, 47, 0.55);
+      padding: 4px 8px;
+      border-radius: 22px;
       display: none;
       align-items: center;
-      gap: 16px;
+      gap: 4px;
       z-index: 20;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.8);
-      backdrop-filter: blur(12px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
     }
+    #multi-tools .btn { padding: 4px 8px; font-size: 13px; min-height: 0; line-height: 1.2; border-radius: 14px; }
+    #multi-tools #multi-count { font-size: 11px !important; padding: 0 6px; white-space: nowrap; }
+    #multi-tools .mt-handle { cursor: grab; color: var(--text-low); font-size: 14px; padding: 0 4px; touch-action: none; user-select: none; }
+    #multi-tools .mt-sep { width: 1px; height: 18px; background: rgba(255,255,255,.15); margin: 0 2px; }
+    #mesero-menu { display:none; position:absolute; bottom: calc(100% + 8px); right: 0; width: 230px; max-height: 240px; overflow-y:auto;
+      background: rgba(18,21,29,.97); border:1px solid var(--accent); border-radius: 12px; padding: 8px; box-shadow: 0 10px 26px rgba(0,0,0,.7); }
+    #mesero-menu.open { display:block; }
+    #mesero-menu .mm-title { font-size:10px; font-weight:800; color:var(--accent); margin-bottom:6px; }
+    #mesero-menu #multi-mesero-chips { display:grid !important; grid-template-columns: repeat(3, 1fr); gap:5px; }
+    #mesero-menu .mesero-chip { padding: 6px 4px; font-size: 11px; text-align:center; }
+    #mt-mesero-wrap { position: relative; }
 
     #multi-tools.active {
       display: flex;
@@ -1887,14 +1897,20 @@
       </div>
 
       <div id="multi-tools">
-        <span id="multi-count" style="font-size: 12px; font-weight: 700; color: var(--accent);">0 elementos seleccionados</span>
-        <button class="btn" id="btn-align-h" title="Alinear al mismo centro horizontal">▤ Alinear Fila</button>
-        <button class="btn" id="btn-align-v" title="Alinear al mismo centro vertical">▥ Alinear Columna</button>
-        <button class="btn" id="btn-distribute" title="Distribuir espacio uniforme entre los elementos">↔ Distribuir Parejo</button>
-        <button class="btn" id="btn-unir-mesas" style="background: rgba(243, 186, 47, 0.15); border-color: var(--accent); color: var(--accent);">🔗 Unir Mesas</button>
-        <button class="btn" id="btn-desunir-mesas" style="background: rgba(100, 116, 139, 0.15); border-color: var(--text-low); color: var(--text-main);">🔓 Desunir Mesas</button>
-        <div id="multi-mesero-bar"><span class="lbl">👤 Asignar mesero a toda la selección:</span><span id="multi-mesero-chips" style="display:contents"></span></div>
-        <button class="btn" id="btn-del-multi" style="background: var(--neon-red); color: #ffffff;">Eliminar Seleccionados</button>
+        <span class="mt-handle" id="mt-handle" title="Arrastra para mover el panel">⠿</span>
+        <span id="multi-count" style="font-weight: 700; color: var(--accent);">0</span>
+        <span class="mt-sep"></span>
+        <div id="mt-mesero-wrap">
+          <button class="btn" id="btn-asignar-mesero" title="Asignar mesero a toda la selección">👤 Asignar Mesero ▾</button>
+          <div id="mesero-menu"><div class="mm-title">ELEGIR MESERO PARA LA SELECCIÓN</div><span id="multi-mesero-chips"></span></div>
+        </div>
+        <span class="mt-sep"></span>
+        <button class="btn" id="btn-align-h" title="Alinear en fila (mismo centro horizontal)">▤</button>
+        <button class="btn" id="btn-align-v" title="Alinear en columna (mismo centro vertical)">▥</button>
+        <button class="btn" id="btn-distribute" title="Distribuir espacio parejo">↔</button>
+        <button class="btn" id="btn-unir-mesas" title="Unir mesas seleccionadas" style="color: var(--accent);">🔗</button>
+        <button class="btn" id="btn-desunir-mesas" title="Desunir mesas">🔓</button>
+        <button class="btn" id="btn-del-multi" title="Eliminar seleccionados" style="background: var(--neon-red); color: #fff;">🗑</button>
       </div>
 
       <div id="marquee-box"></div>
@@ -3076,6 +3092,27 @@
     }
     paint();
 
+    const menu = document.getElementById('mesero-menu'), btnMenu = document.getElementById('btn-asignar-mesero');
+    btnMenu.addEventListener('click', (e) => { e.stopPropagation(); menu.classList.toggle('open'); });
+    chipsBox.addEventListener('click', () => menu.classList.remove('open'));
+    document.addEventListener('pointerdown', (e) => { if (!e.target.closest('#mt-mesero-wrap')) menu.classList.remove('open'); });
+
+    // Mover el panel flotante (arrastrando el asa ⠿)
+    const bar = document.getElementById('multi-tools'), handle = document.getElementById('mt-handle');
+    handle.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); handle.setPointerCapture(e.pointerId);
+      const host = bar.offsetParent || canvas.parentElement, hr = host.getBoundingClientRect(), br = bar.getBoundingClientRect();
+      const ox = e.clientX - br.left, oy = e.clientY - br.top;
+      bar.style.transform = 'none'; bar.style.bottom = 'auto';
+      const move = (ev) => {
+        bar.style.left = Math.max(0, Math.min(ev.clientX - hr.left - ox, hr.width - br.width)) + 'px';
+        bar.style.top = Math.max(0, Math.min(ev.clientY - hr.top - oy, hr.height - br.height)) + 'px';
+      };
+      move(e);
+      const up = () => { handle.removeEventListener('pointermove', move); handle.removeEventListener('pointerup', up); };
+      handle.addEventListener('pointermove', move); handle.addEventListener('pointerup', up);
+    });
+
     // Cuadro de selección: en modo Multi-Selección, arrastrar sobre el fondo dibuja un rectángulo.
     const box = document.getElementById('marquee-box');
     let start = null, active = false;
@@ -3287,7 +3324,7 @@
       let targetId = 'res_batch_' + Date.now() + '_' + i;
       if (r.mesa && window.layoutsData[dateKey]) ['PB', 'PA'].forEach(p => {
         const m = (window.layoutsData[dateKey][p] || []).find(x => (x.nombre || '').toLowerCase() === r.mesa.toLowerCase());
-        if (m) { targetId = m.id; conMesa++; }
+        if (m) { targetId = m.grupoId ? 'grp_' + m.grupoId : m.id; conMesa++; }
       });
       window.reservasData[dateKey][targetId] = { estado: 'reservada', cliente: r.cliente, telefono: r.telefono, personas: r.personas, mesero: r.mesero };
       let cli = window.clientes.find(c => c.nombre.toLowerCase() === r.cliente.toLowerCase());
@@ -3308,7 +3345,8 @@
     const countTxt = document.getElementById('multi-count');
     if (multiSelectMode && selectedIds.size > 0) {
       bar.classList.add('active');
-      countTxt.textContent = `${selectedIds.size} elementos seleccionados`;
+      countTxt.textContent = String(selectedIds.size);
+      countTxt.title = selectedIds.size + ' elementos seleccionados';
     } else {
       bar.classList.remove('active');
     }
@@ -3848,7 +3886,7 @@
           ['PB','PA'].forEach(p => {
             if (window.layoutsData[dateKey][p]) {
               const match = window.layoutsData[dateKey][p].find(m => m.nombre.toLowerCase() === mesaAsignada.toLowerCase() || m.id.toLowerCase() === mesaAsignada.toLowerCase());
-              if (match) targetId = match.id;
+              if (match) targetId = match.grupoId ? 'grp_' + match.grupoId : match.id;
             }
           });
         }
