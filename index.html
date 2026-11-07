@@ -818,7 +818,6 @@
       box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.4), 5px 8px 0 rgba(0, 0, 0, 0.28), 7px 12px 12px rgba(0, 0, 0, 0.5);
       box-sizing: border-box;
       transition: border-color 0.2s, box-shadow 0.15s ease, transform 0.15s ease;
-      will-change: transform;
       backface-visibility: hidden;
       contain: layout style;
     }
@@ -1744,6 +1743,17 @@
     }
   </style>
 <style>
+    /* Rendimiento táctil: la cámara se mueve por transform (GPU); mientras se arrastra
+       se apagan animaciones/transiciones de las mesas para que no haya tirones. */
+    #canvas { touch-action: none; overscroll-behavior: contain; }
+    #canvas-stage { will-change: transform; }
+    #canvas.panning-active .furniture { animation: none !important; transition: none !important; }
+    #canvas.panning-active .fixed-architecture { visibility: visible; }
+    .furniture { -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+    /* Colocación continua */
+    #btn-continuo.active { background: var(--accent); color: #111; box-shadow: 0 0 10px rgba(243,186,47,.7); }
+    .pal-item.pal-active { outline: 2px solid var(--accent); outline-offset: 1px; box-shadow: 0 0 12px rgba(243,186,47,.65); }
+    body.continuo-on #canvas { cursor: crosshair; }
     /* Alfombra negra mate (PB y PA) */
     .fixed-architecture .arch-carpet, .fixed-architecture .arch-floor {
       background: radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px) 0 0/6px 6px, #141414 !important;
@@ -1777,6 +1787,7 @@
       <button class="btn" id="btn-quick-checkin">⚡ Check-in Rápido</button>
       <button class="btn" id="btn-add-batch-res">📦 Carga Masiva</button>
       <button class="btn" id="btn-toggle-multi">☑ Multi-Selección</button>
+      <button class="btn" id="btn-continuo" title="Elige un tipo en la paleta y toca el plano para colocarlos uno tras otro">⚡ Colocación Continua</button>
       <button class="btn" id="btn-plan-img" title="Sube una foto o captura de un plano y se acomodan las mesas solas">📐 Plano por Imagen</button>
       <button class="btn" id="btn-res-img" title="Sube una captura de la lista de reservas y se registran solas">🧾 Reservas por Imagen</button>
       <input type="file" id="file-plan-img" accept="image/*" style="display:none">
@@ -2428,7 +2439,8 @@
   function applyStageTransform() {
     const tilt = view3DActive ? ` ${VIEW3D_TILT}` : '';
     canvasStage.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})${tilt}`;
-    zoomResetBtn.textContent = `${Math.round(currentZoom * 100)}%`;
+    const zTxt = `${Math.round(currentZoom * 100)}%`;
+    if (zoomResetBtn.textContent !== zTxt) zoomResetBtn.textContent = zTxt;
   }
 
   function setZoom(val) {
@@ -2517,106 +2529,83 @@
     setZoom(currentZoom + (e.deltaY < 0 ? 0.1 : -0.1));
   }, { passive: false });
 
-  // Pan (deslizar la cámara por el plano) — simplificado: ahora basta con
-  // arrastrar con 1 dedo/clic normal sobre el fondo, sin combinaciones raras
-  // (ya no hace falta clic derecho, central ni Shift). Un "tap" corto sin
-  // apenas movimiento se sigue tratando como clic (deselecciona); en cuanto
-  // el dedo se mueve más de unos pocos px, se vuelve un pan fluido.
+  // Pan / pinch del plano (motor táctil).
+  //  - Un dedo/clic sobre el fondo (o sobre una mesa NO arrastrable) mueve la cámara.
+  //  - Sobre una mesa arrastrable (Modo Edición, sin bloqueo) se mueve la mesa, no la cámara.
+  //  - Un toque corto sin movimiento = tap (selecciona / coloca en modo continuo).
+  //  - Dos dedos = pinch-zoom + pan. Captura de puntero => nunca se "pierde" el dedo.
   (function setupCanvasPan() {
-    const activePointers = new Map();
-    let isPanning = false;
-    let dragCommitted = false; // true en cuanto el movimiento supera el umbral de "tap"
-    let panStartX = 0, panStartY = 0;
-    let panOriginX = 0, panOriginY = 0;
-    let pinchStartDist = 0;
-    let pinchStartZoom = 1;
-    const DRAG_THRESHOLD = 4; // px — por debajo de esto, se sigue considerando un tap/clic
-
-    function dist(p1, p2) { return Math.hypot(p1.x - p2.x, p1.y - p2.y); }
+    const pts = new Map();
+    let mode = null;            // 'pan' | 'pinch' | null
+    let committed = false;      // ya superó el umbral de tap
+    let downBg = false;         // el toque empezó sobre el fondo
+    let sx = 0, sy = 0, ox = 0, oy = 0;
+    let pinchDist = 0, pinchZoom = 1;
+    const slop = (e) => (e.pointerType === 'mouse' ? 4 : 10);
+    const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+    let raf = 0;
+    function frame() { raf = 0; applyStageTransform(); }
+    function schedule() { if (!raf) raf = requestAnimationFrame(frame); }
 
     canvas.addEventListener('pointerdown', (e) => {
-      if (e.target !== canvas && e.target !== canvasStage) return;
-      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const bg = (e.target === canvas || e.target === canvasStage);
+      const onFurn = !!(e.target.closest && e.target.closest('.furniture'));
+      if (!bg && !onFurn) return;              // controles flotantes: no tocar
+      if (window.__furnitureDragging) return;  // se está arrastrando una mesa: la cámara no se mueve
+      if (e.pointerType === 'mouse' && e.button !== 0 && e.button !== 1) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (bg) { try { canvas.setPointerCapture(e.pointerId); } catch (_) {} }
 
-      if (activePointers.size === 2) {
-        // Inicio de pinch-zoom + pan de dos dedos
-        const pts = [...activePointers.values()];
-        pinchStartDist = dist(pts[0], pts[1]);
-        pinchStartZoom = currentZoom;
-        isPanning = true;
-        dragCommitted = true;
-        panStartX = (pts[0].x + pts[1].x) / 2;
-        panStartY = (pts[0].y + pts[1].y) / 2;
-        panOriginX = panX;
-        panOriginY = panY;
+      if (pts.size === 2) {
+        const v = [...pts.values()];
+        mode = 'pinch'; committed = true;
+        pinchDist = dist(v[0], v[1]) || 1; pinchZoom = currentZoom;
+        sx = (v[0].x + v[1].x) / 2; sy = (v[0].y + v[1].y) / 2; ox = panX; oy = panY;
         canvas.classList.add('panning-active');
-      } else if (activePointers.size === 1) {
-        // En Multi-Selección, un dedo dibuja el cuadro de selección (no hace pan);
-        // con dos dedos sigue funcionando pan/zoom.
-        if (multiSelectMode) return;
-        // Cualquier clic/toque simple sobre el fondo puede convertirse en pan
-        // en cuanto haya movimiento — ya no requiere clic derecho ni Shift.
-        isPanning = true;
-        dragCommitted = false;
-        panStartX = e.clientX;
-        panStartY = e.clientY;
-        panOriginX = panX;
-        panOriginY = panY;
+      } else if (pts.size === 1) {
+        if (multiSelectMode && bg) return;      // en Multi-Selección el fondo dibuja el cuadro de selección
+        mode = 'pan'; committed = false; downBg = bg;
+        sx = e.clientX; sy = e.clientY; ox = panX; oy = panY;
       }
     });
-
-    let panRafPending = false;
-
-    function schedulePanFrame() {
-      if (panRafPending) return;
-      panRafPending = true;
-      requestAnimationFrame(() => {
-        panRafPending = false;
-        applyStageTransform();
-      });
-    }
 
     canvas.addEventListener('pointermove', (e) => {
-      if (!activePointers.has(e.pointerId)) return;
-      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (!isPanning) return;
-
-      if (activePointers.size === 2) {
-        const pts = [...activePointers.values()];
-        const newDist = dist(pts[0], pts[1]);
-        if (pinchStartDist > 0) {
-          currentZoom = Math.min(Math.max(0.22, pinchStartZoom * (newDist / pinchStartDist)), 3);
+      if (!pts.has(e.pointerId) || !mode) return;
+      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (mode === 'pinch' && pts.size >= 2) {
+        const v = [...pts.values()];
+        currentZoom = Math.min(Math.max(0.22, pinchZoom * (dist(v[0], v[1]) / pinchDist)), 3);
+        panX = ox + ((v[0].x + v[1].x) / 2 - sx);
+        panY = oy + ((v[0].y + v[1].y) / 2 - sy);
+        schedule();
+      } else if (mode === 'pan' && pts.size === 1) {
+        const dx = e.clientX - sx, dy = e.clientY - sy;
+        if (!committed) {
+          if (Math.hypot(dx, dy) < slop(e)) return;
+          committed = true; canvas.classList.add('panning-active');
         }
-        const midX = (pts[0].x + pts[1].x) / 2;
-        const midY = (pts[0].y + pts[1].y) / 2;
-        panX = panOriginX + (midX - panStartX);
-        panY = panOriginY + (midY - panStartY);
-        schedulePanFrame();
-      } else if (activePointers.size === 1) {
-        const dx = e.clientX - panStartX;
-        const dy = e.clientY - panStartY;
-        if (!dragCommitted) {
-          if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
-          dragCommitted = true;
-          canvas.classList.add('panning-active');
-        }
-        panX = panOriginX + dx;
-        panY = panOriginY + dy;
-        schedulePanFrame();
+        panX = ox + dx; panY = oy + dy;
+        schedule();
       }
     });
 
-    function endPointer(e) {
-      activePointers.delete(e.pointerId);
-      if (activePointers.size < 2) pinchStartDist = 0;
-      if (activePointers.size === 0) {
-        isPanning = false;
-        dragCommitted = false;
+    function end(e) {
+      if (!pts.has(e.pointerId)) return;
+      pts.delete(e.pointerId);
+      try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+      if (pts.size === 1 && mode === 'pinch') {
+        // de 2 dedos a 1: seguir con pan sin salto
+        const r = [...pts.values()][0];
+        mode = 'pan'; committed = true; sx = r.x; sy = r.y; ox = panX; oy = panY;
+      } else if (pts.size === 0) {
+        const wasTap = (mode === 'pan' && !committed && downBg && e.type === 'pointerup');
+        mode = null; committed = false;
         canvas.classList.remove('panning-active');
+        if (wasTap && typeof window.__canvasTap === 'function') window.__canvasTap(e);
       }
     }
-    canvas.addEventListener('pointerup', endPointer);
-    canvas.addEventListener('pointercancel', endPointer);
+    canvas.addEventListener('pointerup', end);
+    canvas.addEventListener('pointercancel', end);
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   })();
 
@@ -2750,7 +2739,7 @@
   }
 
   canvas.addEventListener('pointerdown', (e) => {
-    if (e.target === canvas || e.target === canvasStage) {
+    if ((e.target === canvas || e.target === canvasStage) && !multiSelectMode && !continuousMode && selectedIds.size) {
       selectedIds.clear();
       renderFurniture();
     }
@@ -2887,24 +2876,62 @@
     });
   }
 
+  // Zona de toque ampliada: un toque en el fondo, a menos de HIT_PAD px de una mesa o
+  // elemento, cuenta como toque sobre él (sin cambiar su diseño visual).
+  function nearestFurniture(x, y, pad) {
+    let best = null, bestD = Infinity, bestC = Infinity;
+    canvasStage.querySelectorAll('.furniture').forEach(el => {
+      const r = el.getBoundingClientRect();
+      const dx = Math.max(r.left - x, 0, x - r.right), dy = Math.max(r.top - y, 0, y - r.bottom);
+      const d = Math.hypot(dx, dy);
+      if (d > pad) return;
+      const c = Math.hypot((r.left + r.right) / 2 - x, (r.top + r.bottom) / 2 - y);
+      if (d < bestD || (d === bestD && c < bestC)) { best = el; bestD = d; bestC = c; }
+    });
+    return best;
+  }
+  window.__tapNearest = function (x, y, pointerType) {
+    const pad = pointerType === 'mouse' ? 10 : 22;
+    const el = nearestFurniture(x, y, pad);
+    if (el && typeof el._tap === 'function') { el._tap(); return true; }
+    return false;
+  };
+
   function attachDrag(el, item) {
-    let startX, startY, moved, pointerId;
+    let startX, startY, moved, pointerId, dragging = false;
     let rafPending = false;
     let pendingClientX = 0, pendingClientY = 0;
+    const canDrag = () => !item.locked && !view3DActive && !!window.editModeActive;
+
+    function tap() {
+      if (typeof continuousMode !== 'undefined' && continuousMode) return; // en colocación continua no se abren/seleccionan mesas
+      if (multiSelectMode) {
+        if (selectedIds.has(item.id)) selectedIds.delete(item.id);
+        else selectedIds.add(item.id);
+      } else if (selectedIds.has(item.id)) {
+        openModal(item.id);
+        return;
+      } else {
+        selectedIds.clear();
+        selectedIds.add(item.id);
+      }
+      renderFurniture();
+    }
+    el._tap = tap;
 
     el.addEventListener('pointerdown', (e) => {
       if (e.target.classList.contains('resize-handle')) return;
-      e.stopPropagation();
-      pointerId = e.pointerId;
-      el.setPointerCapture(pointerId);
-      startX = e.clientX;
-      startY = e.clientY;
-      moved = false;
-      if (!item.locked && window.editModeActive) {
+      pointerId = e.pointerId; startX = e.clientX; startY = e.clientY; moved = false; dragging = false;
+      if (canDrag() && !(typeof continuousMode !== 'undefined' && continuousMode)) {
+        // arrastrar la mesa (la cámara no se mueve)
+        e.stopPropagation();
+        dragging = true; window.__furnitureDragging = true;
+        try { el.setPointerCapture(pointerId); } catch (_) {}
         el.classList.add('dragging');
         el.dataset.baseTransform = el.style.transform;
         el.style.transform = el.style.transform + ' scale(1.06)';
       }
+      // si NO es arrastrable el evento sigue hasta el lienzo: mover la cámara empezando sobre una mesa funciona
     });
 
     function applyDragFrame() {
@@ -2921,52 +2948,97 @@
     }
 
     el.addEventListener('pointermove', (e) => {
-      // Bloqueo de movimiento: solo se puede arrastrar con Modo Edición
-      // activo (igual que en la Vista 3D) — en modo normal/operación los
-      // elementos quedan fijos para evitar desplazamientos por touch accidental.
-      if (item.locked || view3DActive || !window.editModeActive) return;
-      if (e.pointerId !== pointerId || !el.hasPointerCapture(pointerId)) return;
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+      if (!dragging || e.pointerId !== pointerId) return;
+      const slop = e.pointerType === 'mouse' ? 3 : 8;
+      if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > slop) moved = true;
       if (moved) {
-        // Throttleado con requestAnimationFrame para máxima fluidez al arrastrar mesas
-        pendingClientX = e.clientX;
-        pendingClientY = e.clientY;
-        if (!rafPending) {
-          rafPending = true;
-          requestAnimationFrame(applyDragFrame);
-        }
+        pendingClientX = e.clientX; pendingClientY = e.clientY;
+        if (!rafPending) { rafPending = true; requestAnimationFrame(applyDragFrame); }
       }
     });
 
-    el.addEventListener('pointerup', (e) => {
+    function finish(e, cancelled) {
       if (pointerId !== e.pointerId) return;
-      el.releasePointerCapture(pointerId);
+      const wasDragging = dragging;
+      dragging = false; window.__furnitureDragging = false;
+      try { el.releasePointerCapture(pointerId); } catch (_) {}
       el.classList.remove('dragging');
       if (el.dataset.baseTransform !== undefined) {
         el.style.transform = el.dataset.baseTransform;
         delete el.dataset.baseTransform;
       }
-
-      if (moved && !item.locked) {
-        saveLayouts();
-      } else {
-        if (multiSelectMode) {
-          if (selectedIds.has(item.id)) selectedIds.delete(item.id);
-          else selectedIds.add(item.id);
-        } else {
-          if (selectedIds.has(item.id)) {
-            openModal(item.id);
-          } else {
-            selectedIds.clear();
-            selectedIds.add(item.id);
-          }
-        }
-        renderFurniture();
-      }
-    });
+      if (cancelled) return;
+      if (wasDragging && moved) { saveLayouts(); return; }
+      // no fue arrastre: ¿fue un toque (sin desplazarse)? si se desplazó fue pan de cámara
+      const slop = e.pointerType === 'mouse' ? 4 : 10;
+      if (Math.hypot(e.clientX - startX, e.clientY - startY) <= slop) tap();
+    }
+    el.addEventListener('pointerup', (e) => finish(e, false));
+    el.addEventListener('pointercancel', (e) => finish(e, true));
   }
+
+  // ---- Crear un elemento en el plano (usado por arrastre y por colocación continua) ----
+  const DEFAULT_SIZES = {
+    mesa: {a: 72, h: 46}, mesa_alta: {a: 72, h: 46}, mesa_doble: {a: 144, h: 46}, sillon: {a: 110, h: 42}, sofa: {a: 150, h: 64}, bocina: {a: 45, h: 45}, cristal: {a: 120, h: 15},
+    dj: {a: 120, h: 50}, pantalla: {a: 140, h: 20}, entrada: {a: 80, h: 40}, salida: {a: 80, h: 40},
+    wc: {a: 80, h: 50}, pasillo: {a: 100, h: 30}, barra: {a: 180, h: 45},
+    caja: {a: 70, h: 40}, escaleras: {a: 80, h: 60}
+  };
+  let _itemSeq = 0;
+  function createItemAt(key, tipo, p, select) {
+    const size = DEFAULT_SIZES[key] || {a: 50, h: 50};
+    const newItem = {
+      id: 'item_' + Date.now() + '_' + (_itemSeq++),
+      tipo: tipo,
+      nombre: tipo === 'mesa' ? nextMesaNombre(currentFloor) : (NOMBRES_DEFAULT[key] || tipo.toUpperCase()),
+      x: p.x, y: p.y,
+      anchoPx: size.a, altoPx: size.h,
+      rotacion: 0, locked: false
+    };
+    if (key === 'mesa_alta') newItem.variante = 'alta';
+    if (key === 'mesa_doble') newItem.variante = 'doble';
+    getLayout().push(newItem);
+    if (select) { selectedIds.clear(); selectedIds.add(newItem.id); }
+    saveLayouts();
+    renderFurniture();
+    return newItem;
+  }
+
+  // ---- Modo de colocación continua ----
+  let continuousMode = false, continuousKey = null, continuousTipo = null, continuousSrc = null;
+  function setContinuousTool(key, tipo, srcEl) {
+    if (continuousSrc) continuousSrc.classList.remove('pal-active');
+    continuousKey = key; continuousTipo = tipo; continuousSrc = srcEl;
+    srcEl.classList.add('pal-active');
+    showImpStatus('⚡ ' + (srcEl.textContent || key).trim() + ': toca el plano para colocar. Toca de nuevo la herramienta para cambiarla.', 3500);
+  }
+  function setContinuousMode(on) {
+    continuousMode = on;
+    document.getElementById('btn-continuo').classList.toggle('active', on);
+    document.body.classList.toggle('continuo-on', on);
+    if (!on) {
+      if (continuousSrc) continuousSrc.classList.remove('pal-active');
+      continuousKey = continuousTipo = continuousSrc = null;
+      showImpStatus('Colocación continua desactivada', 1800);
+    } else {
+      if (multiSelectMode) document.getElementById('btn-toggle-multi').click();
+      selectedIds.clear(); renderFurniture();
+      showImpStatus('⚡ Colocación continua: elige un tipo en la paleta y toca el plano. Vuelve a pulsar el botón para salir.', 4500);
+    }
+  }
+  document.getElementById('btn-continuo').addEventListener('click', () => setContinuousMode(!continuousMode));
+
+  // Toque corto sobre el fondo: coloca (modo continuo) o selecciona la mesa más cercana (hitbox ampliado)
+  window.__canvasTap = function (e) {
+    if (continuousMode) {
+      if (!continuousKey) { showImpStatus('Primero elige un tipo en la paleta (p. ej. Mesa).', 2500); return; }
+      const p = pctPos(e.clientX, e.clientY);
+      const it = createItemAt(continuousKey, continuousTipo, p, false);
+      showImpStatus('✔ ' + it.nombre + ' colocada en ' + currentFloor, 900);
+      return;
+    }
+    window.__tapNearest(e.clientX, e.clientY, e.pointerType);
+  };
 
   function setupPaletteDrag(paletteId, tipo, paletteKey) {
     const src = document.getElementById(paletteId);
@@ -2975,6 +3047,7 @@
 
     src.addEventListener('pointerdown', (e) => {
       e.preventDefault();
+      if (continuousMode) { setContinuousTool(key, tipo, src); return; } // en modo continuo: solo elige la herramienta
       const ghost = src.cloneNode(true);
       ghost.classList.add('ghost');
       ghost.style.width = src.offsetWidth + 'px';
@@ -2990,32 +3063,7 @@
         if (ev.clientX > r.left && ev.clientX < r.right && ev.clientY > r.top && ev.clientY < r.bottom) {
           let p = pctPos(ev.clientX, ev.clientY);
           p = clampToFloorBounds(p.x, p.y, currentFloor);
-          const defaultSizes = {
-            mesa: {a: 72, h: 46}, mesa_alta: {a: 72, h: 46}, mesa_doble: {a: 144, h: 46}, sillon: {a: 110, h: 42}, sofa: {a: 150, h: 64}, bocina: {a: 45, h: 45}, cristal: {a: 120, h: 15},
-            dj: {a: 120, h: 50}, pantalla: {a: 140, h: 20}, entrada: {a: 80, h: 40}, salida: {a: 80, h: 40},
-            wc: {a: 80, h: 50}, pasillo: {a: 100, h: 30}, barra: {a: 180, h: 45},
-            caja: {a: 70, h: 40}, escaleras: {a: 80, h: 60}
-          };
-          const size = defaultSizes[key] || {a: 50, h: 50};
-          const newItem = {
-            id: 'item_' + Date.now(),
-            tipo: tipo,
-            nombre: tipo === 'mesa' ? nextMesaNombre(currentFloor) : (NOMBRES_DEFAULT[key] || tipo.toUpperCase()),
-            x: p.x, y: p.y,
-            anchoPx: size.a,
-            altoPx: size.h,
-            rotacion: 0,
-            locked: false
-          };
-          // Mesa Alta = una Mesa (misma reserva/CRM/numeración) con el diseño de nogal
-          if (key === 'mesa_alta') newItem.variante = 'alta';
-          // Mesa Doble = una Mesa (misma reserva/CRM) del doble de largo
-          if (key === 'mesa_doble') newItem.variante = 'doble';
-          getLayout().push(newItem);
-          selectedIds.clear();
-          selectedIds.add(newItem.id);
-          saveLayouts();
-          renderFurniture();
+          createItemAt(key, tipo, p, true);
         }
       }
       document.addEventListener('pointermove', onMove);
@@ -3119,7 +3167,7 @@
     canvas.addEventListener('pointerdown', (e) => {
       if (!multiSelectMode || (e.target !== canvas && e.target !== canvasStage && !e.target.closest('.fixed-architecture'))) return;
       if (e.pointerType === 'touch' && e.isPrimary === false) return;
-      start = { x: e.clientX, y: e.clientY }; active = false;
+      start = { x: e.clientX, y: e.clientY, type: e.pointerType }; active = false;
     }, true);
     window.addEventListener('pointermove', (e) => {
       if (!start) return;
@@ -3130,9 +3178,13 @@
     });
     window.addEventListener('pointerup', (e) => {
       if (!start) return;
-      const wasActive = active; const r = { l: Math.min(start.x, e.clientX), t: Math.min(start.y, e.clientY), r: Math.max(start.x, e.clientX), b: Math.max(start.y, e.clientY) };
+      const wasActive = active; const st = start; const r = { l: Math.min(start.x, e.clientX), t: Math.min(start.y, e.clientY), r: Math.max(start.x, e.clientX), b: Math.max(start.y, e.clientY) };
       start = null; active = false; box.style.display = 'none';
-      if (!wasActive) return;
+      if (!wasActive) {
+        // toque corto en Multi-Selección: alterna la mesa más cercana (hitbox ampliado); en vacío limpia
+        if (!window.__tapNearest(e.clientX, e.clientY, st.type)) { selectedIds.clear(); renderFurniture(); }
+        return;
+      }
       canvasStage.querySelectorAll('.furniture').forEach(el => {
         const q = el.getBoundingClientRect();
         if (q.right >= r.l && q.left <= r.r && q.bottom >= r.t && q.top <= r.b && el.dataset.itemId) selectedIds.add(el.dataset.itemId);
