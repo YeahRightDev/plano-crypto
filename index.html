@@ -1764,6 +1764,26 @@
     #marquee-box { position:fixed; border:1.5px dashed var(--accent); background:rgba(243,186,47,.12); z-index:900; pointer-events:none; display:none; }
     #imp-status { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#0d1117; border:1px solid var(--accent); color:#fff; padding:10px 16px; border-radius:10px; z-index:2000; font-size:12px; display:none; max-width:86vw; }
   </style>
+<style>
+    /* Recinto de referencia (2D) */
+    .fixed-architecture .arch-stage { position:absolute; background: linear-gradient(180deg,#3d404e,#30333f); box-shadow: inset 0 -8px 16px rgba(0,0,0,.45); }
+    .fixed-architecture .arch-dj { position:absolute; background: linear-gradient(#2b2e3a,#222530); border:2px solid #555b70; border-radius:6px; box-shadow:0 6px 12px rgba(0,0,0,.5);
+      background-image: radial-gradient(circle at 25% 50%, #0d0f14 0 24%, #5b6176 25% 30%, transparent 31%), radial-gradient(circle at 75% 50%, #0d0f14 0 24%, #5b6176 25% 30%, transparent 31%), linear-gradient(#2b2e3a,#222530); }
+    .fixed-architecture .arch-speaker { position:absolute; background:#22252e; border:2px solid #4b5063; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,.5); }
+    .fixed-architecture .arch-tag { position:absolute; text-align:center; font:800 13px/1.6 sans-serif; letter-spacing:4px; color:rgba(255,255,255,.28); }
+    .fixed-architecture .arch-black { position:absolute; background:#000; }
+    .fixed-architecture .arch-led { position:absolute; background: linear-gradient(180deg,#5a6076,#464b5e); border-right:2px solid #262a36; border-bottom:4px solid #1e212b;
+      display:flex; align-items:center; justify-content:center; font:800 15px sans-serif; letter-spacing:7px; color:rgba(255,255,255,.3); }
+    .fixed-architecture .arch-led-end { background: linear-gradient(180deg,#6b7188,#565b70); }
+    .fixed-architecture .arch-ledge { position:absolute; background:#07080b; box-shadow:0 -2px 6px rgba(0,0,0,.6); }
+    .fixed-architecture .arch-wall-left { position:absolute; background:#101116; }
+    .fixed-architecture .arch-glass-left { position:absolute;
+      background: repeating-linear-gradient(115deg, rgba(255,255,255,.55) 0 14px, rgba(255,255,255,0) 14px 60px), linear-gradient(90deg,#9fcfe0,#c9e6f0 55%,#8fc2d6); opacity:.92; border-left:2px solid #6fa3b8; }
+    .fixed-architecture .arch-truss { position:absolute;
+      background: repeating-linear-gradient(60deg, transparent 0 16px, rgba(225,229,238,.95) 16px 19px), repeating-linear-gradient(-60deg, transparent 0 16px, rgba(225,229,238,.95) 16px 19px), linear-gradient(90deg,#8d94a8,#d9dde8 18%,#7f869a 50%,#d9dde8 82%,#8d94a8); box-shadow:0 0 10px rgba(0,0,0,.6); }
+    .fixed-architecture .arch-omega { position:absolute; display:flex; align-items:center; font-size:30px; letter-spacing:8px; }
+    .btn-zoom.lock-on { background: var(--accent) !important; color:#111 !important; box-shadow:0 0 10px rgba(243,186,47,.7); }
+  </style>
 </head>
 <body>
 
@@ -1847,6 +1867,7 @@
             <button class="btn-zoom btn-zoom-reset" id="btn-zoom-reset" title="Restablecer">100%</button>
             <button class="btn-zoom" id="btn-zoom-out" title="Alejar">➖</button>
             <button class="btn-zoom" id="btn-toggle-3d" title="Vista 3D del antro">🧊</button>
+            <button class="btn-zoom" id="btn-view-lock" title="Vista restringida: la cámara no sale de los límites del recinto">🔓</button>
             <button class="btn-zoom" id="btn-toggle-limit-3d" title="Ver límite del área visible en 3D">📐</button>
           </div>
         </div>
@@ -2308,19 +2329,21 @@
   const FLOOR_WIDTH = 1450;
   const FLOOR_HEIGHT = 900;
 
-  // PA ocupa una L angosta: franja derecha + franja inferior, con ancho
-  // proporcionado para que quepan mesas y sillones sin sobrar espacio.
-  const PA_LAYOUT = {
-    rightX: 80,
-    bottomY: 66 // 38 pts de alto ≈ 24 pts de ancho en pantalla (lienzo 1.6:1) → mismo grosor que el brazo derecho
-  };
-  const PA_MIN = -6, PA_MAX = 104;
-  const PA_RIGHT_YMIN = -45; // el brazo derecho sube mucho más que el inferior
-
-  // Límite de colocación de PB (en % del lienzo): ancho igual que antes,
-  // pero bastante más alto (se llega con pan / zoom-out).
-  const PB_X_MIN = -45, PB_X_MAX = 145;
-  const PB_Y_MIN = -80, PB_Y_MAX = 180;
+  // ===== GEOMETRÍA DEL RECINTO (basada estrictamente en la imagen de referencia) =====
+  // El lienzo (0–100 %) ES el interior del recinto: vertical (≈0.56:1), con el escenario /
+  // cabina de DJ y la pared LED al fondo (arriba), ventanal a la izquierda y estructura
+  // metálica a la derecha. Es más grande que antes para que las mesas queden holgadas.
+  const STAGE_W = 1000, STAGE_H = 1790;
+  canvasStage.style.width = STAGE_W + 'px';
+  canvasStage.style.height = STAGE_H + 'px';
+  const STAGE_ZONE_END = 29;                 // % — escenario + pared LED (no se colocan mesas ahí)
+  const PB_X_MIN = 1.5, PB_X_MAX = 98.5, PB_Y_MIN = STAGE_ZONE_END + 1, PB_Y_MAX = 97;
+  // PA: L del mezzanine (brazo derecho + brazo inferior), mismo grosor en pantalla
+  const PA_LAYOUT = { rightX: 68, bottomY: 80 };
+  window.CLUB3D_PA_PCT = PA_LAYOUT;
+  const PA_MIN = 1.5, PA_MAX = 98.5, PA_RIGHT_YMIN = 1.5;
+  // Encuadre total del recinto en px del lienzo (incluye ventanal izq. y estructura der.)
+  const VENUE_BOX = { x0: -0.105 * STAGE_W, x1: 1.06 * STAGE_W, y0: 0, y1: STAGE_H };
 
   function isInsideBounds(x, y, floor = currentFloor) {
     if (floor === 'PB') {
@@ -2331,6 +2354,7 @@
             (x >= PA_MIN && x <= PA_MAX && y >= PA_LAYOUT.bottomY && y <= PA_MAX));
   }
 
+  window.clampPlanBounds = (x, y) => clampToFloorBounds(x, y, currentFloor);
   function clampToFloorBounds(x, y, floor = currentFloor) {
     const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
     if (floor === 'PB') return { x: clamp(x, PB_X_MIN, PB_X_MAX), y: clamp(y, PB_Y_MIN, PB_Y_MAX) };
@@ -2364,8 +2388,23 @@
     };
 
     if (currentFloor === 'PB') {
-      // PB: plano libre (sin LED SCREEN / STAGE AREA / DJ CONSOL); solo alfombra negra.
-      add('arch-carpet', PB_X_MIN, PB_Y_MIN, PB_X_MAX - PB_X_MIN, PB_Y_MAX - PB_Y_MIN);
+      // PB según la referencia: alfombra negra, escenario con cabina de DJ al fondo,
+      // pared LED, ventanal a la izquierda y estructura metálica (truss) a la derecha.
+      add('arch-carpet', 0, 0, 100, 100);
+      add('arch-stage', 0, 0, 100, 19.5);
+      add('arch-speaker', 25.5, 3.2, 7, 6.2).style.transform = 'rotate(-18deg)';
+      add('arch-speaker', 67.5, 3.2, 7, 6.2).style.transform = 'rotate(18deg)';
+      add('arch-dj', 34, 5.1, 32, 7);
+      add('arch-tag', 34, 13.2, 32, 2, 'CABINA DJ');
+      add('arch-black', 0, 19.5, 12.5, 8.9);
+      add('arch-led', 12.5, 19.5, 26, 8.9, 'LED SCREEN');
+      add('arch-led', 38.5, 19.5, 26, 8.9);
+      add('arch-led', 64.5, 19.5, 26, 8.9);
+      add('arch-led arch-led-end', 90.5, 19.5, 9.5, 8.9);
+      add('arch-ledge', 14, 97, 86, 3);
+      add('arch-wall-left', -3, 0, 3, 100);
+      add('arch-glass-left', -10.5, 0, 7.5, 100);
+      add('arch-truss', 100, 0, 6, 100);
     } else {
       // PA — estructura elevada en L, más grande. Sin cristal que se cruce:
       // solo el piso y un único filo metálico por brazo, sin atravesarse.
@@ -2374,8 +2413,8 @@
       // filos metálicos: cada uno llega solo hasta donde empieza el otro brazo (sin cruzarse)
       add('arch-metal', PA_LAYOUT.rightX-1.2, PA_RIGHT_YMIN, 1.4, PA_LAYOUT.bottomY - PA_RIGHT_YMIN);
       add('arch-metal', PA_MIN, PA_LAYOUT.bottomY-1.2, PA_LAYOUT.rightX - PA_MIN, 1.4);
-      add('arch-omega', 62, 18, 13, 6, 'ΩMEGA');
-      add('arch-omega', 62, 42, 13, 6, 'ΩMEGA');
+      add('arch-omega', 6, 83, 16, 3, 'ΩMEGA');
+      add('arch-omega', 6, 90, 16, 3, 'ΩMEGA');
     }
 
     canvasStage.insertBefore(root, canvasStage.firstChild);
@@ -2436,7 +2475,26 @@
   const canvasEl = document.getElementById('canvas');
   const VIEW3D_TILT = 'rotateX(55deg) rotateZ(-45deg) scale(0.85)';
 
+  // ---- Vista restringida (Viewport Lock) + encuadre automático ----
+  let viewLock = false;
+  try { viewLock = localStorage.getItem('viewLock') === '1'; } catch (e) {}
+  const MIN_ZOOM = 0.1, MAX_ZOOM = 3;
+  function minZoomForLock() {
+    const cw = canvas.clientWidth || 1, ch = canvas.clientHeight || 1;
+    return Math.max(cw / (VENUE_BOX.x1 - VENUE_BOX.x0), ch / (VENUE_BOX.y1 - VENUE_BOX.y0));
+  }
+  function clampView() {
+    if (!viewLock || view3DActive) return;
+    const cw = canvas.clientWidth, ch = canvas.clientHeight;
+    if (!cw || !ch) return;
+    currentZoom = Math.min(MAX_ZOOM, Math.max(currentZoom, minZoomForLock()));
+    const z = currentZoom;
+    const x0 = VENUE_BOX.x0 * z, x1 = VENUE_BOX.x1 * z, y0 = VENUE_BOX.y0 * z, y1 = VENUE_BOX.y1 * z;
+    panX = (x1 - x0 <= cw) ? (cw - (x1 + x0)) / 2 : Math.min(-x0, Math.max(cw - x1, panX));
+    panY = (y1 - y0 <= ch) ? (ch - (y1 + y0)) / 2 : Math.min(-y0, Math.max(ch - y1, panY));
+  }
   function applyStageTransform() {
+    clampView();
     const tilt = view3DActive ? ` ${VIEW3D_TILT}` : '';
     canvasStage.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})${tilt}`;
     const zTxt = `${Math.round(currentZoom * 100)}%`;
@@ -2444,9 +2502,41 @@
   }
 
   function setZoom(val) {
-    currentZoom = Math.min(Math.max(0.22, val), 3);
+    // zoom respecto al centro de la pantalla (no respecto a la esquina del plano)
+    const cw = canvas.clientWidth, ch = canvas.clientHeight, old = currentZoom;
+    currentZoom = Math.min(Math.max(MIN_ZOOM, val), MAX_ZOOM);
+    if (cw && ch && old > 0) {
+      panX = cw / 2 - (cw / 2 - panX) * (currentZoom / old);
+      panY = ch / 2 - (ch / 2 - panY) * (currentZoom / old);
+    }
     applyStageTransform();
   }
+  function fitView() {
+    const cw = canvas.clientWidth, ch = canvas.clientHeight;
+    if (!cw || !ch) return;
+    const w = VENUE_BOX.x1 - VENUE_BOX.x0, h = VENUE_BOX.y1 - VENUE_BOX.y0;
+    let z = Math.min(cw / w, ch / h) * 0.96;
+    if (viewLock) z = Math.max(z, minZoomForLock());
+    currentZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z));
+    panX = (cw - w * currentZoom) / 2 - VENUE_BOX.x0 * currentZoom;
+    panY = viewLock ? -VENUE_BOX.y0 * currentZoom : (ch - h * currentZoom) / 2 - VENUE_BOX.y0 * currentZoom;
+    applyStageTransform();
+  }
+  window.fitPlanView = fitView;
+  (function initViewLock() {
+    const btn = document.getElementById('btn-view-lock');
+    const sync = () => { btn.classList.toggle('lock-on', viewLock); btn.textContent = viewLock ? '🔒' : '🔓';
+      btn.title = viewLock ? 'Vista restringida ACTIVA: la cámara no sale del recinto (toca para liberar)' : 'Vista restringida: la cámara no sale de los límites del recinto'; };
+    btn.addEventListener('click', () => {
+      viewLock = !viewLock;
+      try { localStorage.setItem('viewLock', viewLock ? '1' : '0'); } catch (e) {}
+      sync();
+      if (viewLock) fitView(); else applyStageTransform();
+    });
+    sync();
+    window.addEventListener('resize', () => { if (viewLock) applyStageTransform(); });
+    requestAnimationFrame(() => requestAnimationFrame(fitView)); // encuadre inicial del recinto
+  })();
 
   btnToggle3D.addEventListener('click', () => {
     view3DActive = true;
@@ -2491,7 +2581,7 @@
       return;
     }
     boundaryIndicator2.classList.remove('visible');
-    const b = window.CLUB3D_BOUNDS || { FLOOR_W: 40, FLOOR_D: 46, FLOOR_Z_OFFSET: 4, PCT_Z_OFFSET: 6 };
+    const b = window.CLUB3D_BOUNDS || { FLOOR_W: 40, FLOOR_D: 46, FLOOR_Z_OFFSET: 4, PCT_Z_OFFSET: 4 };
     // Inversa exacta de pctToWorld()/floor.position.z del motor 3D:
     // worldZ = (yPct/100)*FLOOR_D - FLOOR_D/2 + PCT_Z_OFFSET  →  despejamos yPct
     const floorZMin = b.FLOOR_Z_OFFSET - b.FLOOR_D / 2;
@@ -2521,7 +2611,7 @@
 
   document.getElementById('btn-zoom-in').onclick = () => setZoom(currentZoom + 0.15);
   document.getElementById('btn-zoom-out').onclick = () => setZoom(currentZoom - 0.15);
-  zoomResetBtn.onclick = () => { panX = 0; panY = 0; setZoom(1.0); };
+  zoomResetBtn.onclick = () => fitView();
 
   // Zoom con rueda del ratón (mantiene el centro visual, sin romper pctPos)
   canvas.addEventListener('wheel', (e) => {
@@ -2574,7 +2664,7 @@
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (mode === 'pinch' && pts.size >= 2) {
         const v = [...pts.values()];
-        currentZoom = Math.min(Math.max(0.22, pinchZoom * (dist(v[0], v[1]) / pinchDist)), 3);
+        currentZoom = Math.min(Math.max(MIN_ZOOM, pinchZoom * (dist(v[0], v[1]) / pinchDist)), MAX_ZOOM);
         panX = ox + ((v[0].x + v[1].x) / 2 - sx);
         panY = oy + ((v[0].y + v[1].y) / 2 - sy);
         schedule();
@@ -3277,7 +3367,7 @@
     const medArea = med(shapes.map(k => k.area));
     // Región destino según la capa: PB = todo el plano; PA = el rectángulo que cubre la L.
     const R = currentFloor === 'PB'
-      ? { x0: 6, x1: 94, y0: 6, y1: 94 }
+      ? { x0: PB_X_MIN + 3, x1: PB_X_MAX - 3, y0: PB_Y_MIN + 2, y1: PB_Y_MAX - 2 }
       : { x0: PA_MIN + 2, x1: PA_MAX - 2, y0: PA_RIGHT_YMIN + 2, y1: PA_MAX - 2 };
     const sizes = { mesa: [72, 46], mesa_doble: [144, 46], sillon: [110, 42] };
     const items = [];
@@ -4315,6 +4405,7 @@
   (function Club3DEngine() {
     let renderer, scene, camera, clock;
     let floorGroup, furnitureGroup;
+    let paGroupRef = null; // mezzanine (PA): solo visible cuando la capa activa es PA
     let flickerLights = [];
     const isMobileGPU = /Android|iPad|iPhone|iPod|Tablet|Mobi/i.test(navigator.userAgent) || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
     let raf = null;
@@ -4326,15 +4417,15 @@
     const container = document.getElementById('view3d-container');
     const canvasEl3d = document.getElementById('view3d-canvas');
     const loadingEl = document.getElementById('view3d-loading');
-    const FLOOR_W = 90, FLOOR_D = 69; // escala 1.5x respecto al modelo anterior
+    const FLOOR_W = 66, FLOOR_D = 118; // recinto vertical (≈0.56:1) como en la referencia, más amplio que antes
     // Se exponen para que el plano 2D pueda dibujar el límite exacto del piso 3D
     // (mismo cálculo que pctToWorld/floor.position.z, sin duplicar números mágicos por separado).
-    window.CLUB3D_BOUNDS = { FLOOR_W, FLOOR_D, FLOOR_Z_OFFSET: 4, PCT_Z_OFFSET: 6 };
+    window.CLUB3D_BOUNDS = { FLOOR_W, FLOOR_D, FLOOR_Z_OFFSET: 4, PCT_Z_OFFSET: 4 };
 
     // --- Cámara: orbita + "deslizarse" (pan) libremente por el lugar ---
     // 1 dedo / click izq = orbitar. 2 dedos / click der / Shift+drag = deslizar (pan) el punto de mira.
     // Rueda / pellizco = acercar-alejar. Además hay un joystick táctil para moverse caminando.
-    const cam = { theta: 0.78, phi: 1.08, radius: 30, target: new THREE.Vector3(0, 6.5, 3) };
+    const cam = { theta: 0.22, phi: 0.95, radius: 80, target: new THREE.Vector3(0, 4, 4) };
     let dragging = false, panning = false, lastX = 0, lastY = 0;
     let pinchDist = null;
     const moveState = { fwd: 0, side: 0 };
@@ -4352,7 +4443,7 @@
       mouseNDC3d.x = ((clientX - rect.left) / rect.width) * 2 - 1;
       mouseNDC3d.y = -((clientY - rect.top) / rect.height) * 2 + 1;
       raycaster3d.setFromCamera(mouseNDC3d, camera);
-      const hits = raycaster3d.intersectObjects(furnitureGroup.children, true);
+      const hits = raycaster3d.intersectObjects(furnitureGroup.children, true).filter(h => { let o = h.object; while (o) { if (o.visible === false) return false; o = o.parent; } return true; });
       if (!hits.length) return null;
       let obj = hits[0].object;
       while (obj && !obj.userData.itemId && obj.parent) obj = obj.parent;
@@ -4366,7 +4457,7 @@
 
     function clampCam() {
       cam.phi = Math.min(Math.max(cam.phi, 0.35), 1.52);
-      cam.radius = Math.min(Math.max(cam.radius, 6), 95);
+      cam.radius = Math.min(Math.max(cam.radius, 6), 150);
       cam.target.x = Math.min(Math.max(cam.target.x, -FLOOR_W * 1.1), FLOOR_W * 1.1);
       cam.target.y = Math.min(Math.max(cam.target.y, 1.2), 18);
       cam.target.z = Math.min(Math.max(cam.target.z, -FLOOR_D * 0.7), FLOOR_D * 0.7);
@@ -4432,9 +4523,14 @@
           furnitureDragTarget.position.x = point.x;
           furnitureDragTarget.position.z = point.z;
           const xPct = (point.x / FLOOR_W + 0.5) * 100;
-          const yPct = ((point.z - 6 + FLOOR_D * 0.5) / FLOOR_D) * 100;
-          furnitureDragItem.x = Math.min(145, Math.max(-45, xPct));
-          furnitureDragItem.y = Math.min(180, Math.max(-80, yPct));
+          const yPct = ((point.z - 4 + FLOOR_D * 0.5) / FLOOR_D) * 100;
+          // mismo límite estricto que en el 2D (PB: piso sin escenario; PA: solo la L)
+          const cl = window.clampPlanBounds ? window.clampPlanBounds(xPct, yPct) : { x: xPct, y: yPct };
+          const wp = pctToWorld(cl.x, cl.y);
+          furnitureDragTarget.position.x = wp.x;
+          furnitureDragTarget.position.z = wp.z;
+          furnitureDragItem.x = cl.x;
+          furnitureDragItem.y = cl.y;
         }
         return;
       }
@@ -4914,11 +5010,11 @@
 
     function pctToWorld(xPct, yPct) {
       const worldX = (xPct / 100 - 0.5) * FLOOR_W;
-      const worldZ = (yPct / 100) * FLOOR_D - FLOOR_D * 0.5 + 6;
+      const worldZ = (yPct / 100) * FLOOR_D - FLOOR_D * 0.5 + 4;
       return { x: worldX, z: worldZ };
     }
     function worldToPct(x, z) {
-      return { x: (x / FLOOR_W + 0.5) * 100, y: ((z - 6 + FLOOR_D * 0.5) / FLOOR_D) * 100 };
+      return { x: (x / FLOOR_W + 0.5) * 100, y: ((z - 4 + FLOOR_D * 0.5) / FLOOR_D) * 100 };
     }
 
     // Restringe un punto (x,z en mundo) al suelo real de la plataforma de PA
@@ -4993,6 +5089,15 @@
         });
       });
       scene.add(furnitureGroup);
+      applyFloorVisibility();
+    }
+
+    // Visibilidad por capas en 3D: en PB se oculta el mezzanine y lo que hay sobre él;
+    // en PA se ve todo (el piso de abajo queda visible a través del hueco).
+    function applyFloorVisibility() {
+      const pa = (typeof currentFloor !== 'undefined' && currentFloor === 'PA');
+      if (paGroupRef) paGroupRef.visible = pa;
+      if (furnitureGroup) furnitureGroup.children.forEach(m => { if (m.userData && m.userData.floor === 'PA') m.visible = pa; });
     }
 
     // ============================================================
@@ -5004,16 +5109,18 @@
     window.club3DSetFloor = function (floor) {
       if (!built) return; // la escena aún no existe; se construirá con el layout correcto al abrir
       buildFurnitureFromLayout();
+      applyFloorVisibility();
       if (floor === 'PA') {
-        cam.target.set(FLOOR_W / 2 + 8.5, mezzYRef(), 6);
-        cam.radius = 26;
+        const PP = window.CLUB3D_PA_PLATFORM;
+        cam.target.set(PP ? (PP.rightWing.xMin + PP.rightWing.xMax) / 2 - 6 : FLOOR_W / 2, mezzYRef(), PP ? PP.bottomWing.zMax - 26 : 20);
+        cam.radius = 46;
         cam.theta = 0.95;
         cam.phi = 1.05;
       } else {
-        cam.target.set(0, 6.5, 3);
-        cam.radius = 30;
-        cam.theta = 0.78;
-        cam.phi = 1.08;
+        cam.target.set(0, 4, 4);
+        cam.radius = 80;
+        cam.theta = 0.22;
+        cam.phi = 0.95;
       }
       updateCameraFromOrbit();
     };
@@ -5096,7 +5203,7 @@
       scene.add(fillLight2);
 
       const screenLight = new THREE.PointLight(0x1de9b6, 6.2, 50, 2);
-      screenLight.position.set(0, 9, -20);
+      screenLight.position.set(0, 9, 4 - FLOOR_D / 2 + 26);
       scene.add(screenLight);
       flickerLights.push(screenLight);
 
@@ -5134,13 +5241,83 @@
       grid2.material.opacity = 0.05; grid2.material.transparent = true;
       floorGroup.add(grid2);
 
+      // ====== ESCENARIO, CABINA DJ, PARED LED Y ESTRUCTURA METÁLICA (según la referencia) ======
+      (function buildStageAndTruss() {
+        const zBack = 4 - FLOOR_D / 2;
+        const zOf = (pc) => zBack + (pc / 100) * FLOOR_D;
+        const xOf = (pc) => (pc / 100 - 0.5) * FLOOR_W;
+        const stageMat = new THREE.MeshStandardMaterial({ color: 0x3a3d4a, metalness: 0.2, roughness: 0.85 });
+        const darkMat = new THREE.MeshStandardMaterial({ color: 0x1b1d26, metalness: 0.4, roughness: 0.6 });
+        const stageD = zOf(19.5) - zBack;
+        const stage = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W, 1.0, stageD), stageMat);
+        stage.position.set(0, 0.5, zBack + stageD / 2);
+        floorGroup.add(stage);
+
+        // cabina de DJ: consola con 2 platos y mezcladora + 2 bocinas inclinadas
+        const djW = FLOOR_W * 0.32, djD = FLOOR_D * 0.06, djZ = zOf(8.6);
+        const djBase = new THREE.Mesh(new THREE.BoxGeometry(djW, 1.6, djD), darkMat);
+        djBase.position.set(0, 1.8, djZ); floorGroup.add(djBase);
+        const deckMat = new THREE.MeshStandardMaterial({ color: 0x0b0c10, metalness: 0.6, roughness: 0.3 });
+        [-1, 1].forEach(sx => {
+          const plate = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.12, 24), deckMat);
+          plate.position.set(sx * djW * 0.24, 2.66, djZ); floorGroup.add(plate);
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.05, 6, 28), neonMaterial(0x06d6a0, 1.6));
+          ring.rotation.x = Math.PI / 2; ring.position.set(sx * djW * 0.24, 2.74, djZ); floorGroup.add(ring);
+        });
+        const mixer = new THREE.Mesh(new THREE.BoxGeometry(djW * 0.16, 0.2, djD * 0.7), new THREE.MeshStandardMaterial({ color: 0x2a2d38, metalness: 0.5, roughness: 0.4 }));
+        mixer.position.set(0, 2.7, djZ); floorGroup.add(mixer);
+        [-1, 1].forEach(sx => {
+          const spk = new THREE.Mesh(new THREE.BoxGeometry(3.6, 6, 3.4), darkMat);
+          spk.position.set(sx * FLOOR_W * 0.255, 4, zOf(6.4));
+          spk.rotation.y = sx * -0.32; floorGroup.add(spk);
+          const cone = new THREE.Mesh(new THREE.CircleGeometry(1.2, 20), neonMaterial(0x1de9b6, 0.8));
+          cone.position.set(sx * FLOOR_W * 0.255 + sx * -0.5, 3.6, zOf(6.4) + 1.75); cone.rotation.y = sx * -0.32; floorGroup.add(cone);
+        });
+
+        // pared LED al frente del escenario (3 paneles + bloque negro a la izquierda + bloque lateral)
+        const ledZ = zOf(23.9), ledT = 1.2, ledH = 14;
+        const screenTex = buildScreenTexture();
+        const sideMat = new THREE.MeshStandardMaterial({ color: 0x2b2f3d, metalness: 0.5, roughness: 0.4 });
+        const faceMat = new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false, fog: false });
+        const panelW = FLOOR_W * 0.26;
+        [0, 1, 2].forEach(i => {
+          const cx = xOf(12.5 + 26 * i + 13);
+          const panel = new THREE.Mesh(new THREE.BoxGeometry(panelW - 0.15, ledH, ledT), [sideMat, sideMat, sideMat, sideMat, faceMat, sideMat]);
+          panel.position.set(cx, ledH / 2, ledZ); floorGroup.add(panel);
+        });
+        const blk = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W * 0.125, ledH, ledT * 3), new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 1 }));
+        blk.position.set(xOf(6.25), ledH / 2, ledZ); floorGroup.add(blk);
+        const endBlk = new THREE.Mesh(new THREE.BoxGeometry(FLOOR_W * 0.095, 8, ledT * 2), new THREE.MeshStandardMaterial({ color: 0x5b6074, metalness: 0.3, roughness: 0.6 }));
+        endBlk.position.set(xOf(95.25), 4, ledZ); floorGroup.add(endBlk);
+
+        // estructura metálica (truss) a lo largo del muro derecho
+        const tx = FLOOR_W / 2 + 1.6, tH = 9.5, tMat = new THREE.MeshStandardMaterial({ color: 0xc9ced8, metalness: 0.9, roughness: 0.35 });
+        [1.4, tH].forEach(y => [-0.6, 0.6].forEach(dx => {
+          const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, FLOOR_D, 8), tMat);
+          rail.rotation.x = Math.PI / 2; rail.position.set(tx + dx, y, 4); floorGroup.add(rail);
+        }));
+        const step = 4.2, nBr = Math.floor(FLOOR_D / step);
+        for (let i = 0; i <= nBr; i++) {
+          const z = zBack + i * step;
+          const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, tH - 1.4, 0.1), tMat);
+          post.position.set(tx, (tH + 1.4) / 2, z); floorGroup.add(post);
+          if (i < nBr) {
+            const len = Math.hypot(step, tH - 1.4);
+            const d = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, len), tMat);
+            d.position.set(tx, (tH + 1.4) / 2, z + step / 2);
+            d.rotation.x = (i % 2 ? 1 : -1) * Math.atan((tH - 1.4) / step);
+            floorGroup.add(d);
+          }
+        }
+      })();
+
       // ============================================================
       // ALAS LATERALES SIMÉTRICAS: el piso ahora se extiende exactamente
       // la misma distancia a cada lado, hasta pegar justo con el cristal
       // (antes la derecha se salía mucho más que la izquierda y quedaba
       // descuadrado). Solo el ala derecha tiene el mezzanine elevado.
       // ============================================================
-      const WING_SPAN = 19;                       // ancho de cada ala, igual en ambos lados
+      const WING_SPAN = 5;                        // ancho de cada ala, igual en ambos lados
       // CORRECCIÓN DE HUECOS: antes las alas laterales (WING_Z_LEN=FLOOR_D+6,
       // centradas en WING_Z=-1) no coincidían en profundidad/centro con el piso
       // central (FLOOR_D=46, centrado en z=4). Ese desfase dejaba esquinas y
@@ -5203,9 +5380,17 @@
       // (el que mira hacia adentro del club); el otro borde es la fachada
       // real de vidrio exterior del edificio (ya construida más abajo).
       // ============================================================
+      const paGroup = new THREE.Group();
+      floorGroup.add(paGroup);
+      paGroupRef = paGroup;
       const mezzY = 12;
       mezzYCache = mezzY;
-      const platformX = FLOOR_W / 2 + WING_SPAN / 2;
+      const paPct = window.CLUB3D_PA_PCT || { rightX: 68, bottomY: 80 };
+      const armXMin = (paPct.rightX / 100 - 0.5) * FLOOR_W;   // donde empieza el brazo derecho (mundo)
+      const armXMax = FLOOR_W / 2 + WING_SPAN;
+      const RIGHT_ARM_W = armXMax - armXMin;
+      const platformX = (armXMin + armXMax) / 2;
+      const rightStripX = FLOOR_W / 2 + WING_SPAN / 2;
       const platformZ = WING_Z;
       // AJUSTE FINAL: la plataforma, su barandal, el vidrio exterior y los
       // muros de apoyo del lado derecho usaban WING_Z_LEN, que queda 1 unidad
@@ -5225,30 +5410,31 @@
       // --- Plataforma de Planta Alta: corre de corrido todo el lateral
       // derecho, desde el fondo (cristales traseros) hasta el frente,
       // tocando ambos muros sin dejar rendija ---
-      const mezz = new THREE.Mesh(new THREE.BoxGeometry(WING_SPAN, 0.5, RIGHT_SIDE_LEN), platformMat);
+      const mezz = new THREE.Mesh(new THREE.BoxGeometry(RIGHT_ARM_W, 0.5, RIGHT_SIDE_LEN), platformMat);
       mezz.position.set(platformX, mezzY, platformZ);
-      floorGroup.add(mezz);
-      const mezzFloor = new THREE.Mesh(new THREE.PlaneGeometry(WING_SPAN, RIGHT_SIDE_LEN), mezzFloorMat);
+      paGroup.add(mezz);
+      const mezzFloor = new THREE.Mesh(new THREE.PlaneGeometry(RIGHT_ARM_W, RIGHT_SIDE_LEN), mezzFloorMat);
       mezzFloor.rotation.x = -Math.PI / 2;
       mezzFloor.position.set(platformX, mezzY + 0.26, platformZ);
-      floorGroup.add(mezzFloor);
+      paGroup.add(mezzFloor);
       const mezzGrid = new THREE.GridHelper(1, 10, 0x2ecbff, 0x14283a);
-      mezzGrid.scale.set(WING_SPAN, 1, RIGHT_SIDE_LEN);
+      mezzGrid.scale.set(RIGHT_ARM_W, 1, RIGHT_SIDE_LEN);
       mezzGrid.position.set(platformX, mezzY + 0.27, platformZ);
       mezzGrid.material.opacity = 0.12;
       mezzGrid.material.transparent = true;
-      floorGroup.add(mezzGrid);
+      paGroup.add(mezzGrid);
       const mezzLight = new THREE.PointLight(0x9fd3ff, 1.9, 26, 2);
       mezzLight.position.set(platformX, mezzY + 3.2, platformZ);
-      floorGroup.add(mezzLight);
+      paGroup.add(mezzLight);
       // Detalle extra: tira de luz ámbar bajo el borde del mezzanine, como remate
-      const mezzUnderStrip = new THREE.Mesh(new THREE.BoxGeometry(WING_SPAN + 0.1, 0.06, 0.06), neonMaterial(0xf3ba2f, 2.0));
+      const mezzUnderStrip = new THREE.Mesh(new THREE.BoxGeometry(RIGHT_ARM_W + 0.1, 0.06, 0.06), neonMaterial(0xf3ba2f, 2.0));
       mezzUnderStrip.position.set(platformX, mezzY - 0.28, platformZ - RIGHT_SIDE_LEN / 2);
-      floorGroup.add(mezzUnderStrip);
+      paGroup.add(mezzUnderStrip);
 
       // Brazo inferior de la L (zona OMEGA): se une al pasillo derecho.
-      const BOTTOM_SPAN = 19; // 20% aprox. de la profundidad ampliada
       const bottomZMax = WING_Z + RIGHT_SIDE_LEN / 2;
+      const bottomZStart = (paPct.bottomY / 100) * FLOOR_D - FLOOR_D * 0.5 + 4;
+      const BOTTOM_SPAN = bottomZMax - bottomZStart;
       const bottomZ = bottomZMax - BOTTOM_SPAN / 2;
       const bottomXMin = LEFT_GLASS_X; // = ancho total del piso de PB (de muro a muro)
       const bottomXMax = FLOOR_W / 2 + WING_SPAN;
@@ -5256,19 +5442,19 @@
       const bottomX = (bottomXMin + bottomXMax) / 2;
       const mezzBottom = new THREE.Mesh(new THREE.BoxGeometry(bottomW, 0.5, BOTTOM_SPAN), platformMat);
       mezzBottom.position.set(bottomX, mezzY, bottomZ);
-      floorGroup.add(mezzBottom);
+      paGroup.add(mezzBottom);
       const mezzBottomFloor = new THREE.Mesh(new THREE.PlaneGeometry(bottomW, BOTTOM_SPAN), mezzFloorMat);
       mezzBottomFloor.rotation.x = -Math.PI / 2;
       mezzBottomFloor.position.set(bottomX, mezzY + 0.26, bottomZ);
-      floorGroup.add(mezzBottomFloor);
+      paGroup.add(mezzBottomFloor);
       const bottomLight = new THREE.PointLight(0xffb703, 1.5, 30, 2);
       bottomLight.position.set(bottomX, mezzY + 3, bottomZ);
-      floorGroup.add(bottomLight);
+      paGroup.add(bottomLight);
 
       // Se expone el contorno completo de PA: unión de dos rectángulos (L).
       window.CLUB3D_PA_PLATFORM = {
         floorW: FLOOR_W, floorD: FLOOR_D,
-        rightWing: { xMin: FLOOR_W / 2, xMax: FLOOR_W / 2 + WING_SPAN, zMin: WING_Z - RIGHT_SIDE_LEN / 2, zMax: bottomZMax },
+        rightWing: { xMin: armXMin, xMax: armXMax, zMin: WING_Z - RIGHT_SIDE_LEN / 2, zMax: bottomZMax },
         bottomWing: { xMin: bottomXMin, xMax: bottomXMax, zMin: bottomZMax - BOTTOM_SPAN, zMax: bottomZMax }
       };
 
@@ -5298,25 +5484,25 @@
       //  - brazo derecho: desde el fondo hasta la esquina interior de la L
       //  - brazo inferior: desde el muro izquierdo hasta esa misma esquina
       // Ambos terminan exactamente en la esquina, con un poste común.
-      const cornerX = FLOOR_W / 2 + 0.05;
+      const cornerX = armXMin + 0.05;
       const cornerZ = bottomZMax - BOTTOM_SPAN + 0.05;
       const rightRailZMin = WING_Z - RIGHT_SIDE_LEN / 2;
       const rightRailLen = cornerZ - rightRailZMin;
-      floorGroup.add(buildGlassRail(rightRailLen, cornerX, (rightRailZMin + cornerZ) / 2, Math.PI / 2));
+      paGroup.add(buildGlassRail(rightRailLen, cornerX, (rightRailZMin + cornerZ) / 2, Math.PI / 2));
       const bottomRailLen = cornerX - bottomXMin;
-      floorGroup.add(buildGlassRail(bottomRailLen, (bottomXMin + cornerX) / 2, cornerZ, 0));
+      paGroup.add(buildGlassRail(bottomRailLen, (bottomXMin + cornerX) / 2, cornerZ, 0));
       const cornerPost = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.5, 0.12), railFrameMat);
       cornerPost.position.set(cornerX, mezzY + 0.5 + 1.25, cornerZ);
-      floorGroup.add(cornerPost);
+      paGroup.add(cornerPost);
 
       // Relleno de piso a nivel de calle bajo la plataforma (Planta Baja, bajo el hueco)
       const groundFill = new THREE.Mesh(new THREE.PlaneGeometry(WING_SPAN, WING_Z_LEN), floorMat);
       groundFill.rotation.x = -Math.PI / 2;
-      groundFill.position.set(platformX, 0, platformZ);
+      groundFill.position.set(rightStripX, 0, platformZ);
       floorGroup.add(groundFill);
       const groundFillGrid = new THREE.GridHelper(1, 8, 0x06d6a0, 0x0d3b30);
       groundFillGrid.scale.set(WING_SPAN, 1, WING_Z_LEN);
-      groundFillGrid.position.set(platformX, 0.02, platformZ);
+      groundFillGrid.position.set(rightStripX, 0.02, platformZ);
       groundFillGrid.material.opacity = 0.12;
       groundFillGrid.material.transparent = true;
       floorGroup.add(groundFillGrid);
@@ -5598,7 +5784,7 @@
 
     document.getElementById('view3d-zoom-in').onclick = () => { cam.radius -= 4; updateCameraFromOrbit(); };
     document.getElementById('view3d-zoom-out').onclick = () => { cam.radius += 4; updateCameraFromOrbit(); };
-    document.getElementById('view3d-zoom-reset').onclick = () => { cam.theta = 0.78; cam.phi = 1.08; cam.radius = 30; cam.target.set(0, 6.5, 3); updateCameraFromOrbit(); };
+    document.getElementById('view3d-zoom-reset').onclick = () => { cam.theta = 0.22; cam.phi = 0.95; cam.radius = 80; cam.target.set(0, 4, 4); updateCameraFromOrbit(); };
 
     // --- Joystick táctil para "deslizarse" caminando por el antro (ideal para tableta) ---
     (function setupJoystick() {
